@@ -148,7 +148,7 @@ class Greeter implements Actor {
 
     @Override
     public void onReceive(Message message, ActorRef sender, ActorContext context) {
-        if (message instanceof Greet greet && sender != null) {
+        if (message instanceof Greet greet) {
             greeted++;
             sender.tell(new Greeting("hello " + greet.who()), context.self());
         }
