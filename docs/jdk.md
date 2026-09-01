@@ -73,9 +73,8 @@ while (state != STOPPED) {
 Serialization *is* the virtual thread itself — that is the whole mechanism, and why an actor's fields
 need no synchronization. Cooperative `Thread.yield()` every 64 drained envelopes keeps a CPU-bound
 mailbox from holding a carrier indefinitely; virtual threads are not time-sliced, so this is the only
-lever that exists against a busy actor. Parking on an empty mailbox is itself a yield point. (Whether
-64 envelopes is the right trigger, or whether it should be a duration, is the open question in
-[`yield-policy.md`](yield-policy.md).)
+lever that exists against a busy actor. Parking on an empty mailbox is itself a yield point. Whether
+64 envelopes is the right trigger, or whether it should be a duration, is still open.
 
 `preStart` is the first lifecycle envelope, enqueued before `Thread.start()`. `runFinalStop` is the
 last; then the loop sees `STOPPED` and exits. A restart keeps the same loop thread and the same
@@ -147,7 +146,8 @@ different from a shared run loop, and is also why offloading still belongs on
 `ActorContext.vThreadFactory()`: blocking the loop stalls this actor's own mailbox even when it stalls
 nobody else's.
 
-*Pinning* is the case that differs between the two schedulers. `synchronized` or a JNI call cannot
-unmount the virtual thread at all, so it holds its carrier: under the JDK builtin that costs one
-`ForkJoinPool` worker, which the pool can compensate for by growing; under the carrier-affine
-scheduler it stalls every other virtual thread that calls that carrier home.
+*Pinning* is the case that differs between the two schedulers. A native frame — a JNI or
+foreign-function call — cannot unmount the virtual thread at all, so it holds its carrier: under the
+JDK builtin that costs one `ForkJoinPool` worker, which the pool can compensate for by growing; under
+the carrier-affine scheduler it stalls every other virtual thread that calls that carrier home.
+(`synchronized` no longer pins: [JEP 491](https://openjdk.org/jeps/491), JDK 24.)

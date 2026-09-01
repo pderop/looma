@@ -333,12 +333,16 @@ actor's fields: take what it needs by value and hand the outcome back as a messa
 
 ### Pinning is the case that is genuinely bad
 
-`synchronized` around a blocking call, or a JNI call, cannot unmount the virtual thread at all, so it
-holds its **carrier** rather than merely its own loop. Under the JDK builtin scheduler that costs one
-`ForkJoinPool` worker and the pool compensates by growing; under the carrier-affine scheduler the
-carrier is pinned to a CPU and there is nothing to grow, so every actor that calls it home stops
-until the pin is released. Use `ReentrantLock` rather than `synchronized`, and keep JNI off the actor
-loop and off anything forked from it.
+A **native frame** on the stack — a JNI call, or a foreign-function downcall — cannot unmount the
+virtual thread at all, so it holds its **carrier** rather than merely its own loop. Under the JDK
+builtin scheduler that costs one `ForkJoinPool` worker and the pool compensates by growing; under the
+carrier-affine scheduler the carrier is pinned to a CPU and there is nothing to grow, so every actor
+that calls it home stops until the pin is released. Keep native calls off the actor loop and off
+anything forked from it.
+
+`synchronized` is **not** a pin on the JDKs this project targets: [JEP 491](https://openjdk.org/jeps/491)
+(JDK 24) unmounts a virtual thread that blocks inside a monitor. `ReentrantLock` is still the better
+default for its `tryLock`/timeout surface, but no longer for pinning reasons.
 
 ## 7. Supervision
 

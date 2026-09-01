@@ -10,7 +10,7 @@ creates through `ActorContext.vThreadFactory()` — is started from that carrier
 [README](../README.md#why-carrier-affinity).
 
 This is the same locality model
-[franz1981's scheduler](https://github.com/franz1981/Netty-VirtualThread-Scheduler) uses for Netty
+[Netty-VirtualThread-Scheduler](https://github.com/franz1981/Netty-VirtualThread-Scheduler) uses for Netty
 event loops, applied to a plain actor system with no Netty dependency at all.
 
 There is only one `ActorSystem` implementation, `DefaultActorSystem` in `core`. This page is about

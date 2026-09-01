@@ -58,7 +58,7 @@ headline metric (cycles/request) without an obvious error.
 
 ## 4. JDK
 
-The bench needs the Loom JDK (Franz's scheduler). How to obtain it, and that a stock JDK 25 is
+The bench needs the Loom JDK (for the carrier-affine scheduler). How to obtain it, and that a stock JDK 25 is
 enough to *use* Looma without that scheduler: [README Prerequisites](../README.md#prerequisites).
 
 ```sh

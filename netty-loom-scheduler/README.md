@@ -1,6 +1,6 @@
 # `netty-loom-scheduler`
 
-This module is a **verbatim, byte-for-byte copy** of Francesco Nigro's carrier-affine
+This module is a **verbatim, byte-for-byte copy** of the upstream carrier-affine
 virtual thread scheduler, plus the `ActorSchedulerProvider` /
 `ActorScheduler` adapter that lets `looma` reach it through the SPI declared in
 `core` (`io.github.pderop.looma.spi`).
@@ -34,22 +34,22 @@ is kept **diffable against upstream**:
 
 To pick up an upstream change, re-run the same `cp` this copy was taken with, against
 a clone of `franz1981/Netty-VirtualThread-Scheduler` checked out at the commit you want
-(`<franz-clone>` below is that clone's path):
+(`<upstream-clone>` below is that clone's path):
 
 ```sh
-FRANZ=<franz-clone>
+UPSTREAM=<upstream-clone>
 DEST=netty-loom-scheduler/src
 
-cp "$FRANZ"/bootstrap/src/main/java/io/netty/loom/scheduler/*.java \
+cp "$UPSTREAM"/bootstrap/src/main/java/io/netty/loom/scheduler/*.java \
    "$DEST"/main/java/io/netty/loom/scheduler/
-cp "$FRANZ"/bootstrap/src/main/java/io/netty/loom/scheduler/jfr/*.java \
+cp "$UPSTREAM"/bootstrap/src/main/java/io/netty/loom/scheduler/jfr/*.java \
    "$DEST"/main/java/io/netty/loom/scheduler/jfr/
-cp "$FRANZ"/topology/src/main/java/io/netty/loom/topology/LinuxCarrierTopology.java \
+cp "$UPSTREAM"/topology/src/main/java/io/netty/loom/topology/LinuxCarrierTopology.java \
    "$DEST"/main/java/io/netty/loom/topology/
 
-cp "$FRANZ"/bootstrap/src/test/java/io/netty/loom/scheduler/{CarrierTopologyTest,ClusterStateTest,IdleCarrierTrackerTest,MpscUnboundedQueueTest,ReplaceBuiltinSchedulerTest}.java \
+cp "$UPSTREAM"/bootstrap/src/test/java/io/netty/loom/scheduler/{CarrierTopologyTest,ClusterStateTest,IdleCarrierTrackerTest,MpscUnboundedQueueTest,ReplaceBuiltinSchedulerTest}.java \
    "$DEST"/test/java/io/netty/loom/scheduler/
-cp "$FRANZ"/topology/src/test/java/io/netty/loom/topology/{FakeClusterTopology,LinuxCarrierTopologyTest}.java \
+cp "$UPSTREAM"/topology/src/test/java/io/netty/loom/topology/{FakeClusterTopology,LinuxCarrierTopologyTest}.java \
    "$DEST"/test/java/io/netty/loom/topology/
 ```
 
