@@ -190,35 +190,6 @@ final class ConnectionActor implements Actor {
 	 */
 	private static final RequestConfig NO_TIMEOUT = RequestConfig.custom().setResponseTimeout(Timeout.DISABLED).build();
 
-	/** One cache line on every CPU this benchmark targets. */
-	private static final int LINE_BYTES = 64;
-
-	/**
-	 * The state is an {@code int[]} walked one cache line at a time, so this is the
-	 * stride.
-	 *
-	 * <p>
-	 * A Java array's elements begin after its header, so a 64-byte stride is not
-	 * guaranteed to be 64-byte <em>aligned</em>: a logical line may straddle two
-	 * physical ones. That doubles the lines actually touched, identically under
-	 * both schedulers, so it costs a little absolute precision and nothing at all
-	 * in the comparison.
-	 */
-	private static final int LINE_INTS = LINE_BYTES / Integer.BYTES;
-
-	/**
-	 * Slot within a line holding the index of the next line to visit — see
-	 * {@link #modifyState(int)} for why the walk is threaded through the data
-	 * instead of being drawn from a generator.
-	 */
-	private static final int NEXT = 0;
-
-	/**
-	 * Slot within a line holding the value actually read and modified. It shares
-	 * the line with {@link #NEXT}, so touching it costs no second miss.
-	 */
-	private static final int PAYLOAD = 1;
-
 	private final SocketChannel channel;
 
 	private final int stateKiB;
@@ -261,9 +232,6 @@ final class ConnectionActor implements Actor {
 	 */
 	private int[] snapshot;
 
-	/** {@code state.length / LINE_INTS}; {@code 0} in the control run. */
-	private int lines;
-
 	/**
 	 * Where the next walk of {@link #state} picks the chase up. Carried across
 	 * requests rather than reset, so nothing about the walk is constant from the
@@ -298,8 +266,7 @@ final class ConnectionActor implements Actor {
 
 		state = new int[stateKiB * 1024 / Integer.BYTES];
 		snapshot = new int[state.length];
-		lines = state.length / LINE_INTS;
-		layOutChase();
+		PointerChase.layOutChase(state, random);
 
 		ActorRef self = context.self();
 		context.vThreadFactory().newThread(() -> readLoop(self)).start();
@@ -412,7 +379,12 @@ final class ConnectionActor implements Actor {
 		System.arraycopy(state, 0, snapshot, 0, state.length);
 		ActorRef self = context.self();
 		context.vThreadFactory().newThread(() -> {
-			int checksum = readSnapshot(snapshot);
+			/*
+			 * The chase was laid out in state and copied along with everything else, so the
+			 * snapshot carries it for free. The sum comes back in UpstreamDone and is
+			 * folded into the actor's next modification, so this read cannot be dead code.
+			 */
+			int checksum = PointerChase.sumPayloads(snapshot);
 			byte[] body = fetchUpstream();
 			self.tell(new UpstreamDone(body, checksum), self);
 		}).start();
@@ -432,65 +404,23 @@ final class ConnectionActor implements Actor {
 	}
 
 	/**
-	 * Threads a single random cycle through every line of {@link #state}: the
-	 * {@link #NEXT} slot of each line holds the index of the line to visit after
-	 * it, so following those indices {@link #lines} times visits every line exactly
-	 * once and comes back to where it started. Built once per connection, from
-	 * {@link #random}, so two co-resident connections walk different orders and a
-	 * given run is reproducible.
-	 *
-	 * <p>
-	 * A single cycle, rather than a random index per step, is what makes the walk a
-	 * <em>chase</em> — see {@link #modifyState(int)}.
-	 */
-	private void layOutChase() {
-		int n = lines;
-		int[] order = new int[n];
-		for (int i = 0; i < n; i++) {
-			order[i] = i;
-		}
-
-		// Fisher-Yates: every permutation equally likely, so the cycle is a genuine
-		// random order and not a stride some prefetcher could learn.
-		for (int i = n - 1; i > 0; i--) {
-			int j = random.nextInt(i + 1);
-			int swapped = order[i];
-			order[i] = order[j];
-			order[j] = swapped;
-		}
-
-		for (int i = 0; i < n; i++) {
-			state[order[i] * LINE_INTS + NEXT] = order[(i + 1) % n];
-		}
-	}
-
-	/**
 	 * Walks every line of {@link #state} once, leaving each one dirty, folding in
 	 * what the forked thread read back.
 	 *
 	 * <p>
-	 * <b>Why the next line is read out of the current one, instead of drawn from a
-	 * generator.</b> A CPU does not wait for one load at a time — it keeps a dozen
-	 * or so in flight at once. But it can only do that when it knows the addresses
-	 * in advance, and an address drawn from a random number generator <em>is</em>
-	 * known in advance, because computing it touches no memory. Written that way,
-	 * four accesses cost one memory latency instead of four:
-	 *
-	 * <pre>
-	 * index drawn from a generator      index read out of the line itself
-	 * ----------------------------      ---------------------------------
-	 * t=0    issue load of line 2       t=0     issue load of line 0
-	 * t=0    issue load of line 0       t=30ns  arrives, holds 3 -&gt; issue line 3
-	 * t=0    issue load of line 3       t=60ns  arrives, holds 1 -&gt; issue line 1
-	 * t=0    issue load of line 1       t=90ns  arrives, holds 2 -&gt; issue line 2
-	 * t=30ns all four have arrived      t=120ns arrives
-	 * </pre>
+	 * The walk is a {@link PointerChase}: each line carries the index of the next
+	 * one, so the loop cannot compute an address until the previous load has come
+	 * back, and the value it modifies lives in the same line as that index, so the
+	 * read-modify-write costs no second miss. See that class for why the next index
+	 * is read out of the data instead of drawn from a generator, why the order is
+	 * random rather than sequential, and why each visited line is left dirty.
 	 *
 	 * <p>
-	 * That overlap is fatal here, because the entire experiment is a difference in
-	 * per-line latency: roughly 5 ns when the line is already in this core's cache,
-	 * against roughly 30 ns when it has to be snooped away from another core. Over
-	 * the 1024 lines of a default 64 KiB state, per call:
+	 * <b>Why it has to be a chase here.</b> The entire experiment is a difference
+	 * in per-line latency: roughly 5 ns when the line is already in this core's
+	 * cache, against roughly 30 ns when it has to be snooped away from another
+	 * core. Overlapped loads would hide exactly that. Over the 1024 lines of a
+	 * default 64 KiB state, per call:
 	 *
 	 * <pre>
 	 *                                  home core   foreign core   difference
@@ -500,63 +430,14 @@ final class ConnectionActor implements Actor {
 	 *
 	 * <p>
 	 * Two microseconds inside a request that also waits on a backend is not
-	 * measurable; twenty-six is. So the walk is a <b>pointer chase</b>: each line
-	 * carries the index of the next one ({@link #layOutChase()}), and the loop
-	 * below cannot compute an address until the previous load has come back. The
-	 * value it modifies lives in the same line as that index, so the
-	 * read-modify-write costs no second miss.
-	 *
-	 * <p>
-	 * <b>The order is random, never sequential</b>, for a second and independent
-	 * reason: a contiguous scan is exactly what a hardware prefetcher is built to
-	 * hide. The L2 streamer would detect an ascending stride and fetch lines — and
-	 * the read-for-ownership requests that go with them — far enough ahead to erase
-	 * the very difference the chase exists to expose.
-	 *
-	 * <p>
-	 * <b>Read-modify-write, never a plain read</b>, so each visited line is left
-	 * <em>dirty</em>: a core that visits it next must take it away rather than
-	 * merely share it, which is the coherence cost this benchmark exists to expose.
+	 * measurable; twenty-six is.
 	 *
 	 * <p>
 	 * Called only from {@code onReceive}, so {@link #state} is touched by one
 	 * thread at a time and needs no synchronisation of any kind.
 	 */
 	private void modifyState(int mix) {
-		int[] local = state;
-		int n = lines;
-		int delta = 1 + mix;
-		int cursor = chaseCursor;
-		for (int i = 0; i < n; i++) {
-			cursor = local[cursor * LINE_INTS + NEXT];
-			local[cursor * LINE_INTS + PAYLOAD] += delta;
-		}
-		chaseCursor = cursor;
-	}
-
-	/**
-	 * Follows the same chase through the snapshot, reading one value per line, and
-	 * returns their sum — which the actor folds into its next modification, so this
-	 * read cannot be dead code. See {@link #modifyState(int)} for why the walk is a
-	 * chase, and the class Javadoc for why the result must reach the actor.
-	 *
-	 * <p>
-	 * The chase was laid out in {@link #state} and copied along with everything
-	 * else, so the snapshot carries it for free and this method needs no generator
-	 * of its own — one less thing shared across the park.
-	 */
-	private static int readSnapshot(int[] snapshot) {
-		int n = snapshot.length / LINE_INTS;
-		if (n == 0) {
-			return 0;
-		}
-		int cursor = 0;
-		int sum = 0;
-		for (int i = 0; i < n; i++) {
-			cursor = snapshot[cursor * LINE_INTS + NEXT];
-			sum += snapshot[cursor * LINE_INTS + PAYLOAD];
-		}
-		return sum;
+		chaseCursor = PointerChase.chase(state, chaseCursor, 1 + mix);
 	}
 
 	/**
