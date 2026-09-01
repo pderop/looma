@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.github.pderop</groupId>
+    <artifactId>looma-parent</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+    <name>looma</name>
+
+    <!--
+        Two JDKs, on purpose: core and examples compile at release=25, without the
+        preview compiler flag, and run on a stock JDK 25. Only netty-loom-scheduler needs a
+        Loom-enabled JDK 28+ and that preview flag, for the JDK's preview virtual thread
+        scheduler SPI (Thread.VirtualThreadScheduler); it joins the reactor only under the
+        loom-jdk profile below, activated automatically when the build JDK is 28 or newer
+        (see .sdkmanrc). A stock JDK fails at compile time on Thread.VirtualThreadScheduler
+        only inside that one module.
+    -->
+    <modules>
+        <module>core</module>
+        <module>examples</module>
+    </modules>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <java.version>25</java.version>
+        <junit.version>6.1.1</junit.version>
+        <jmh.version>1.37</jmh.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-engine</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.15.0</version>
+                <configuration>
+                    <release>${java.version}</release>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.6</version>
+            </plugin>
+            <plugin>
+                <groupId>com.diffplug.spotless</groupId>
+                <artifactId>spotless-maven-plugin</artifactId>
+                <version>3.8.0</version>
+                <configuration>
+                    <java>
+                        <!--
+                            netty-loom-scheduler/src/**/io/netty/loom/** is a byte-for-byte copy
+                            of upstream franz1981/Netty-VirtualThread-Scheduler: formatting it
+                            would reformat ~1900 lines kept diffable against upstream and stamp
+                            this project's Apache-2.0 header over its own. This exclude also covers
+                            EventLoopSchedulerWorkStealingTest, which is this project's own test but
+                            must live in that same io.netty.loom.scheduler package to reach a
+                            package-private field.
+                        -->
+                        <excludes>
+                            <exclude>**/io/netty/loom/**</exclude>
+                        </excludes>
+                        <eclipse/>
+                        <licenseHeader>
+                            <content>/*
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */</content>
+                        </licenseHeader>
+                    </java>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>check-formatting</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+        <!--
+            Local dev builds auto-format before compiling; CI only checks (mvn verify -P '!dev').
+            Property-based, not activeByDefault: Maven disables activeByDefault as soon as any
+            other profile in the POM activates, and loom-jdk (below) activates on every JDK 28+
+            build, which is exactly the JDK this project's own README tells you to build with
+            (see .sdkmanrc), so activeByDefault would silently never fire on that JDK. A
+            profile keyed off the absence of a property stays active regardless of what else in
+            the POM activates.
+        -->
+        <profile>
+            <id>dev</id>
+            <activation><property><name>!skipFormat</name></property></activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.diffplug.spotless</groupId>
+                        <artifactId>spotless-maven-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>apply-formatting</id>
+                                <phase>compile</phase>
+                                <goals><goal>apply</goal></goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <!--
+            Additive: profile <modules> add to the base <modules>, they do not replace them, so
+            netty-loom-scheduler must not also be listed there. Activated by the JDK the build
+            itself runs on (not by an explicit -P), so `mvn verify` on a stock JDK 25 simply does
+            not see this module, and `mvn verify` on JDK 28-loom (or newer) does.
+        -->
+        <profile>
+            <id>loom-jdk</id>
+            <activation><jdk>[28,)</jdk></activation>
+            <modules>
+                <module>netty-loom-scheduler</module>
+            </modules>
+        </profile>
+    </profiles>
+</project>

@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.pderop</groupId>
+        <artifactId>looma-parent</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>looma-netty-scheduler</artifactId>
+
+    <!--
+        Only this module runs on the Loom preview JDK: it carries a verbatim copy of
+        franz1981/Netty-VirtualThread-Scheduler's io.netty.loom.* under src/main and src/test
+        (see README.md for the commit and the refresh procedure), plus the SPI adapter that
+        wires it under io.github.pderop.looma.spi. The parent no
+        longer sets the preview compiler flag, so this module re-declares release=28 and that
+        flag on both the compiler and surefire, and redefines java.version to 28.
+    -->
+    <properties>
+        <java.version>28</java.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.pderop</groupId>
+            <artifactId>looma-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.pderop</groupId>
+            <artifactId>looma-core</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <compilerArgs>
+                        <arg>--enable-preview</arg>
+                    </compilerArgs>
+                </configuration>
+            </plugin>
+            <!--
+                Four executions, and every one of them filters explicitly. Without <includes>
+                the default execution would also pick up the Carrier* tests, which need the
+                carrier pool to actually be installed: discovery would fall through to the
+                JdkActorScheduler builtin and CarrierAffinityTest would fail.
+
+                EventLoopSchedulerWorkStealingTest must run under workstealing-test and ONLY
+                there. Its first line is assumeTrue(EventLoopScheduler.WORK_STEALING_ENABLED),
+                a static final read at class-init from the io.netty.loom.workstealing.enabled
+                system property, so anywhere else it would silently self-skip and report green
+                while testing nothing. The io/netty/loom glob below reaches it, hence the
+                explicit exclude.
+
+                Do not "simplify" these argLines: jdk.traceVirtualThreadLocals=false and the
+                add-opens of java.base/java.lang are on every upstream execution, and
+                LinuxCarrierTopologyTest calls sched_getaffinity through FFM, hence the
+                enable-native-access flag.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <executions>
+                    <!-- The vendored scheduler's own tests. -->
+                    <execution>
+                        <id>default-test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <argLine>--enable-preview --enable-native-access=ALL-UNNAMED -Djdk.virtualThreadScheduler.implClass=io.netty.loom.scheduler.NettyScheduler -Djdk.traceVirtualThreadLocals=false -Dio.netty.loom.schedulers=2 --add-opens=java.base/java.lang=ALL-UNNAMED</argLine>
+                            <includes>
+                                <include>**/io/netty/loom/**/*Test.java</include>
+                            </includes>
+                            <excludes>
+                                <exclude>**/ReplaceBuiltinSchedulerTest.java</exclude>
+                                <exclude>**/EventLoopSchedulerWorkStealingTest.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                    <!-- The actor suites over the carrier-affine scheduler: two carriers, no stealing. -->
+                    <execution>
+                        <id>carrier-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <argLine>--enable-preview --enable-native-access=ALL-UNNAMED -Djdk.virtualThreadScheduler.implClass=io.netty.loom.scheduler.NettyScheduler -Djdk.traceVirtualThreadLocals=false -Dio.netty.loom.schedulers=2 --add-opens=java.base/java.lang=ALL-UNNAMED</argLine>
+                            <includes>
+                                <include>**/scheduler/netty/*Test.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                    <!-- The same suites over four carriers with stealing on, plus the steal proof itself. -->
+                    <execution>
+                        <id>workstealing-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <argLine>--enable-preview --enable-native-access=ALL-UNNAMED -Djdk.virtualThreadScheduler.implClass=io.netty.loom.scheduler.NettyScheduler -Djdk.traceVirtualThreadLocals=false -Dio.netty.loom.schedulers=4 --add-opens=java.base/java.lang=ALL-UNNAMED -Dio.netty.loom.workstealing.enabled=true -Djdk.trackAllThreads=true -Dio.netty.loom.topology=io.netty.loom.topology.FakeClusterTopology</argLine>
+                            <includes>
+                                <include>**/scheduler/netty/*Test.java</include>
+                                <include>**/EventLoopSchedulerWorkStealingTest.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                    <!-- Copied verbatim from upstream bootstrap/pom.xml. -->
+                    <execution>
+                        <id>replaceBuiltinScheduler-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <argLine>--enable-preview -Djdk.virtualThreadScheduler.implClass=io.netty.loom.scheduler.NettyScheduler -Djdk.traceVirtualThreadLocals=false -Dio.netty.loom.schedulers=2 --add-opens=java.base/java.lang=ALL-UNNAMED -Dio.netty.loom.workstealing.enabled=true -Dio.netty.loom.replaceBuiltinScheduler=true -Djdk.pollerMode=3</argLine>
+                            <includes>
+                                <include>**/ReplaceBuiltinSchedulerTest.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

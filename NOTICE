@@ -1,0 +1,33 @@
+Looma
+
+This product is licensed to you under the Apache License, Version 2.0 (the "License").
+See the LICENSE file for details.
+
+===============================================================================
+
+Vendored code: carrier-affine virtual thread scheduler
+
+looma contains code vendored, unmodified, under the Java package io.netty.loom
+(and its .scheduler.jfr and .topology subpackages), inside the netty-loom-scheduler
+module (see netty-loom-scheduler/README.md for the exact directories and the refresh
+procedure), from:
+
+  Project:  Netty VirtualThread Scheduler
+  Origin:   https://github.com/franz1981/Netty-VirtualThread-Scheduler
+  Commit:   7e712d8ae96baa7bfc904e3527d119a5b3ac60f9
+  Packages: io.netty.loom.scheduler.* (module "bootstrap")
+            io.netty.loom.topology.LinuxCarrierTopology (module "topology")
+  License:  Apache License, Version 2.0
+            https://www.apache.org/licenses/LICENSE-2.0
+
+Copyright 2025-2026 The Netty VirtualThread Scheduler Project
+
+In accordance with Apache License, Version 2.0, Section 4(b): these files are an
+unmodified copy of the originals at the commit above. No package, class, structural
+or logical changes were made, and no system property, JFR event name or test body was
+altered. The netty-loom-scheduler module reaches this code through a separate adapter,
+io.github.pderop.looma.scheduler.netty, which is this project's own code and is
+not part of this vendored copy.
+
+The original Apache-2.0 copyright header is preserved at the top of each vendored file,
+in addition to this NOTICE.

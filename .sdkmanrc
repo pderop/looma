@@ -1,0 +1,7 @@
+# Local SDKMAN identifier for a Loom JDK 28 image (Shipilev / openjdk/loom fibers).
+# Not a catalog candidate: see the README "Getting the Loom JDK".
+# `sdk env` then puts it in JAVA_HOME; Maven runs on it directly — no toolchain.
+#
+#   sdk env
+#   mvn clean install
+java=28-loom
