@@ -102,23 +102,23 @@ final class PointerChase {
 	private PointerChase() {
 	}
 
-	/** How many cache lines {@code cacheLines} amounts to. */
-	static int cacheLineCount(int[] cacheLines) {
-		return cacheLines.length / INTS_PER_CACHE_LINE;
+	/** How many cache lines {@code data} amounts to. */
+	static int cacheLineCount(int[] data) {
+		return data.length / INTS_PER_CACHE_LINE;
 	}
 
 	/**
-	 * Threads a single random cycle through every line of {@code cacheLines}: slot
-	 * 0 of each line holds the index of the line to visit after it, so following
-	 * those indices {@link #cacheLineCount} times visits every line exactly once
-	 * and comes back to where it started.
+	 * Threads a single random cycle through every line of {@code data}: slot 0 of
+	 * each line holds the index of the line to visit after it, so following those
+	 * indices {@link #cacheLineCount} times visits every line exactly once and
+	 * comes back to where it started.
 	 *
 	 * <p>
 	 * Drawing the permutation from a caller-supplied generator lets two walkers be
 	 * given different orders while a given run stays reproducible.
 	 */
-	static void layOutChase(int[] cacheLines, RandomGenerator rnd) {
-		int n = cacheLineCount(cacheLines);
+	static void layOutChase(int[] data, RandomGenerator rnd) {
+		int n = cacheLineCount(data);
 		int[] visitOrder = new int[n];
 
 		// start from the identity permutation: visit line 0, then 1, then 2...
@@ -143,7 +143,7 @@ final class PointerChase {
 		// it is what lets chase() start anywhere and still cover every line in n steps
 		// -- and it removes any special case from the hot loop.
 		for (int i = 0; i < n; i++) {
-			cacheLines[visitOrder[i] * INTS_PER_CACHE_LINE] = visitOrder[(i + 1) % n];
+			data[visitOrder[i] * INTS_PER_CACHE_LINE] = visitOrder[(i + 1) % n];
 		}
 	}
 
@@ -161,12 +161,12 @@ final class PointerChase {
 	 * Carrying the cursor across calls, rather than resetting it, keeps anything
 	 * about the walk from being constant from the JIT's point of view.
 	 */
-	static int chase(int[] cacheLines, int startCursor, int delta) {
-		int n = cacheLineCount(cacheLines);
+	static int chase(int[] data, int startCursor, int delta) {
+		int n = cacheLineCount(data);
 		int cursor = startCursor;
 		for (int i = 0; i < n; i++) {
-			cursor = cacheLines[cursor * INTS_PER_CACHE_LINE]; // slot 0: index of the next line
-			cacheLines[cursor * INTS_PER_CACHE_LINE + PAYLOAD] += delta;
+			cursor = data[cursor * INTS_PER_CACHE_LINE]; // slot 0: index of the next line
+			data[cursor * INTS_PER_CACHE_LINE + PAYLOAD] += delta;
 		}
 		return cursor;
 	}
@@ -179,13 +179,13 @@ final class PointerChase {
 	 * The chase lives in the array itself, so a copy of a laid-out array carries it
 	 * for free and this needs no generator of its own.
 	 */
-	static int sumPayloads(int[] cacheLines) {
-		int n = cacheLineCount(cacheLines);
+	static int sumPayloads(int[] data) {
+		int n = cacheLineCount(data);
 		int cursor = 0;
 		int sum = 0;
 		for (int i = 0; i < n; i++) {
-			cursor = cacheLines[cursor * INTS_PER_CACHE_LINE];
-			sum += cacheLines[cursor * INTS_PER_CACHE_LINE + PAYLOAD];
+			cursor = data[cursor * INTS_PER_CACHE_LINE];
+			sum += data[cursor * INTS_PER_CACHE_LINE + PAYLOAD];
 		}
 		return sum;
 	}
