@@ -37,15 +37,49 @@ schedulers rather than a framework.
 Below the API, `spi.ActorScheduler` is the seam. The *same* actor, the same engine, the same
 workload run either on the JDK's default virtual-thread scheduler or on the carrier-affine one —
 switched by JVM flags, never by application code. That is what makes the comparison honest, and it
-is what the [HTTP benchmark](#the-http-cache-locality-benchmark) drives.
+is what the [user-recommendation benchmark](#the-user-recommendation-cache-locality-benchmark) drives.
 
 Looma is a lab, not a production framework: there is no intent to publish it as one.
 
+- [Quickstart](#quickstart) — install the Loom JDK, build, run the tests, the examples, the benchmark
 - [Why carrier affinity](#why-carrier-affinity) — the rationale, with pictures
-- [Quickstart](#quickstart) and the [API guide](docs/api.md)
+- [Minimal example](#minimal-example) and the [API guide](docs/api.md)
 - [The two schedulers](#the-two-schedulers)
 - [Build and test](#build-and-test), [running the examples](#running-the-examples)
-- [The HTTP cache-locality benchmark](#the-http-cache-locality-benchmark)
+- [The user-recommendation cache-locality benchmark](#the-user-recommendation-cache-locality-benchmark)
+
+---
+
+## Quickstart
+
+```sh
+# 1. Get a Loom JDK 28 — needed to build/run the carrier-affine scheduler. Skip this and
+#    step 3's netty-loom-scheduler module if you only want the JDK builtin scheduler: a
+#    stock JDK 25 is then enough (details: Prerequisites).
+curl -fsSL -o loom-jdk.tar.xz \
+  https://builds.shipilev.net/openjdk-jdk-loom/openjdk-jdk-loom-linux-x86_64-server.tar.xz
+mkdir -p "$HOME/.local/jdk-loom"
+tar -xJf loom-jdk.tar.xz -C "$HOME/.local/jdk-loom" --strip-components=1
+sdk install java 28-loom "$HOME/.local/jdk-loom"   # or: export JAVA_HOME=$HOME/.local/jdk-loom
+sdk env                                            # reads .sdkmanrc, picks 28-loom
+
+# 2. Build — also runs every test, on both schedulers
+mvn clean install
+
+# 3. See carrier affinity in one trace: three actors, one line each, all on carrier-0
+scripts/run-hello.sh
+
+# 4. Run the cache-locality benchmark: carrier-affine vs. JDK builtin, same binary
+scripts/run-user-bench.sh
+```
+
+**Linux only** for steps 3-4: the benchmark and its `perf` integration need `taskset`, `/proc`, and
+`LinuxCarrierTopology`. `mvn clean install` and the actor API itself run on any OS with a matching
+JDK; on macOS `run-user-bench.sh` still runs, unpinned — a smoke test, not a measurement.
+
+More detail: JDK setup and alternatives — [Prerequisites](#prerequisites); what each test execution
+covers — [Build and test](#build-and-test); reading the benchmark's output —
+[`docs/benchmark.md`](docs/benchmark.md).
 
 ---
 
@@ -57,9 +91,9 @@ A virtual thread is a *continuation* plus a scheduler. When it blocks, the conti
 and its carrier handed back to the pool; when the wait completes, the continuation is submitted to
 the scheduler again — which is free to run it **anywhere**.
 
-For a stateless request handler that is genuinely free, and the JDK's `ForkJoinPool` is right not to
-care. For an actor it is not free, because an actor is *defined* by the state it keeps. And this is
-not an edge case: **every** actor parks on an empty mailbox and is unparked by the next `tell`,
+For a stateless request handler, running anywhere costs nothing, and the JDK's `ForkJoinPool` is
+right not to care. For an actor it is not free, because an actor **is** the state it keeps. And this
+is not an edge case: every actor parks on an empty mailbox and is unparked by the next `tell`,
 constantly. That is the migration point.
 
 ```
@@ -83,11 +117,11 @@ constantly. That is the migration point.
 
 That last transfer is a **HITM**: a load that hits a cache line held *Modified* in another core's
 private cache. The owning core must be interrogated, the line forwarded, the previous owner
-invalidated — roughly an order of magnitude more expensive than the L1 hit it replaced, and paid
-**per cache line the actor had dirtied**.
+invalidated — about ten times the cost of the L1 hit it replaced, and paid **per cache line the
+actor had dirtied**.
 
 Nothing was shared. Nothing needed a lock. The state was private by construction, and it still paid
-coherence traffic, purely because the scheduler moved the code away from the data.
+coherence traffic — only because the scheduler moved the code away from the data.
 
 ### What affinity changes
 
@@ -96,9 +130,9 @@ the state is first-touched, written and read back on the same CPU for the whole 
 Two things follow for free — children inherit their parent's carrier, so a whole subtree resolves to
 one core; and blocking work offloaded through `ActorContext.vThreadFactory()` runs there too.
 
-Affinity preserves **L2, not L1**: a 64 KiB array already overflows a 48 KiB L1d, and the other
-actors the carrier ran meanwhile have flushed what was left. That is what the benchmark is sized
-around.
+Affinity preserves **L2, not L1**: the benchmark's per-actor state (~640 KiB, see below) overflows a
+48 KiB L1d many times over, and whatever else the carrier ran meanwhile has flushed what was left
+there. It has to fit a core's L2 instead — that is what the benchmark is sized around.
 
 | Where the line is | Typical cost |
 | --- | --- |
@@ -107,7 +141,7 @@ around.
 | L3, clean | ~40-50 cycles |
 | **Another core's L2, Modified (HITM)** | **~70-90 cycles** |
 
-An actor holding 64 KiB of state holds 1024 cache lines, and migrating it means dragging them
+An actor holding 640 KiB of state holds ~10,000 cache lines, and migrating it means dragging them
 across one snoop at a time. Hence the falsifiable claim the benchmark is built on: **an affinity
 advantage must grow with the amount of per-actor state, and must vanish once that state no longer
 fits in a core's private cache anyway.**
@@ -115,10 +149,10 @@ fits in a core's private cache anyway.**
 ### Where affinity stops being free
 
 - An actor bound to a carrier cannot be helped by an idle neighbour — a **fixed utilization
-  handicap**, which only pays for itself while the locality saving covers it.
+  handicap** that only pays for itself while the locality saving covers it.
 - **Work stealing** (`-Dio.netty.loom.workstealing.enabled=true`) is the release valve: an idle
-  sibling may run a *queued* actor loop. Which way the trade goes is a property of the workload, not
-  a setting to pick by taste.
+  sibling may run a *queued* actor loop. Which way that trade goes depends on the workload, not
+  on taste.
 - **Pinning** — a native frame on the stack, i.e. a JNI or foreign-function call — holds the whole
   carrier rather than one pooled worker, and there is nothing to grow. Keep it off the actor loop.
   (`synchronized` is *not* a pin: [JEP 491](https://openjdk.org/jeps/491) removed monitor pinning in
@@ -129,7 +163,7 @@ Blocking inside `onReceive` is cheap and allowed — what it costs, and when to 
 
 ---
 
-## Quickstart
+## Minimal example
 
 ```xml
 <dependency>
@@ -210,6 +244,17 @@ There is no builder knob to "force the JDK one". Without
 what is left. A provider that fails to *link* — a preview-compiled class on a stock JDK throws
 `UnsupportedClassVersionError` — is caught and skipped too.
 
+The flags alone are not enough — `looma-netty-scheduler` must also be on the classpath, or step 2
+above finds no provider and step 3 (`JdkActorScheduler`) is silently what runs:
+
+```xml
+<dependency>
+    <groupId>io.github.pderop</groupId>
+    <artifactId>looma-netty-scheduler</artifactId>
+    <version>1.0-SNAPSHOT</version>
+</dependency>
+```
+
 The flags that install the affine scheduler:
 
 | Property | Meaning |
@@ -221,6 +266,11 @@ The flags that install the affine scheduler:
 
 Full table with defaults: [`docs/carrier.md`](docs/carrier.md). Looma itself reads **no** system
 property of its own.
+
+The jar must be visible to the **system** classloader specifically, not just an application
+classloader — automatic under a plain `-cp` launch (a Surefire fork, the `scripts/` launchers), but
+worth checking under a fat-jar container (Spring Boot, Quarkus). Details:
+[`docs/carrier.md`](docs/carrier.md#system-classloader-constraint).
 
 A third-party scheduler plugs in exactly the way this project's own does: implement
 `spi.ActorScheduler` and `spi.ActorSchedulerProvider`, register the provider under
@@ -238,7 +288,7 @@ the reverse, and `looma-core` never names a scheduler class.
 | --- | --- | --- | --- |
 | `core` | `looma-core` | 25 | The API (`io.github.pderop.looma`), the engine (`….impl`), the scheduler and mailbox SPIs (`….spi`). |
 | `netty-loom-scheduler` | `looma-netty-scheduler` | 28 + `--enable-preview` | A byte-for-byte copy of the upstream scheduler under `io.netty.loom.*`, plus the adapter `….scheduler.netty` that exposes it through Looma's SPI. |
-| `examples` | `looma-examples` | 25 | `….examples.hello` (the carrier-affinity trace) and `….examples.http` (the benchmark server). |
+| `examples` | `looma-examples` | 25 | `….examples.hello` (the carrier-affinity trace) and `….examples.user` (the benchmark). |
 
 That is also a **JDK split**. `core` and `examples` compile at `release=25` and run on a stock JDK.
 `netty-loom-scheduler` is the only module built against the preview virtual-thread-scheduler SPI
@@ -322,7 +372,7 @@ Tests run in separate Surefire executions, one per scheduler configuration:
 
 | Module | Execution | Test classes | JVM |
 | --- | --- | --- | --- |
-| `core` | `default-test` | the contract suites over the JDK builtin, plus `examples`' `Http1CodecTest` | no flags — never `-Djdk.virtualThreadScheduler.implClass`, which would leak process-wide into the control JVM |
+| `core` | `default-test` | the contract suites over the JDK builtin | no flags — never `-Djdk.virtualThreadScheduler.implClass`, which would leak process-wide into the control JVM |
 | `netty-loom-scheduler` | `default-test` | the vendored scheduler's own tests (`io.netty.loom.*`) | scheduler installed, 2 carriers |
 | | `carrier-test` | `….scheduler.netty` — the same contract suites, carrier-affine | scheduler installed, 2 carriers, stealing off |
 | | `workstealing-test` | the same, plus `EventLoopSchedulerWorkStealingTest` | scheduler installed, 4 carriers, stealing on, `FakeClusterTopology` |
@@ -382,78 +432,30 @@ the actor system still works — the `carrier-N` suffixes simply stop being mean
 
 ---
 
-## The HTTP cache-locality benchmark
+## The user-recommendation cache-locality benchmark
 
-A real HTTP/1.1 server on real sockets, driven by a third-party load generator — a workload
-`perf c2c` can be pointed at, unlike an in-JVM microbenchmark. The server is
-`examples/…/examples/http`; the driver is `scripts/run-http-bench.sh`.
+A workload with no I/O and no locks, built to isolate one thing: what it costs when a scheduler
+moves an actor off the core that holds its data. Server: `examples/…/examples/user`. Driver:
+`scripts/run-user-bench.sh`.
 
-Every connection is an actor owning a **private** array, pinned to carrier *n % carriers*. Each
-request walks that array, makes a blocking call to a mock upstream, then walks it again. Nothing is
-shared between actors, so any coherence traffic a run produces was created by the scheduler moving
-an actor off the core that dirtied its lines.
-
-The array size is swept to place the working set on either side of the caches:
-
-| `stateKiB` | per-carrier footprint | what it shows |
-| --- | --- | --- |
-| `0` | nothing touched | dispatch cost alone — any gap here is not locality |
-| `64` | 1.5 MiB — past L1d, inside the 2 MiB L2 | **the locality effect** |
-| `256` | 6 MiB — past L2 | the effect **must** collapse back onto the `0` result |
-
-Three configurations of the same binary, switched by JVM flags only:
+One `UserGroup` actor per core, each owning a private map of ~8 000 users. A request walks that
+actor's friend graph, one dependent lookup after another, so it is only as fast as memory answers
+it. Same binary, three JVM configurations:
 
 | | carriers pinned | stealing | What it answers |
 | --- | --- | --- | --- |
 | `carrier` | yes | no | Does the locality exist, and what is it worth |
 | `stealing` | yes | yes | What stealing costs — a measurement, not a default |
-| `jdk` | — | — | The control: same server, same cores, no affinity |
-
-### The result
-
-At the operating point — 64 KiB per connection, too big for L1d, still inside the private L2 — on an
-i9-14900K with 8 carriers:
-
-| | requests/s | cycles per request |
-| --- | ---: | ---: |
-| JDK builtin *(control)* | 103 221 | 219 686 |
-| carrier-affine | 123 697 &nbsp;**+20 %** | 176 951 &nbsp;**−19 %** |
-| carrier-affine + stealing | **132 194 &nbsp;+28 %** | 180 184 &nbsp;−18 % |
-
-Same server, same cores, same binary — only JVM flags differ. The second column is the one that
-matters: **fewer cycles per request means the work got cheaper**, not that the machine was pushed
-harder. The extra throughput follows from it.
-
-Move the state out of the L2 (`256` KiB) and the advantage disappears entirely, which is what says
-the gain came from cache residency and not from a scheduler that is simply faster. Full tables,
-`perf c2c` corroboration and caveats: [`docs/performance.md`](docs/performance.md).
-
-### Running it
+| `jdk` | — | — | The control: same code, same cores, no affinity |
 
 ```sh
-sdk env                           # the scripts follow the same JAVA_HOME as Maven
-mvn clean install                 # must be redone on the benchmark machine: a preview class
-                                  # file only runs on the JDK build that produced it
-
-scripts/run-http-bench.sh                 # closed loop: throughput and perf counters
-RATE=20000 scripts/run-http-bench.sh      # open loop: latency percentiles at a fixed rate
-FAST=1 scripts/run-http-bench.sh          # ~2 min smoke run — proves the harness, measures nothing
+scripts/run-user-bench.sh                 # the E-cores of a 14900K (default)
+PERF=stat scripts/run-user-bench.sh       # + cycles/req and IPC, from perf stat
+PERF=c2c  scripts/run-user-bench.sh       # + HITM (cross-core cache traffic), from perf c2c
 ```
 
-`jbang`, `taskset` and `perf` must be on `PATH`. The full campaign is about nine minutes.
-**Nothing measured under `FAST=1` is a result** — its 5 s window has run-to-run variance the size
-of the effect being compared.
-
-The defaults are sized for an **i9-14900K** and nothing in the driver reads the topology, so on
-another CPU the cpusets and state sizes have to be recomputed. Machine preparation — frequency
-pinned, turbo off, `perf` permissions — is not done by the driver either, and skipping it turns the
-numbers into noise rather than making the run fail.
-
-| | |
-| --- | --- |
-| [`docs/benchmark.md`](docs/benchmark.md) | Why it is built this way, sizing for your machine, and how to read a run |
-| [`docs/machine-prep.md`](docs/machine-prep.md) | Per-machine checklist before a run |
-| [`docs/performance.md`](docs/performance.md) | Measured results |
+Workload rationale, the report format, and how to read `perf stat`/`perf c2c` output:
+[`docs/benchmark.md`](docs/benchmark.md).
 
 ---
 
@@ -464,9 +466,7 @@ numbers into noise rather than making the run fail.
 | [`docs/api.md`](docs/api.md) | The API guide: actors, messages, `tell`/`ask`, hierarchy, supervision, placement, offloading, shutdown. |
 | [`docs/carrier.md`](docs/carrier.md) | The carrier-affine scheduler: placement rules, work stealing, the `io.netty.loom.*` properties, why it is a separate module. |
 | [`docs/jdk.md`](docs/jdk.md) | The JDK builtin scheduler, and the shared engine documented once in its terms. |
-| [`docs/benchmark.md`](docs/benchmark.md) | The HTTP benchmark method: why it is built this way, sizing, how to read a run. |
-| [`docs/performance.md`](docs/performance.md) | The latest measured campaign, and what it does and does not show. |
-| [`docs/machine-prep.md`](docs/machine-prep.md) | Per-machine checklist before a benchmark run. |
+| [`docs/benchmark.md`](docs/benchmark.md) | The user-recommendation benchmark: the workload, running it, and how to read `perf stat`/`perf c2c`. |
 | [`netty-loom-scheduler/README.md`](netty-loom-scheduler/README.md) | The vendored copy: upstream commit, refresh procedure, why it is never edited. |
 
 ## Not to be confused with

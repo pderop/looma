@@ -402,7 +402,7 @@ one core's locality, and parent↔child messages never cross one.
 
 ```java
 // a specific carrier — e.g. an acceptor spreading connections deterministically
-system.spawn("conn-" + n, ConnectionActor::new,
+system.spawn("conn-" + n, ConnectionHandler::new,
         SpawnOptions.placedOn(Placement.carrier(Math.floorMod(n, system.carrierCount()))));
 
 // co-locate a new actor with an existing one

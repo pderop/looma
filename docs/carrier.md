@@ -64,8 +64,9 @@ loop, not the individual message.
 Stealing is off by default, and that is a measurement rather than a preference. Strict affinity
 leaves a carrier's backlog stranded while neighbours idle, which is a fixed utilization handicap;
 stealing removes the handicap and gives back some locality. Which one wins depends on how large the
-per-message work is relative to the constant dispatch saving — see [`performance.md`](performance.md)
-for a campaign where the answer flips with the size of the actor's state.
+per-message work is relative to the constant dispatch saving — see
+[`benchmark.md`](benchmark.md) for a campaign where the answer flips with the size of the actor's
+state.
 
 `EventLoopSchedulerWorkStealingTest` exercises stealing directly against the vendored engine;
 `CarrierAffinityTest` covers the actor-level affinity guarantees, which hold unconditionally since
@@ -115,9 +116,10 @@ unchanged. Read directly out of the vendored source (`EventLoopSchedulerGroup`, 
 | --- | --- | --- |
 | `io.netty.loom.schedulers` | `availableProcessors()` | Carrier pool size (`EventLoopSchedulerGroup`). |
 | `io.netty.loom.resumed.continuations` | `1024` | Initial MPSC run-queue capacity per carrier. |
-| `io.netty.loom.topology` | none | Fully-qualified `CarrierTopology` implementation for CPU/L3-aware carrier placement (must be system-classloader-visible, public no-arg constructor). Set to `io.netty.loom.topology.LinuxCarrierTopology` for the bundled Linux implementation, or to a test double such as `FakeClusterTopology`. **With no topology set, carriers are not pinned to CPUs at all** and form one flat cluster (`StealScope.GLOBAL`). |
+| `io.netty.loom.topology` | none | Fully-qualified `CarrierTopology` implementation for CPU/L3-aware carrier placement (must be system-classloader-visible, public no-arg constructor). Set to `io.netty.loom.topology.LinuxCarrierTopology` for the bundled Linux implementation (groups by LLC), to `io.netty.loom.topology.CacheGroupCarrierTopology` to group by the deepest cache level that actually partitions the cpuset (it descends LLC → L3 → L2, which is what turns a hybrid part's E-core modules into real clusters), or to a test double such as `FakeClusterTopology`. **With no topology set, carriers are not pinned to CPUs at all** and form one flat cluster (`StealScope.GLOBAL`). |
 | `io.netty.loom.workstealing.enabled` | `false` | Push/pull work stealing between carriers (`EventLoopScheduler`). Deliberately **not** exposed on `ActorSystem.Builder`: the carrier pool is a JVM-wide singleton created during `VirtualThread.<clinit>`, so a builder could only flip it process-wide for every actor system at once — and making it settable at all costs the flag its `static final`-ness, which is what lets the JIT fold it and delete the whole stealing path from the compiled carrier loop. |
-| `io.netty.loom.workstealing.scope` | `GLOBAL` | Read by `LinuxCarrierTopology` only (i.e. only takes effect when `io.netty.loom.topology` names it, or another topology that consults it). `CLUSTER_LOCAL` restricts stealing to carriers sharing an L3. |
+| `io.netty.loom.topology.minCacheLevel` | `2` | Read by `CacheGroupCarrierTopology` only: the floor of its cache descent. Level 1 is available but rarely wanted — on an SMT part the L1 grouping is the pair of hyperthread siblings, so it clusters by physical core rather than by cache. |
+| `io.netty.loom.workstealing.scope` | `GLOBAL` | Read by `LinuxCarrierTopology` and its subclasses (i.e. only takes effect when `io.netty.loom.topology` names one, or another topology that consults it). `CLUSTER_LOCAL` restricts stealing to carriers the topology puts in the same cluster — carriers sharing an L3 under `LinuxCarrierTopology`, or sharing whichever cache level split the cpuset under `CacheGroupCarrierTopology`. **Check the `clusters=N` line the scheduler logs at start-up before reading anything into a `CLUSTER_LOCAL` run**: `clusters=1` makes it identical to `GLOBAL`, and one carrier per cluster makes it stealing switched off. |
 | `io.netty.loom.yield.us` | `50` | Continuation-drain time slice per carrier loop pass, in **microseconds** (`EventLoopScheduler.YIELD_DURATION_NS`). |
 | `io.netty.loom.replaceBuiltinScheduler` | `false` | Upstream's mode where *every* virtual thread in the JVM, not just those created from a carrier's factory, runs on the carrier pool (`NettyScheduler`). Not used by this project's own runs; covered by `ReplaceBuiltinSchedulerTest`. |
 
