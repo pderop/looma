@@ -131,8 +131,7 @@ measured:
 perf stat -p <pid> -e task-clock,cycles,instructions,cache-references,cache-misses -- sleep <n>
 ```
 
-Raw output, one line per event (on a hybrid P/E chip like the 14900K, perf resolves each bare event
-name on both PMUs, and the one this run never touches reports `<not counted>`):
+Raw output, one line per event:
 
 ```
      31307.31 msec task-clock                 #  2.236 CPUs utilized
@@ -143,6 +142,20 @@ name on both PMUs, and the one this run never touches reports `<not counted>`):
       2126856      cpu_atom/cache-misses/     #  0.33% of all cache refs
    14.004432693 seconds time elapsed
 ```
+
+The `cpu_atom/` and `cpu_core/` prefixes come from the hybrid P/E layout described above: the two
+core types are different microarchitectures with different counters, so they expose *two* PMUs, and
+perf has no single `cycles` event that spans both. `cpu_core/` is the P-cores (Raptor Cove),
+`cpu_atom/` the E-cores (Gracemont — "Atom" is the E-core line's own name, not something about the
+counter). Given a bare event name like `cycles`, perf therefore resolves it on both PMUs and counts
+it twice, once per core type.
+
+Since `taskset` pins the whole run to one set of cores, only one of the two ever fires; the other
+reports `<not counted>`, which means "this counter was never scheduled onto any CPU the process
+ran on" — not zero, and not an error. The output above is a default (E-core) run, so the numbers
+land on `cpu_atom/`; under `CORES=pcore` the two swap. The script reads whichever line carries a
+number, so nothing about the summary below changes with `CORES`. On a non-hybrid CPU there is one
+PMU, the prefixes disappear, and each event prints a single line.
 
 A raw counter is a total over that window, and the three schedulers never serve the same number of
 requests in it — nothing is comparable until each counter is divided by requests actually served,
