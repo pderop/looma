@@ -218,7 +218,10 @@ warn_if_frequency() {
 			path=/sys/devices/system/cpu/cpu$cpu/cpufreq/scaling_governor
 			[ -r "$path" ] && cat "$path"
 		done | sort -u | tr '\n' ' '
-	)
+	# No cpufreq sysfs at all -- a Mac, a container -- leaves the loop ending on a failed test,
+	# which pipefail hands back as the status of the whole substitution and `set -e` then turns
+	# into a silent exit right here, before the first run. Nothing to warn about in that case.
+	) || true
 	if [ -n "$governors" ] && [ "$governors" != "performance " ]; then
 		echo "WARNING: governor on the cpuset is [$governors] -- want \"performance\", or the clock" >&2
 		echo "will ramp up and down mid-run instead of holding still. Fix:" >&2
