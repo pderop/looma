@@ -48,7 +48,10 @@ Every scheduler runs the *same* actor engine, in `io.github.pderop.looma.impl`:
 - **`ActorCell`** — one actor's own state: mailbox, loop virtual thread, hierarchy, lifecycle hooks,
   supervision. It implements `ActorContext` directly.
 - **`ActorRefImpl`** — the `ActorRef` handed out for a live cell; **`PromiseRef`** — the single-use,
-  unregistered reply channel `ask` passes as the message's `sender`.
+  unregistered reply channel `ask` passes as the message's `sender`; **`PoolRef`** — the `ActorRef`
+  handed out for a `poolSize > 1` spawn, a round-robin fan-out over the pool's `ActorRefImpl`s. It
+  owns no mailbox, no loop and no actor instance: a routed `tell` pays the same single hop as one to
+  a lone actor.
 - **`Envelope`** — one mailbox entry, either a message or a lifecycle step.
 - **`ActorSchedulers`** — the `ServiceLoader` lookup that decides which scheduler a process gets.
 
@@ -62,7 +65,7 @@ The loop is started once at spawn, from the resolved carrier's `vThreadFactory`:
 ```
 while (state != STOPPED) {
   envelope = mailbox.poll();
-  if (envelope != null) { runEnvelope; interrupted(); yield every 64; continue; }
+  if (envelope != null) { runEnvelope; interrupted(); yield every 8; continue; }
   if (STOPPED) break;
   if (TERMINATING && !cascadeStarted) { tryFinishDraining(); continue; }
   LockSupport.park();

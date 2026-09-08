@@ -15,7 +15,7 @@ import io.github.pderop.looma.*;
 | `ActorContext` | An actor's view of itself, its children, and the system. |
 | `Message` | The marker interface every payload implements. |
 | `SupervisionStrategy` / `Directive` | What happens when `onReceive` throws. |
-| `Placement` / `SpawnOptions` | Optional home-carrier placement and supervision at spawn time. |
+| `Placement` / `SpawnOptions` | Optional home-carrier placement, supervision, and pool size at spawn time. |
 
 The scheduler SPI (`io.github.pderop.looma.spi`) is for people *implementing* a scheduler, not for
 people using actors — see [`carrier.md`](carrier.md) and [`jdk.md`](jdk.md).
@@ -160,6 +160,9 @@ The `factory` passed to `spawn` is a `Supplier<Actor>`, not an instance, because
 
 Names must be non-blank, contain no `/` (which would forge a path), and be unique among siblings.
 
+One `spawn` can also create **N actors of the same type** behind a single load-balancing reference —
+see [Pools](#pools-n-actors-of-one-type-behind-one-reference).
+
 ## 4. The hierarchy
 
 A child is spawned from its parent's context — normally in `preStart`:
@@ -293,6 +296,10 @@ So:
 
 - **Block, if there is nothing else the actor could usefully do meanwhile** — a strictly sequential
   protocol has no line to be head-of-line-blocked, and forking would only add a hop.
+- **Block behind a [pool](#pools-n-actors-of-one-type-behind-one-reference), if the *work* is what
+  must stay responsive** — N actors of the same type behind one reference: a blocked one stalls only
+  its own mailbox and its `n-1` peers keep serving. No forking, no captured state, no fold-back
+  message; the price is that ordering is per actor rather than pool-wide.
 - **Fork, if the actor must stay responsive while it waits** — several conversations, a control
   channel, a `Cancel` it must accept, an aggregation to keep feeding:
 
@@ -441,6 +448,84 @@ cross-carrier hop instead of the same-core delivery the default gives for nothin
 explicit placement when the actor's *own* workload wants a specific or spread-out assignment, not by
 default.
 
+### Pools: N actors of one type behind one reference
+
+`SpawnOptions.pooled(n)` (or `.withPoolSize(n)`) makes one `spawn` create **n** actors from the same
+factory and hand back a single `ActorRef` that spreads `tell` and `ask` over them round-robin. Both
+spawning surfaces take it, and each keeps its own default placement — see [below](#placement-and-pools):
+
+```java
+// four actors, load-balanced behind one reference
+ActorRef db = system.spawn("db", DbActor::new, SpawnOptions.pooled(4));
+
+db.tell(new Query(id));                              // → one of /db-0 … /db-3
+Row row = db.ask(new Query(id), Row.class).join();   // answered once, by the routee it went to
+system.stop(db);                                     // stops all four
+
+// the same from inside an actor, for a child pool
+ActorRef io = context.spawn("io", BlockingIoActor::new, SpawnOptions.pooled(4));
+```
+
+**The point is blocking work.** Each actor in a pool has its own mailbox and its own loop virtual
+thread, so one of them sitting in a blocking call stalls *its* mailbox and nothing else — the other
+`n-1` keep answering. That is the alternative to `vThreadFactory()` offloading in
+[§6](#6-blocking-work): the actor is free to just block. Note that this needs no spread across
+carriers to work — a virtual thread blocking on I/O unmounts from its carrier rather than holding it,
+so what buys the responsiveness is the `n` mailboxes. Spreading matters when the routees *compute*.
+
+**Each actor of a pool is an ordinary actor.** It is registered at its own path (`/db-0` … `/db-3`),
+it shows up in its parent's `children()`, it gets its own instance from the factory, it is supervised
+on its own terms, and it is stopped by the ordinary cascade. There is no router actor in the middle:
+the returned reference is a plain fan-out, so a message pays exactly the one hop it would to a lone
+actor.
+
+What that reference is *not*:
+
+- **It is not an actor.** `path()` reports the pool's path (`/db`), but nothing is registered there:
+  `findActor("/db")` is empty, and `findActor("/db-0")` is the live actor.
+- **It gives no pool-wide ordering.** Two messages sent through it land in two mailboxes and are
+  processed concurrently. Messages that must be ordered relative to each other, or that share mutable
+  state, belong to **one** actor — a pool is for independent units of work.
+- **It routes round-robin, and only round-robin.** No random, no smallest-mailbox; a stopped routee
+  is skipped rather than fed its share, so a dead one never silently swallows `1/n` of the traffic.
+
+#### Placement and pools
+
+**The placement applies to each actor of the pool** — a pool is exactly the actors you would have got
+by spawning them one at a time with these options. That one rule gives both shapes, because the
+placements already differ: `inherit()` and `carrier(i)` name *one* carrier, so the pool lands there
+whole, while `roundRobin()` means *the next* carrier, so applying it per actor spreads the pool one
+per carrier. Nothing extra to pass, and no default is touched:
+
+```java
+// child: the 4 on the parent's carrier (inherit, the default there)
+context.spawn("io", BlockingIoActor::new, SpawnOptions.pooled(4));
+
+// child: the same 4, spread one per carrier
+context.spawn("io", BlockingIoActor::new,
+        SpawnOptions.pooled(4).withPlacement(Placement.roundRobin()));
+
+// root: the 4 spread (roundRobin, the default there)
+system.spawn("db", DbActor::new, SpawnOptions.pooled(4));
+
+// root: the same 4, all on carrier 0
+system.spawn("db", DbActor::new,
+        SpawnOptions.pooled(4).withPlacement(Placement.carrier(0)));
+```
+
+A spread pool has no single home carrier, so **`homeCarrierIdOf(pool)` throws** — and it throws for a
+co-located pool too, rather than making the contract depend on a placement the reference no longer
+carries. Ask one of its actors, each an ordinary actor at its own path:
+
+```java
+int carrier = system.homeCarrierIdOf(system.findActor("/db-0").orElseThrow());
+```
+
+`poolSize` must be at least `1`, and a pool of `1` is exactly the single-actor spawn it always was —
+same path, no `-0` suffix. A pool whose name collides partway through (`/db-2` already taken) leaves
+nothing behind: the actors already created are stopped before the `IllegalStateException` reaches the
+caller.
+
 ### Asserting affinity
 
 `homeCarrierIdOf(ref)` is available on both `ActorSystem` and `ActorContext`, and it is the **only**
@@ -453,7 +538,9 @@ assertEquals(system.homeCarrierIdOf(parent), system.homeCarrierIdOf(child));
 The home carrier is the only *deterministic* thing about placement. Which carrier a continuation
 happens to *run* on may, under work stealing, legitimately be a sibling — asserting against the
 running carrier is a flaky test, not a bug in the scheduler. It throws `IllegalArgumentException`
-for a reference that is not a spawned actor, such as the single-use `sender` an `ask` produces.
+for any reference that is not one spawned actor: the single-use `sender` an `ask` produces, and a
+[pool](#pools-n-actors-of-one-type-behind-one-reference), which stands for `n` of them — assert on
+its actors, at `/db-0` and so on.
 
 ## 9. Stopping
 

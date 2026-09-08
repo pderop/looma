@@ -226,6 +226,59 @@ class CarrierPlacementTest {
 		assertEquals(parentHomeCarrier, system.homeCarrierIdOf(parent), "the round trip must not move the parent");
 	}
 
+	/**
+	 * A pool applies its placement <b>once per actor</b>, so the default
+	 * {@link Placement#roundRobin()} of {@link ActorSystem#spawn} — "the next
+	 * carrier" — spreads a root pool one actor per carrier. With
+	 * {@code carrierCount()} actors, that is every carrier exactly once: this is
+	 * the assertion that a pool advances the system-wide cursor {@code poolSize}
+	 * times rather than once, and it needs more than one carrier to say anything at
+	 * all.
+	 */
+	@Test
+	void aRootPoolSpreadsOneActorPerCarrier() {
+		int carriers = system.carrierCount();
+
+		system.spawn("pool", Probe::new, SpawnOptions.pooled(carriers));
+
+		Set<Integer> homeCarriers = IntStream.range(0, carriers)
+				.mapToObj(index -> system.homeCarrierIdOf(system.findActor("/pool-" + index).orElseThrow()))
+				.collect(Collectors.toSet());
+
+		assertEquals(carriers, homeCarriers.size(),
+				"a root pool of carrierCount() actors must occupy every carrier exactly once");
+	}
+
+	/**
+	 * The same rule on the child surface, in both directions — and this is the pair
+	 * that makes the rule worth having. An unset placement is
+	 * {@link Placement#inherit()}, which names one carrier however many times it is
+	 * applied, so a child pool stays whole on its parent's carrier; an explicit
+	 * {@link Placement#roundRobin()} spreads that same pool one child per carrier.
+	 * Neither needs an option of its own: the placement already says which.
+	 */
+	@Test
+	void aChildPoolInheritsByDefaultAndSpreadsWhenPlacedRoundRobin() throws Exception {
+		int carriers = system.carrierCount();
+		ActorRef parent = system.spawn("parent", Probe::new);
+		int parentHomeCarrier = system.homeCarrierIdOf(parent);
+
+		ask(parent, new SpawnChild("kept", SpawnOptions.pooled(carriers)));
+		for (int index = 0; index < carriers; index++) {
+			assertEquals(parentHomeCarrier,
+					system.homeCarrierIdOf(system.findActor("/parent/kept-" + index).orElseThrow()),
+					"an unset placement is inherit(), which does not bend for pools");
+		}
+
+		ask(parent, new SpawnChild("spread", SpawnOptions.pooled(carriers).withPlacement(Placement.roundRobin())));
+		Set<Integer> spreadCarriers = IntStream.range(0, carriers)
+				.mapToObj(index -> system.homeCarrierIdOf(system.findActor("/parent/spread-" + index).orElseThrow()))
+				.collect(Collectors.toSet());
+
+		assertEquals(carriers, spreadCarriers.size(),
+				"roundRobin() means the next carrier, so applying it per child spreads the pool");
+	}
+
 	// ================================================================
 	// Helpers
 	// ================================================================

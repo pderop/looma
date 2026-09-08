@@ -28,7 +28,8 @@
  * instance, so its fields need no synchronization.
  * <li>{@link io.github.pderop.looma.ActorRef} — the opaque, thread-safe handle
  * to an actor: {@code tell} (fire and forget) and {@code ask} (a future of the
- * reply, typed by the reply class the caller passes).
+ * reply, typed by the reply class the caller passes). A pool spawn hands back
+ * one of these standing for several actors, load-balanced round-robin.
  * <li>{@link io.github.pderop.looma.ActorContext} — an actor's own view of
  * itself, its children, and the system; also where blocking work is offloaded,
  * through {@link io.github.pderop.looma.ActorContext#vThreadFactory()}.
@@ -39,7 +40,7 @@
  * {@code onReceive} threw: resume, restart, or stop.
  * <li>{@link io.github.pderop.looma.Placement} and
  * {@link io.github.pderop.looma.SpawnOptions} — the optional home-carrier
- * placement and supervision strategy a {@code spawn} can carry.
+ * placement, supervision strategy, and pool size a {@code spawn} can carry.
  * </ul>
  *
  * <h2>A complete program</h2>

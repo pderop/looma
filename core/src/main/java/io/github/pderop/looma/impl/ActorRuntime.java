@@ -13,6 +13,7 @@
  */
 package io.github.pderop.looma.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -29,6 +30,7 @@ import io.github.pderop.looma.Actor;
 import io.github.pderop.looma.ActorRef;
 import io.github.pderop.looma.Placement;
 import io.github.pderop.looma.SpawnOptions;
+import io.github.pderop.looma.SupervisionStrategy;
 import io.github.pderop.looma.spi.MailboxQueueFactory;
 
 /**
@@ -286,6 +288,19 @@ final class ActorRuntime {
 		 * a carrier to report, and the caller deserves to be told which of its
 		 * arguments was wrong rather than a ClassCastException naming an internal type.
 		 */
+		if (ref instanceof PoolRef pool) {
+			/*
+			 * A pool has no home carrier of its own to report: its placement was resolved
+			 * once per actor, so a pool spawned with roundRobin() genuinely spans several
+			 * carriers. Answering for a co-located pool and throwing for a spread one would
+			 * make the contract depend on a placement the caller has long since passed and
+			 * this reference no longer carries, so a pool is always rejected — and pointed
+			 * at the actors that do have an answer, each of them an ordinary actor at its
+			 * own path.
+			 */
+			throw new IllegalArgumentException("a pool has no single home carrier: ask one of its actors, e.g. \""
+					+ pool.cells().get(0).path() + "\"");
+		}
 		if (!(ref instanceof ActorRefImpl actorRef)) {
 			throw new IllegalArgumentException(
 					"homeCarrierIdOf requires a reference to a spawned actor, but got " + describe(ref));
@@ -338,50 +353,166 @@ final class ActorRuntime {
 			throw new IllegalStateException("cannot spawn \"" + name + "\": the system is shutting down");
 		}
 		Objects.requireNonNull(options, "options");
-		Placement placement = options.placement().orElse(Placement.roundRobin());
-		ActorDispatcher dispatcher = dispatcherFor(placement, null);
-		ActorCell cell = ActorCell.createCell(name, factory, options.strategy().orElse(null), null, dispatcher, this);
-		// In the roots list before it can run, never after: a preStart that fails stops
-		// the cell, and that removal must not be able to precede this insertion. See
-		// ActorCell.start().
-		addRoot(cell);
-		if (shuttingDown.get()) {
-			/*
-			 * Best-effort closing of a narrow race, exactly as ActorCell.createCell does
-			 * for a child racing its parent's stop: the guard at the top of this method
-			 * already rejects the overwhelmingly common case, a system already shutting
-			 * down when spawn is called, but a beginShutdown() landing in the handful of
-			 * statements between that guard and the addRoot above would have taken its
-			 * roots() snapshot without this brand-new cell in it. Nothing would ever stop
-			 * it afterwards, and an unstoppable root is fatal to the whole system, not just
-			 * to itself: it holds the registry non-empty forever, so awaitTermination can
-			 * never return true and afterTermination — hence ActorScheduler.close() and the
-			 * ask scheduler's shutdown — never runs. Stopping it here keeps it from being
-			 * orphaned; it does not make the two operations atomic, only shrinks the window
-			 * to almost nothing.
-			 */
-			cell.beginStop();
-		}
-		cell.start();
-		return cell.self();
+		return spawnGroup(name, factory, options, null, options.placement().orElse(Placement.roundRobin()));
 	}
 
 	/**
-	 * Stops an actor: resolves {@code ref} back to its cell, if it points to one
-	 * that is still registered, and runs the graceful cascading stop protocol on it
-	 * — see {@code ActorContext.stop(ActorRef)} for the exact protocol. A
-	 * {@code ref} that does not resolve to a registered cell (unknown, already
-	 * fully stopped, or a single-use {@link PromiseRef}) is a silent no-op.
+	 * Creates every actor one {@code spawn} call asks for — a single actor, or the
+	 * {@link SpawnOptions#poolSize()} actors of a pool — registers them, starts
+	 * them, and returns the one reference the caller gets back. Both spawning
+	 * surfaces funnel here, having each applied their own default {@link Placement}
+	 * first, so that "what a spawn does" exists once rather than once per surface.
+	 *
+	 * <p>
+	 * <b>{@code placement} is resolved once per actor, not once for the pool</b> —
+	 * a pool is exactly the same actors the caller would have got by spawning them
+	 * one at a time with these very options, and nothing else. That is the whole
+	 * rule, and it is what gives both shapes of pool for free, because the three
+	 * placements answer it differently by their own definitions:
+	 * {@link Placement#inherit()} and {@link Placement#carrier(int)} are constant —
+	 * every actor of the pool lands on the one carrier they name — while
+	 * {@link Placement#roundRobin()} means "the next carrier", so resolving it once
+	 * per actor spreads the pool one carrier at a time, advancing the system-wide
+	 * cursor {@code poolSize} times. A pool therefore never needs a placement of
+	 * its own, and no option here decides between "together" and "spread": the
+	 * placement already says which.
+	 *
+	 * <p>
+	 * The actors of a pool are ordinary siblings named {@code name-0} …
+	 * {@code name-(poolSize-1)}: same path composition, same registry, same
+	 * children list, same cascade. A pool of one is not named or wrapped at all —
+	 * it is the single actor it always was, returned as its own
+	 * {@link ActorRefImpl}, so nothing about the pre-existing single-actor spawn
+	 * changes shape.
+	 *
+	 * <p>
+	 * A partially created pool is never left behind. If the {@code k}-th actor
+	 * cannot be created — a name already taken, most plausibly, since the first
+	 * {@code k} routees have just claimed paths of their own — the {@code k-1}
+	 * already created are started and immediately stopped, so they run their own
+	 * cascade and unregister, and the original failure is rethrown to the caller.
+	 * Starting them first is load-bearing: a cell that is stopped without ever
+	 * having been started owns no loop to run that cascade, and would sit in the
+	 * registry forever, wedging {@code awaitTermination}.
+	 *
+	 * @param name
+	 *            the pool's (or the single actor's) simple name, validated here
+	 *            before any routee name is derived from it
+	 * @param factory
+	 *            creates each actor instance — called once per actor in the pool,
+	 *            and again after each of their restarts
+	 * @param options
+	 *            the spawn's options; only {@link SpawnOptions#poolSize()} and
+	 *            {@link SpawnOptions#strategy()} are read here — the placement is
+	 *            passed separately, each surface having already substituted its own
+	 *            default for an unset one
+	 * @param parent
+	 *            the parent cell for a child spawn, or {@code null} for roots
+	 * @param placement
+	 *            where to put each actor this call creates, resolved once per
+	 *            actor; an invalid one throws on the first resolution, before
+	 *            anything has been created
+	 * @return the single actor's own reference when {@code poolSize} is {@code 1},
+	 *         otherwise a {@link PoolRef} routing over the pool
+	 */
+	ActorRef spawnGroup(String name, Supplier<Actor> factory, SpawnOptions options, ActorCell parent,
+			Placement placement) {
+		int poolSize = options.poolSize();
+		SupervisionStrategy strategy = options.strategy().orElse(null);
+		// Before deriving name-0 … name-(n-1) from it: "null" + "-0" is a perfectly
+		// valid actor name, and would let a null pool name through unnoticed.
+		ActorCell.validateName(name);
+
+		List<ActorCell> cells = new ArrayList<>(poolSize);
+		try {
+			for (int index = 0; index < poolSize; index++) {
+				// Per actor, deliberately: this is the one line that makes a pool spawned with
+				// roundRobin() spread over carriers and one spawned with inherit() stay whole.
+				ActorDispatcher dispatcher = dispatcherFor(placement, parent);
+				ActorCell cell = ActorCell.createCell(routeeName(name, index, poolSize), factory, strategy, parent,
+						dispatcher, this);
+				if (parent == null) {
+					// In the roots list before it can run, never after: a preStart that fails stops
+					// the cell, and that removal must not be able to precede this insertion. See
+					// ActorCell.start(). (A child is already in its parent's children by now —
+					// createCell put it there.)
+					addRoot(cell);
+				}
+				cells.add(cell);
+			}
+		} catch (RuntimeException | Error failure) {
+			cells.forEach(ActorRuntime::startThenStop);
+			throw failure;
+		}
+
+		if (parent == null && shuttingDown.get()) {
+			/*
+			 * Best-effort closing of a narrow race, exactly as ActorCell.createCell does
+			 * for a child racing its parent's stop: the guard at the top of spawnRoot
+			 * already rejects the overwhelmingly common case, a system already shutting
+			 * down when spawn is called, but a beginShutdown() landing in the handful of
+			 * statements between that guard and the addRoot above would have taken its
+			 * roots() snapshot without these brand-new cells in it. Nothing would ever stop
+			 * them afterwards, and an unstoppable root is fatal to the whole system, not
+			 * just to itself: it holds the registry non-empty forever, so awaitTermination
+			 * can never return true and afterTermination — hence ActorScheduler.close() and
+			 * the ask scheduler's shutdown — never runs. Stopping them here keeps them from
+			 * being orphaned; it does not make the two operations atomic, only shrinks the
+			 * window to almost nothing.
+			 */
+			cells.forEach(ActorCell::beginStop);
+		}
+		cells.forEach(ActorCell::start);
+
+		if (poolSize == 1) {
+			return cells.get(0).self();
+		}
+		return new PoolRef(name, poolPath(name, parent), cells);
+	}
+
+	/**
+	 * Names the {@code index}-th actor of a pool. A pool of one keeps the name it
+	 * was given, unsuffixed: a single-actor spawn must land at exactly the path it
+	 * always did.
+	 */
+	private static String routeeName(String name, int index, int poolSize) {
+		return poolSize == 1 ? name : name + "-" + index;
+	}
+
+	/**
+	 * Composes the path a {@link PoolRef} reports, exactly as a single actor of
+	 * that name would have been given — {@code "/db"} for a root pool, {@code
+	 * "/app/db"} for one spawned under {@code /app}. No cell is registered under
+	 * it: the live actors are the routees, one path each.
+	 */
+	private static String poolPath(String name, ActorCell parent) {
+		return parent == null ? "/" + name : parent.path() + "/" + name;
+	}
+
+	/**
+	 * Starts a cell only to stop it immediately — the cleanup a partially created
+	 * pool needs. The start is what gives the cell the loop that runs its own stop
+	 * cascade and finally unregisters it; {@code beginStop} alone on a
+	 * never-started cell would leave it registered forever.
+	 */
+	private static void startThenStop(ActorCell cell) {
+		cell.start();
+		cell.beginStop();
+	}
+
+	/**
+	 * Stops an actor: resolves {@code ref} back to the cell — or, for a pool, the
+	 * cells — it stands for, and runs the graceful cascading stop protocol on each
+	 * of them; see {@code ActorContext.stop(ActorRef)} for the exact protocol. A
+	 * {@code ref} that resolves to no live cell at all (unknown, already fully
+	 * stopped, or a single-use {@link PromiseRef}) is a silent no-op.
 	 *
 	 * <p>
 	 * This is what {@code ActorSystem.stop(ActorRef)} delegates to, so that a plain
 	 * thread with no {@code ActorContext} can stop an actor.
 	 */
 	public void stop(ActorRef ref) {
-		ActorCell cell = ActorCell.cellOf(ref);
-		if (cell != null) {
-			cell.beginStop();
-		}
+		ActorCell.cellsOf(ref).forEach(ActorCell::beginStop);
 	}
 
 	// ================================================================

@@ -39,6 +39,11 @@ Placement follows two **default** rules, each overridable per spawn through
   cross-carrier hop, and a whole subtree of actors plus their blocking work shares one core's
   locality.
 
+A `spawn` that creates several actors at once (`SpawnOptions.pooled(n)`) applies its placement to
+each of them, so the placement alone decides whether the pool stays whole on one carrier
+(`inherit()`, `carrier(i)`) or spreads one actor per carrier (`roundRobin()`, which means *the next*
+carrier and therefore advances the group's cursor once per actor).
+
 See [`api.md`](api.md#8-placement) for the caller-facing side of this.
 
 ## Home carrier vs. running carrier
@@ -47,7 +52,8 @@ Being work-stolen moves where a continuation *runs*; it never moves an actor's h
 fixed for its lifetime.
 
 `ActorSystem.homeCarrierIdOf(ActorRef)` exposes that placement and is the only sound basis for an
-affinity assertion — see `CarrierAffinityTest`. The same distinction exists inside the scheduler:
+affinity assertion — see `CarrierAffinityTest`. It answers for one actor, so it rejects a pool
+reference: assert on the pool's actors, at `/db-0` and so on. The same distinction exists inside the scheduler:
 `ActorScheduler.currentCarrierId()` maps to `EventLoopScheduler.currentScheduler()` (the *home*
 carrier), never to `currentRunningScheduler()`.
 

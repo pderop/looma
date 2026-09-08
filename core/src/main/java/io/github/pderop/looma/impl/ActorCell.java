@@ -256,13 +256,25 @@ final class ActorCell implements ActorContext {
 	}
 
 	/**
-	 * Resolves the {@link ActorCell} a plain {@link ActorRef} points to, or
-	 * {@code null} if {@code ref} is not a registered cell's reference (e.g. a
-	 * single-use {@link PromiseRef}, which owns no cell to resolve to and is
-	 * therefore silently un-stoppable).
+	 * Resolves every {@link ActorCell} a plain {@link ActorRef} stands for: the one
+	 * cell behind a single actor's reference, every routee behind a
+	 * {@link PoolRef}, or nothing at all for a reference that owns no cell (a
+	 * single-use {@link PromiseRef}, or an unknown implementation).
+	 *
+	 * <p>
+	 * This is what makes {@code stop} uniform across the two kinds of reference a
+	 * {@code spawn} can hand back: stopping a pool is stopping each of its actors,
+	 * each through the very same cascade a single actor goes through, and neither
+	 * caller has to know which kind it holds.
 	 */
-	static ActorCell cellOf(ActorRef ref) {
-		return ref instanceof ActorRefImpl impl ? impl.cell() : null;
+	static List<ActorCell> cellsOf(ActorRef ref) {
+		if (ref instanceof ActorRefImpl impl) {
+			return List.of(impl.cell());
+		}
+		if (ref instanceof PoolRef pool) {
+			return pool.cells();
+		}
+		return List.of();
 	}
 
 	/**
@@ -378,7 +390,13 @@ final class ActorCell implements ActorContext {
 		thread.start();
 	}
 
-	private static void validateName(String name) {
+	/**
+	 * Rejects a name that is null, blank, or would forge a path. Package-visible
+	 * because a pool spawn validates the <em>pool</em>'s name before deriving its
+	 * routees' names from it: {@code name + "-" + i} would otherwise turn a null
+	 * name into the perfectly valid {@code "null-0"}.
+	 */
+	static void validateName(String name) {
 		if (name == null || name.isBlank()) {
 			throw new IllegalArgumentException("an actor name must not be null or blank");
 		}
@@ -393,6 +411,16 @@ final class ActorCell implements ActorContext {
 
 	@Override
 	public ActorRef self() {
+		return self;
+	}
+
+	/**
+	 * Returns this cell's own reference, narrowed to the engine's own type — what
+	 * {@link PoolRef} holds its routees as, so that a routed {@code tell} or
+	 * {@code ask} lands directly on the single-actor implementation rather than
+	 * going back through the interface.
+	 */
+	ActorRefImpl selfRef() {
 		return self;
 	}
 
@@ -419,21 +447,15 @@ final class ActorCell implements ActorContext {
 	@Override
 	public ActorRef spawn(String childName, Supplier<Actor> childFactory, SpawnOptions options) {
 		Objects.requireNonNull(options, "options");
-		Placement placement = options.placement().orElse(Placement.inherit());
-		ActorDispatcher childDispatcher = runtime.dispatcherFor(placement, this);
-		ActorCell child = createCell(childName, childFactory, options.strategy().orElse(null), this, childDispatcher,
-				runtime);
-		// createCell has already added it to this cell's children; see start().
-		child.start();
-		return child.self();
+		// The placement is resolved per actor inside spawnGroup, pool or not: a pool
+		// is exactly the children this same call would have produced one at a time.
+		return runtime.spawnGroup(childName, childFactory, options, this,
+				options.placement().orElse(Placement.inherit()));
 	}
 
 	@Override
 	public void stop(ActorRef ref) {
-		ActorCell target = cellOf(ref);
-		if (target != null) {
-			target.beginStop();
-		}
+		runtime.stop(ref);
 	}
 
 	@Override

@@ -111,6 +111,18 @@ public interface ActorSystem {
 	 * placement: which carrier a task happens to run on may, under a scheduler that
 	 * steals work, legitimately be a sibling carrier. An affinity assertion must be
 	 * made against this, never against the running carrier.
+	 *
+	 * @throws IllegalArgumentException
+	 *             if {@code ref} does not stand for exactly one spawned actor. Two
+	 *             references do not: the single-use reply channel an {@code ask}
+	 *             passes as {@code sender}, which is backed by a future rather than
+	 *             an actor; and a pool reference, which stands for
+	 *             {@link SpawnOptions#poolSize()} actors whose placement was
+	 *             applied to each of them — ask one of those actors instead, at its
+	 *             own path ({@code "/db-0"} and so on). A pool is rejected on being
+	 *             a pool, never on how its actors happen to be placed, so this
+	 *             never turns on a placement passed at spawn time and no longer
+	 *             carried by the reference
 	 */
 	int homeCarrierIdOf(ActorRef ref);
 
@@ -163,18 +175,69 @@ public interface ActorSystem {
 	 * }
 	 * }</pre>
 	 *
+	 * <p>
+	 * <b>A {@link SpawnOptions#poolSize()} above {@code 1} spawns a pool</b>: that
+	 * many root actors from the same {@code factory}, named {@code name-0} …
+	 * {@code name-(poolSize-1)}, and one returned {@link ActorRef} that spreads
+	 * every {@code tell} and {@code ask} over them round-robin. Each is an ordinary
+	 * actor with its own mailbox, its own loop virtual thread and its own
+	 * supervision, so one of them blocking on I/O inside {@code onReceive} stalls
+	 * only its own mailbox and the pool keeps serving — which is what a pool is
+	 * for. There is no router actor in between: a message pays the same single hop
+	 * it would to a lone actor.
+	 *
+	 * <pre>{@code
+	 * // four actors, load-balanced behind one reference
+	 * ActorRef db = system.spawn("db", DbActor::new, SpawnOptions.pooled(4));
+	 * db.tell(new Query(...));                  // goes to one of /db-0 … /db-3
+	 * Row row = db.ask(new Query(...), Row.class).join();
+	 * system.stop(db);                          // stops all four
+	 * }</pre>
+	 *
+	 * <p>
+	 * What the returned reference is, and is not: {@link #stop(ActorRef)} on it
+	 * stops every actor in the pool. But it is a router, not an actor —
+	 * {@link #homeCarrierIdOf(ActorRef)} rejects it, since a pool has no single
+	 * home carrier of its own; {@link ActorRef#path()} reports the pool's path
+	 * ({@code "/db"}) and {@link #findActor(String)} finds nothing there, since the
+	 * live actors are the routees, at {@code "/db-0"} … and each resolvable on its
+	 * own. And the ordering an actor guarantees is <b>per routee, not
+	 * pool-wide</b>: two messages sent through the pool land in two mailboxes and
+	 * are processed concurrently. Messages that must be ordered relative to each
+	 * other, or that share mutable state, belong to one actor — not to a pool.
+	 *
+	 * <p>
+	 * <b>The placement applies to each actor of the pool</b>, which is to say a
+	 * pool is exactly the actors this same call would have produced one at a time.
+	 * Nothing more is needed to get either shape, since the placements already
+	 * differ: the default {@link Placement#roundRobin()} means "the next carrier",
+	 * so a root pool spreads one actor per carrier, advancing the system-wide
+	 * cursor {@code poolSize} times; {@link Placement#carrier(int)} names one
+	 * carrier, so the whole pool lands there together.
+	 *
+	 * <pre>{@code
+	 * // four actors, one carrier each (the default placement for this surface)
+	 * ActorRef db = system.spawn("db", DbActor::new, SpawnOptions.pooled(4));
+	 *
+	 * // the same four, all on carrier 0
+	 * ActorRef db = system.spawn("db", DbActor::new, SpawnOptions.pooled(4).withPlacement(Placement.carrier(0)));
+	 * }</pre>
+	 *
 	 * @param name
 	 *            the actor's simple name (also its full path); must be non-blank,
-	 *            contain no {@code '/'}, and be unique among current root actors
+	 *            contain no {@code '/'}, and be unique among current root actors —
+	 *            a pool takes {@code poolSize} names, {@code name-0} onwards
 	 * @param factory
 	 *            creates the actor instance; also invoked again, by the engine, to
 	 *            obtain a fresh instance after a {@link Directive#RESTART}
 	 * @param options
-	 *            the placement and strategy to apply; never {@code null} — use
-	 *            {@link SpawnOptions#defaults()} for "unset both". A placement of
-	 *            {@link Placement#inherit()} is meaningless here, since a root has
-	 *            no parent to inherit from, and throws
-	 * @return a reference to the new actor
+	 *            the placement, strategy and pool size to apply; never {@code null}
+	 *            — use {@link SpawnOptions#defaults()} for "all unset". A placement
+	 *            of {@link Placement#inherit()} is meaningless here, since a root
+	 *            has no parent to inherit from, and throws
+	 * @return a reference to the new actor, or, when {@code options}'
+	 *         {@link SpawnOptions#poolSize()} is above {@code 1}, one reference
+	 *         routing over the pool
 	 * @throws NullPointerException
 	 *             if {@code options} is {@code null}
 	 * @throws IllegalArgumentException
@@ -183,8 +246,11 @@ public interface ActorSystem {
 	 *             it is a {@link Placement#carrier(int)} whose id is not less than
 	 *             {@link #carrierCount()}
 	 * @throws IllegalStateException
-	 *             if the name is already taken by a root actor, or this system is
-	 *             shutting down or already shut down
+	 *             if the name — or, for a pool, any of the {@code poolSize} names
+	 *             it derives — is already taken by a root actor, or this system is
+	 *             shutting down or already shut down. A pool that fails partway
+	 *             leaves nothing behind: the actors it had already created are
+	 *             stopped before this throws
 	 */
 	ActorRef spawn(String name, Supplier<Actor> factory, SpawnOptions options);
 
@@ -207,6 +273,11 @@ public interface ActorSystem {
 	 * method or a test has no {@link ActorContext} of its own. Stopping this
 	 * system's very last actor does not, by itself, shut the system down — only
 	 * {@link #shutdown()} does that; see there.
+	 *
+	 * <p>
+	 * A pool reference stops every actor of the pool, each through this very same
+	 * cascade: a caller never has to know whether the reference it holds stands for
+	 * one actor or for {@link SpawnOptions#poolSize()} of them.
 	 */
 	void stop(ActorRef ref);
 

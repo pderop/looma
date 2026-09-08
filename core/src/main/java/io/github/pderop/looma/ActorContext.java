@@ -135,6 +135,48 @@ public interface ActorContext {
 	 * 		SpawnOptions.placedOn(Placement.roundRobin()).withStrategy(cause -> Directive.RESTART));
 	 * }</pre>
 	 *
+	 * <p>
+	 * <b>A {@link SpawnOptions#poolSize()} above {@code 1} spawns a pool of
+	 * children</b>: that many actors from the same {@code factory}, named
+	 * {@code name-0} … {@code name-(poolSize-1)}, and one returned {@link ActorRef}
+	 * spreading every {@code tell} and {@code ask} over them round-robin. Each has
+	 * a mailbox and a loop of its own, so a child that blocks on I/O inside
+	 * {@code onReceive} stalls only its own mailbox and its {@code poolSize - 1}
+	 * peers keep serving — a pool is the way to absorb blocking work without
+	 * offloading it to {@link #vThreadFactory()}. Ordering, in exchange, is per
+	 * child and no longer pool-wide.
+	 *
+	 * <pre>{@code
+	 * // four children on this actor's own carrier, load-balanced behind one
+	 * // reference
+	 * ActorRef io = context.spawn("io", BlockingIoActor::new, SpawnOptions.pooled(4));
+	 * io.tell(new Fetch(url), context.self());
+	 *
+	 * // the same four, spread one per carrier
+	 * ActorRef io = context.spawn("io", BlockingIoActor::new,
+	 * 		SpawnOptions.pooled(4).withPlacement(Placement.roundRobin()));
+	 * }</pre>
+	 *
+	 * <p>
+	 * Each is an ordinary child: it appears in {@link #children()}, resolves at its
+	 * own path, is supervised on its own terms, and is stopped by this actor's
+	 * cascade — {@link #stop(ActorRef)} on the returned reference stops all of
+	 * them. That reference is a router, not an actor: it reports the pool's path
+	 * ({@code "/parent/io"}), {@link #findActor(String)} finds nothing there — the
+	 * live actors being {@code "/parent/io-0"} onwards — and
+	 * {@link #homeCarrierIdOf(ActorRef)} rejects it, a pool having no single home
+	 * carrier of its own.
+	 *
+	 * <p>
+	 * <b>The placement applies to each child of the pool</b>, which is to say a
+	 * pool is exactly the children this same call would have produced one at a
+	 * time. An unset placement is therefore still {@link Placement#inherit()} and
+	 * puts every child of the pool on this actor's own home carrier — the
+	 * inheritance rule does not bend for pools — while
+	 * {@link Placement#roundRobin()}, meaning "the next carrier", spreads the pool
+	 * one child per carrier. Nothing else is needed to choose between the two: the
+	 * placement already says which.
+	 *
 	 * @param name
 	 *            the child's simple name; must be non-blank and contain no
 	 *            {@code '/'} (which would forge a path), and unique among this
@@ -143,9 +185,11 @@ public interface ActorContext {
 	 *            creates the actor instance; also invoked again, by the engine, to
 	 *            obtain a fresh instance after a {@link Directive#RESTART}
 	 * @param options
-	 *            the placement and strategy to apply; never {@code null} — use
-	 *            {@link SpawnOptions#defaults()} for "unset both"
-	 * @return a reference to the new child, usable immediately
+	 *            the placement, strategy and pool size to apply; never {@code null}
+	 *            — use {@link SpawnOptions#defaults()} for "all unset"
+	 * @return a reference to the new child, usable immediately, or, when
+	 *         {@code options}' {@link SpawnOptions#poolSize()} is above {@code 1},
+	 *         one reference routing over the pool of children
 	 * @throws NullPointerException
 	 *             if {@code options} is {@code null}
 	 * @throws IllegalArgumentException
@@ -153,8 +197,11 @@ public interface ActorContext {
 	 *             {@code options}' placement is a {@link Placement#carrier(int)}
 	 *             whose id is not less than {@link #carrierCount()}
 	 * @throws IllegalStateException
-	 *             if a sibling already has that name, or this actor is itself
-	 *             stopping or stopped
+	 *             if a sibling already has that name — or, for a pool, any of the
+	 *             {@code poolSize} names it derives — or this actor is itself
+	 *             stopping or stopped. A pool that fails partway leaves nothing
+	 *             behind: the children it had already created are stopped before
+	 *             this throws
 	 */
 	ActorRef spawn(String name, Supplier<Actor> factory, SpawnOptions options);
 
@@ -168,6 +215,10 @@ public interface ActorContext {
 	 * {@code ref} may be <em>any</em> live actor, not only a direct or indirect
 	 * child of this one: there is one uniform rule and no ownership check. Stopping
 	 * an already-stopped or unknown reference is a silent no-op.
+	 *
+	 * <p>
+	 * A pool reference stops every actor of the pool, each through this very same
+	 * cascade — one uniform rule there too, and nothing for the caller to unpack.
 	 */
 	void stop(ActorRef ref);
 
@@ -201,9 +252,12 @@ public interface ActorContext {
 	 * to co-locate a new actor with an existing one.
 	 *
 	 * @throws IllegalArgumentException
-	 *             if {@code ref} does not point to a spawned actor — e.g. the
-	 *             single-use {@code PromiseRef} an actor sees as {@code sender} on
-	 *             an {@code ask}, which is backed by a future, not a cell
+	 *             if {@code ref} does not stand for exactly one spawned actor —
+	 *             either the single-use promise reference an actor sees as
+	 *             {@code sender} on an {@code ask}, which is backed by a future
+	 *             rather than a cell, or a pool reference, which stands for
+	 *             {@link SpawnOptions#poolSize()} actors and points the caller at
+	 *             them instead
 	 */
 	int homeCarrierIdOf(ActorRef ref);
 

@@ -27,9 +27,10 @@ A deliberately **minimal** actor API, plus the seam that lets the same actors ru
 scheduler.
 
 The API borrows the vocabulary everyone already knows from Akka — `tell` and `ask`, a parent/child
-hierarchy with paths, supervision directives (resume / restart / stop), a graceful cascading stop —
-and stops there. Nine types in one package. No typed behaviours, no `become`, no stashing, no
-remoting, no clustering, no persistence, no dead-letter queue; see
+hierarchy with paths, supervision directives (resume / restart / stop), a graceful cascading stop,
+and a round-robin [pool](docs/api.md#pools-n-actors-of-one-type-behind-one-reference) of N actors
+behind one reference — and stops there. Nine types in one package. No typed behaviours, no `become`,
+no stashing, no remoting, no clustering, no persistence, no dead-letter queue; see
 [what it does not do](docs/api.md#10-what-looma-does-not-do). That is on purpose: it has to be big
 enough to write a realistic workload against, and small enough that a benchmark is comparing the two
 schedulers rather than a framework.

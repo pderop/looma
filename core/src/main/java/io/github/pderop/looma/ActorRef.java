@@ -29,6 +29,19 @@ import java.util.concurrent.CompletableFuture;
  * project's dead-letter semantics.
  *
  * <p>
+ * <b>A reference usually stands for one actor, but not always.</b> A
+ * {@code spawn} whose {@link SpawnOptions#poolSize()} is above {@code 1} hands
+ * back one reference standing for that many actors, and spreads every
+ * {@code tell} and {@code ask} over them round-robin; every method below then
+ * means "one of them", chosen per call. Such a reference is a router rather
+ * than an actor: {@link #path()} reports the pool's path but no actor is
+ * registered there ({@code findActor} finds the pool's actors, at
+ * {@code "/db-0"} and so on), {@code stop} on it stops all of them, and
+ * {@code homeCarrierIdOf} rejects it. The per-actor ordering an actor
+ * guarantees is <em>not</em> a pool-wide ordering: see
+ * {@link ActorSystem#spawn(String, java.util.function.Supplier, SpawnOptions)}.
+ *
+ * <p>
  * Identity is plain reference identity: {@code ActorRef} does not override
  * {@link Object#equals} or {@link Object#hashCode}. Two lookups of the same
  * live actor return the same instance, so reference identity is sufficient in

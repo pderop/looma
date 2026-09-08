@@ -36,6 +36,18 @@ package io.github.pderop.looma;
  * </ul>
  *
  * <p>
+ * <b>A {@code spawn} of several actors applies its placement to each of
+ * them</b>, exactly as if they had been spawned one at a time — see
+ * {@link SpawnOptions#poolSize()}. Nothing here has a pool-specific meaning;
+ * the three cases simply answer that differently by their own definitions.
+ * {@link #inherit()} and {@link #carrier(int)} name one carrier however many
+ * times they are applied, so the whole pool lands there together, while
+ * {@link #roundRobin()} means "the next carrier", so applying it per actor
+ * spreads the pool one actor per carrier and advances the system-wide counter
+ * once per actor. Choosing between a pool that stays whole and one that spreads
+ * is therefore choosing a placement, never a separate option.
+ *
+ * <p>
  * Placing a child away from its parent's carrier is not free: every
  * parent-to-child (and child-to-parent) {@code tell} becomes a cross-carrier
  * hop instead of the same-carrier delivery the default gives for nothing. Reach
