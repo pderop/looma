@@ -1,0 +1,15 @@
+scheduler    io.github.pderop.looma.impl.JdkActorScheduler, 12 carriers
+groups       12, 200000 users each (~16015 KiB), depth 256
+load         150,000 req/s, 4 connection(s) on CPUs [0, 1, 16, 17]
+backend      127.0.0.1:8081
+window       5s warm-up, 20s measured
+
+measure      started, 20s
+throughput   149,997 req/s
+cpu          78.20 us/req (11.73 cores busy) -- server: process minus clients
+client cpu   26.65 us/req (4.00 cores busy)
+migrations   14.1% of 93,793 sampled messages ran on another carrier than the one before
+latency      p50 287.0  p90 649.7  p99 1117.2  p99.9 3153.9  max 13082.6 us (from the scheduled send)
+send lag     p50 0.1  p99 0.2 us (how late the clients sent)
+poller       Master-Poller moved to CPUs 8,9,24,25
+pinning      12 of 12 workers pinned to a carrier CPU

@@ -13,197 +13,167 @@
  */
 package io.github.pderop.looma.examples.user;
 
+import java.net.InetSocketAddress;
+import java.lang.management.ManagementFactory;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Random;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.management.ObjectName;
 
 import io.github.pderop.looma.ActorRef;
 import io.github.pderop.looma.ActorSystem;
-import io.github.pderop.looma.spi.ActorScheduler;
+import io.github.pderop.looma.Carriers;
 
 import static io.github.pderop.looma.Placement.carrier;
 import static io.github.pderop.looma.SpawnOptions.placedOn;
 
 /**
- * A service that recommends users, run under two schedulers. Same jar, same
- * code, same cores — only the JVM flags differ. Run it with
- * {@code scripts/run-cache-bench.sh}.
- *
- * <h2>The workload</h2>
- *
- * One {@link UserGroup} actor per core, each owning a plain {@link HashMap} of
- * the users it serves. Requests for user {@code u} go to group
- * {@code u % groups} — a sticky load balancer or a consistent hash already
- * routes them that way — so a group's map is reached by one thread and needs no
- * locking.
- *
- * <p>
- * A request walks the friend graph: read the user, go to a friend, then to a
- * friend of <em>theirs</em>, {@code cache.depth} times, scoring each one.
- * Nothing can tell the CPU which user to fetch next before the current one has
- * arrived. That dependency is not arranged for the benchmark — it is what
- * following a graph costs — and it is what makes the same walk fast out of this
- * core's cache and slow out of another's.
- *
- * <h2>What the two runs compare</h2>
- *
- * An actor that keeps resuming on the same carrier finds its map in its core's
- * L2. An actor resumed on whichever worker happens to be free finds it in
- * another core's, and every line it writes must be taken away from that core
- * first. The application is identical; what differs is whether the scheduler
- * respects the locality it already has.
- *
- * <p>
- * <b>Two sizes decide whether that is measurable, and only one is obvious.</b>
- * One group's map must fit in a core's L2, or affinity has nothing to keep
- * resident. All the maps together must <em>not</em> fit, or a migrated actor
- * finds its own cached wherever it lands and the two schedulers measure the
- * same thing. The banner prints both figures; check them against
- * {@code lscpu -C}.
- *
- * <h2>Reading the report</h2>
+ * A service that recommends users. Run it with {@code scripts/bench.sh};
+ * {@code docs/benchmark.md} explains it.
  *
  * <ul>
- * <li><b>cpu per request</b> is the claim — read it with <b>cores busy</b> next
- * to it. With one request in flight per group nothing is CPU-limited, so
- * <b>throughput</b> partly reports wake-up latency, and a scheduler that merely
- * spins instead of parking leads on it without doing more work.
- * <li><b>migrations</b> is the mechanism, counted rather than inferred.
- * <li><b>{@link UserGroup#DEPTH} set to 0</b> touches no user at all: the
- * control that can falsify the whole thing.
+ * <li>{@link FrontendServer} sends {@code -Dbench.rate} requests per second to
+ * {@link #handleRequest}.
+ * <li>{@code handleRequest} sends each request to the {@link UserGroup} that
+ * owns the user. There is one group per carrier.
+ * <li>The group GETs {@link BackendServer}, which runs in another process. Then
+ * it walks its users and answers.
  * </ul>
  *
- * <p>
- * The sizes that matter — {@link UserGroup#DEPTH} and
- * {@link UserGroup#USERS_PER_GROUP} — are constants of {@link UserGroup}, each
- * with its derivation next to it. The only two knobs are {@code cache.groups},
- * which the script sets from the cpuset, and {@code cache.migrationSample}.
+ * {@code -Dbench.scheduler} picks the scheduler. The other properties are
+ * {@code bench.carriers} (one group per carrier), {@code bench.clientCpus},
+ * {@code bench.backendPort}, {@code bench.warmupSeconds},
+ * {@code bench.measureSeconds}, {@code bench.depth} and
+ * {@code bench.usersPerGroup}.
  */
 public final class Main {
 
-	/**
-	 * Live bytes one user costs, measured rather than guessed: 32 for the
-	 * {@link User}, 24 for its map node, 16 for its boxed key, ~16 for the table
-	 * slot. Weighing the real store gives 81.5 to 84.1 depending on where the
-	 * power-of-two table lands. Printed, never computed with.
-	 */
+	/** The memory one user takes, measured. Only printed. */
 	private static final int BYTES_PER_USER = 82;
 
-	/**
-	 * Client threads per group, and not a knob: one request in flight per group is
-	 * what empties the mailbox between two messages, which is what makes the actor
-	 * park — and that park is the moment a scheduler chooses the core it comes back
-	 * on. Raise it and the mailbox never empties, the actor never migrates, and the
-	 * mechanism being measured disappears.
-	 */
-	private static final int CLIENTS_PER_GROUP = 1;
+	private static final int WARMUP_SECONDS = Integer.getInteger("bench.warmupSeconds", 5);
+
+	private static final int MEASURE_SECONDS = Integer.getInteger("bench.measureSeconds", 20);
 
 	/**
-	 * Seconds of load before the counters are zeroed, and seconds measured after
-	 * that. Long enough for the JIT to have settled and for the maps to be resident
-	 * wherever they are going to be; not knobs, because a run compared against
-	 * another run has to have been measured the same way.
+	 * With {@code -Dbench.stackChunks=true}, counts the live StackChunks during the
+	 * warm-up and after the measure. Each count is a full GC, so none falls in the
+	 * measure.
 	 */
-	private static final int WARMUP_SECONDS = 5;
+	private static final boolean STACK_CHUNKS = Boolean.getBoolean("bench.stackChunks");
 
-	private static final int MEASURE_SECONDS = 20;
+	private final List<ActorRef> groups;
 
-	private Main() {
+	private Main(List<ActorRef> groups) {
+		this.groups = groups;
+	}
+
+	/** Every request comes here, and goes to group {@code userId % groups}. */
+	CompletableFuture<UserGroup.Recommended> handleRequest(int userId) {
+		return groups.get(userId % groups.size()).ask(new UserGroup.Recommend(userId), UserGroup.Recommended.class);
 	}
 
 	public static void main(String[] args) throws Exception {
-		int processors = Runtime.getRuntime().availableProcessors();
+		int groups = Integer.getInteger("bench.carriers", Runtime.getRuntime().availableProcessors());
+		long rate = Long.getLong("bench.rate", 0);
+		if (rate <= 0) {
+			throw new IllegalArgumentException("bench.rate must be a positive number of requests per second");
+		}
+		List<Integer> clientCpus = ClientAffinity.available()
+				? ClientAffinity.parseCpuList(System.getProperty("bench.clientCpus", ""))
+				: List.of();
+		InetSocketAddress backend = new InetSocketAddress("127.0.0.1", Integer.getInteger("bench.backendPort", 8081));
 
-		ActorSystem system = ActorSystem.builder().build();
-		ActorScheduler scheduler = system.scheduler();
+		// First, before any virtual thread starts: the JVM picks its scheduler when
+		// the first one starts.
+		ActorSystem system = ActorSystem.builder().carriers(carriers(groups)).build();
 
-		// One group per CPU of the cpuset. The script overrides it, giving every
-		// scheduler the same number -- which is what makes the runs comparable.
-		int groups = Integer.getInteger("cache.groups", processors);
-		if (groups < 1) {
-			throw new IllegalArgumentException("cache.groups must be at least 1, not " + groups);
+		List<ActorRef> groupRefs = new ArrayList<>();
+		for (int i = 0; i < groups; i++) {
+			int index = i;
+			groupRefs.add(system.spawn("group-" + index, () -> new UserGroup(index, groups, backend),
+					placedOn(carrier(index % system.carrierCount()))));
+		}
+		FrontendServer frontend = new FrontendServer(new Main(groupRefs)::handleRequest,
+				groups * UserGroup.USERS_PER_GROUP, rate, clientCpus);
+
+		long mapKiB = (long) UserGroup.USERS_PER_GROUP * BYTES_PER_USER / 1024;
+		// The carriers asked for. The JDK builtin gets them as its parallelism, but its
+		// carrierCount() is 1: an actor cannot be placed on one of its workers.
+		System.out.printf(Locale.ROOT, "scheduler    %s, %d carriers%n", system.scheduler().getClass().getName(),
+				groups);
+		System.out.printf(Locale.ROOT, "groups       %d, %d users each (~%d KiB), depth %d%n", groups,
+				UserGroup.USERS_PER_GROUP, mapKiB, UserGroup.DEPTH);
+		System.out.printf(Locale.ROOT, "load         %,d req/s, %d connection(s) on CPUs %s%n", rate,
+				frontend.connections(), clientCpus.isEmpty() ? "<floating>" : clientCpus);
+		System.out.printf(Locale.ROOT, "backend      %s:%d%n", backend.getHostString(), backend.getPort());
+		System.out.printf(Locale.ROOT, "window       %ds warm-up, %ds measured%n%n", WARMUP_SECONDS, MEASURE_SECONDS);
+
+		frontend.start();
+		// Take one snapshot during the warm-up, so the JIT has compiled this code
+		// before the measure starts.
+		snapshot(groupRefs, true);
+		frontend.cpuNanos();
+		long chunksBefore = -1;
+		if (STACK_CHUNKS) {
+			TimeUnit.MILLISECONDS.sleep(WARMUP_SECONDS * 500L);
+			chunksBefore = liveStackChunks();
+			TimeUnit.MILLISECONDS.sleep(WARMUP_SECONDS * 500L);
+		} else {
+			TimeUnit.SECONDS.sleep(WARMUP_SECONDS);
 		}
 
-		printConfiguration(scheduler, processors, groups);
-
-		List<ActorRef> groupRefs = spawnGroups(system, scheduler, groups);
-		AtomicBoolean running = new AtomicBoolean(true);
-		List<Thread> clients = startClients(groupRefs, running);
-
-		System.out.printf("warming up for %ds...%n", WARMUP_SECONDS);
-		TimeUnit.SECONDS.sleep(WARMUP_SECONDS);
-
-		snapshot(groupRefs, true); // opens the window: every counter is zero from here
-		long startNanos = System.nanoTime();
+		snapshot(groupRefs, true);
+		// scripts/bench.sh starts perf from this line.
+		System.out.printf(Locale.ROOT, "measure      started, %ds%n", MEASURE_SECONDS);
+		System.out.flush();
+		frontend.startMeasuring();
+		long start = System.nanoTime();
 		Duration startCpu = processCpu();
+		long startClientCpu = frontend.cpuNanos();
 
 		TimeUnit.SECONDS.sleep(MEASURE_SECONDS);
 
 		List<UserGroup.Stats> stats = snapshot(groupRefs, false);
-		long elapsedNanos = System.nanoTime() - startNanos;
-		Duration cpu = processCpu().minus(startCpu);
+		frontend.stopMeasuring();
+		long elapsed = System.nanoTime() - start;
+		long cpu = processCpu().minus(startCpu).toNanos();
+		long clientCpu = frontend.cpuNanos() - startClientCpu;
+		long chunksAfter = STACK_CHUNKS ? liveStackChunks() : -1;
 
-		running.set(false);
-		for (Thread client : clients) {
-			client.join();
+		frontend.stop();
+		printReport(stats, elapsed, cpu, clientCpu);
+		frontend.printReport(elapsed);
+		if (STACK_CHUNKS) {
+			System.out.printf(Locale.ROOT, "stackchunks  %d live during the warm-up, %d after the measure%n",
+					chunksBefore, chunksAfter);
 		}
-
-		printReport(stats, elapsedNanos, cpu, clients.size());
 
 		system.shutdown();
 		system.awaitTermination(10, TimeUnit.SECONDS);
 	}
 
 	/**
-	 * One group per core, each on a carrier of its own. An explicit placement
-	 * rather than the round-robin default, whose cursor is shared with every other
-	 * root spawn in the process.
+	 * The scheduler named by {@code -Dbench.scheduler}, with {@code count}
+	 * carriers.
 	 */
-	private static List<ActorRef> spawnGroups(ActorSystem system, ActorScheduler scheduler, int groups) {
-		List<ActorRef> refs = new ArrayList<>();
-		for (int i = 0; i < groups; i++) {
-			int index = i;
-			refs.add(system.spawn("group-" + index, () -> new UserGroup(index, groups, new CarrierTracker(scheduler)),
-					placedOn(carrier(Math.floorMod(index, system.carrierCount())))));
-		}
-		return refs;
+	private static Carriers carriers(int count) {
+		String name = System.getProperty("bench.scheduler", "hybrid");
+		return switch (name) {
+			case "stealing-local" -> Carriers.affine(count).pinned().workStealing(Carriers.WorkStealing.CLUSTER_LOCAL);
+			case "hybrid" ->
+				Carriers.affine(count).pinned().workStealing(Carriers.WorkStealing.GLOBAL).actorsStayHome();
+			case "jdk" -> Carriers.builtin(count);
+			default -> throw new IllegalArgumentException(
+					"bench.scheduler must be stealing-local, hybrid or jdk, not '" + name + "'");
+		};
 	}
 
-	/**
-	 * One closed loop per client thread, each pinned to one group and drawing users
-	 * from it — stickiness, as a real deployment has it.
-	 *
-	 * <p>
-	 * One request in flight per client, so every request leaves the mailbox empty
-	 * behind it. That empty mailbox is the park where a scheduler decides which
-	 * core this actor comes back on, i.e. the moment the comparison turns on.
-	 */
-	private static List<Thread> startClients(List<ActorRef> groups, AtomicBoolean running) {
-		List<Thread> clients = new ArrayList<>();
-		for (int group = 0; group < groups.size(); group++) {
-			for (int c = 0; c < CLIENTS_PER_GROUP; c++) {
-				ActorRef ref = groups.get(group);
-				int index = group;
-				Random random = new Random(group * 31L + c);
-				clients.add(Thread.ofPlatform().name("client-" + group + "-" + c).start(() -> {
-					while (running.get()) {
-						Integer user = UserGroup.userId(index, groups.size(),
-								random.nextInt(UserGroup.USERS_PER_GROUP));
-						ref.ask(new UserGroup.Recommend(user), UserGroup.Recommended.class).join();
-					}
-				}));
-			}
-		}
-		return clients;
-	}
-
-	/**
-	 * Waits for every answer, so the window opens at a point all groups agree on.
-	 */
+	/** The counters of every group, reset if {@code reset} is true. */
 	private static List<UserGroup.Stats> snapshot(List<ActorRef> groups, boolean reset) {
 		List<UserGroup.Stats> stats = new ArrayList<>();
 		for (ActorRef group : groups) {
@@ -213,60 +183,53 @@ public final class Main {
 	}
 
 	/**
-	 * Process CPU, user plus system. Asked of {@link ProcessHandle} so the demo
-	 * needs no extra module; absent on a platform that will not report it, in which
-	 * case the report simply omits the line.
+	 * The live StackChunks, from a class histogram: what {@code jcmd
+	 * GC.class_histogram} prints, asked from inside the JVM.
 	 */
+	private static long liveStackChunks() throws Exception {
+		String histogram = (String) ManagementFactory.getPlatformMBeanServer().invoke(
+				new ObjectName("com.sun.management:type=DiagnosticCommand"), "gcClassHistogram", new Object[]{null},
+				new String[]{String[].class.getName()});
+		for (String line : histogram.split("\n")) {
+			String[] columns = line.trim().split("\\s+");
+			if (columns.length >= 4 && columns[3].equals("jdk.internal.vm.StackChunk")) {
+				return Long.parseLong(columns[1]);
+			}
+		}
+		return 0;
+	}
+
 	private static Duration processCpu() {
 		return ProcessHandle.current().info().totalCpuDuration().orElse(Duration.ZERO);
 	}
 
-	private static void printConfiguration(ActorScheduler scheduler, int processors, int groups) {
-		// The class name is what says which scheduler actually got installed: a missing
-		// --enable-preview leaves the builtin one in place without saying so.
-		System.out.printf(Locale.ROOT, "scheduler=%s carriers=%d availableProcessors=%d%n",
-				scheduler.getClass().getName(), scheduler.carrierCount(), processors);
-		long mapKiB = (long) UserGroup.USERS_PER_GROUP * BYTES_PER_USER / 1024;
-		System.out.printf(Locale.ROOT,
-				"groups=%d users=%d (%d per group) footprint=~%d KiB per group, ~%.1f MiB total%n", groups,
-				(long) groups * UserGroup.USERS_PER_GROUP, UserGroup.USERS_PER_GROUP, mapKiB, mapKiB * groups / 1024.0);
-		System.out.println("           (one group's map must fit in a core's L2; all of them together must not)");
-		System.out.printf(Locale.ROOT, "depth=%d clients=%d (closed loop, 1 request in flight each)%n", UserGroup.DEPTH,
-				groups * CLIENTS_PER_GROUP);
-		System.out.printf(Locale.ROOT, "warmup=%ds measure=%ds migrationSample=%s%n", WARMUP_SECONDS, MEASURE_SECONDS,
-				CarrierTracker.describe());
-		if (UserGroup.DEPTH == 0) {
-			System.out.println("*** dispatch-only control: no user is touched ***");
-		}
-		System.out.printf(Locale.ROOT, "vtParallelism=%s vtMaxPoolSize=%s%n",
-				System.getProperty("jdk.virtualThreadScheduler.parallelism", "<default>"),
-				System.getProperty("jdk.virtualThreadScheduler.maxPoolSize", "<default>"));
-		System.out.println();
-	}
-
-	private static void printReport(List<UserGroup.Stats> stats, long elapsedNanos, Duration cpu, int clients) {
+	/**
+	 * The server's CPU is the process's CPU minus the client threads' CPU: the
+	 * client threads run in this JVM, but they are the load, not the server.
+	 */
+	private static void printReport(List<UserGroup.Stats> stats, long elapsed, long cpu, long clientCpu) {
 		long requests = 0;
+		long failures = 0;
 		long traced = 0;
 		long migrated = 0;
 		for (UserGroup.Stats group : stats) {
 			requests += group.requests();
-			traced += group.tracedResumes();
-			migrated += group.migratedResumes();
+			failures += group.upstreamFailures();
+			traced += group.tracedMessages();
+			migrated += group.migratedMessages();
 		}
-
-		double seconds = elapsedNanos / 1e9;
-		System.out.println();
-		System.out.printf(Locale.ROOT, "throughput   %,.0f req/s (%,d requests in %.1fs)%n", requests / seconds,
-				requests, seconds);
-		System.out.printf(Locale.ROOT, "latency      %.2f us/req (closed loop, %d clients)%n",
-				seconds * 1e6 * clients / requests, clients);
-		if (!cpu.isZero()) {
-			System.out.printf(Locale.ROOT, "cpu          %.2f us/req (%.2f cores busy)%n",
-					cpu.toNanos() / 1e3 / requests, cpu.toNanos() / (double) elapsedNanos);
-		}
-		if (traced > 0) {
-			System.out.printf(Locale.ROOT, "migrations   %.1f%% of %,d sampled parks resumed on another carrier%n",
-					100.0 * migrated / traced, traced);
+		long serverCpu = cpu - clientCpu;
+		System.out.printf(Locale.ROOT, "throughput   %,.0f req/s%n", requests / (elapsed / 1e9));
+		System.out.printf(Locale.ROOT, "cpu          %.2f us/req (%.2f cores busy) -- server: process minus clients%n",
+				serverCpu / 1e3 / requests, serverCpu / (double) elapsed);
+		System.out.printf(Locale.ROOT, "client cpu   %.2f us/req (%.2f cores busy)%n", clientCpu / 1e3 / requests,
+				clientCpu / (double) elapsed);
+		System.out.printf(Locale.ROOT,
+				"migrations   %.1f%% of %,d sampled messages ran on another carrier than the one before%n",
+				traced == 0 ? 0 : 100.0 * migrated / traced, traced);
+		if (failures > 0) {
+			System.out.printf(Locale.ROOT, "*** %,d requests got no backend response -- not a measurement ***%n",
+					failures);
 		}
 	}
 }

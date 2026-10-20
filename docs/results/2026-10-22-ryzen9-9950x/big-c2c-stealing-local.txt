@@ -1,0 +1,705 @@
+WARNING: failed to find node
+=================================================
+            Trace Event Information              
+=================================================
+  Total records                     :     205307
+  Locked Load/Store Operations      :        306
+  Load Operations                   :      58811
+  Loads - uncacheable               :          0
+  Loads - IO                        :          0
+  Loads - Miss                      :          0
+  Loads - no mapping                :      13767
+  Load Fill Buffer Hit              :          0
+  Load L1D hit                      :      38283
+  Load L2D hit                      :       1445
+  Load LLC hit                      :       2105
+  Load Local HITM                   :       1643
+  Load Remote HITM                  :        207
+  Load Remote HIT                   :          0
+  Load Local DRAM                   :       2947
+  Load Remote DRAM                  :          0
+  Load MESI State Exclusive         :       2947
+  Load MESI State Shared            :          0
+  Load LLC Misses                   :       3154
+  Load access blocked by data       :          0
+  Load access blocked by address    :          0
+  Load HIT Local Peer               :          0
+  Load HIT Remote Peer              :          0
+  LLC Misses to Local DRAM          :       93.4%
+  LLC Misses to Remote DRAM         :        0.0%
+  LLC Misses to Remote cache (HIT)  :        0.0%
+  LLC Misses to Remote cache (HITM) :        6.6%
+  Store Operations                  :      31321
+  Store - uncacheable               :          6
+  Store - no mapping                :       1344
+  Store L1D Hit                     :      29273
+  Store L1D Miss                    :          0
+  Store No available memory level   :        347
+  No Page Map Rejects               :      17429
+  Unable to parse data source       :     115175
+
+=================================================
+    Global Shared Cache Line Event Information   
+=================================================
+  Total Shared Cache Lines          :       1721
+  Load HITs on shared lines         :       2957
+  Fill Buffer Hits on shared lines  :          0
+  L1D hits on shared lines          :       1034
+  L2D hits on shared lines          :         23
+  LLC hits on shared lines          :       1668
+  Load hits on peer cache or nodes  :          0
+  Locked Access on shared lines     :        136
+  Blocked Access on shared lines    :          0
+  Store HITs on shared lines        :        564
+  Store L1D hits on shared lines    :        517
+  Store No available memory level   :         30
+  Total Merged records              :       2414
+
+=================================================
+                 c2c details                     
+=================================================
+  Events                            : ibs_op/ldlat=0/
+  Cachelines sort on                : Total HITMs
+  Cacheline data grouping           : offset,iaddr
+
+=================================================
+           Shared Data Cache Line Table          
+=================================================
+#
+#        ----------- Cacheline ----------      Tot  ------- Load Hitm -------    Total    Total    Total  --------- Stores --------  ----- Core Load Hit -----  - LLC Load Hit --  - RMT Load Hit --  --- Load Dram ----
+# Index             Address  Node  PA cnt     Hitm    Total  LclHitm  RmtHitm  records    Loads   Stores    L1Hit   L1Miss      N/A       FB       L1       L2    LclHit  LclHitm    RmtHit  RmtHitm       Lcl       Rmt
+# .....  ..................  ....  ......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  ........  .......  ........  .......  ........  ........
+#
+      0          0x80007140     0       9    0.32%        6        5        1       13       13        0        0        0        0        0        5        0         2        5         0        1         0         0
+      1          0x80300380     0       7    0.32%        6        4        2       11       11        0        0        0        0        0        5        0         0        4         0        2         0         0
+      2  0xffff88933ea33600     0       2    0.27%        5        1        4        6        6        0        0        0        0        0        0        1         0        1         0        4         0         0
+      3          0x80000540     0       6    0.27%        5        5        0        8        8        0        0        0        0        0        3        0         0        5         0        0         0         0
+      4          0x80280240     0       9    0.27%        5        3        2       11       10        1        1        0        0        0        5        0         0        3         0        2         0         0
+      5  0xffff888c32560d00     0       3    0.22%        4        4        0        7        7        0        0        0        0        0        2        1         0        4         0        0         0         0
+      6          0x80100780     0      17    0.22%        4        4        0       20       20        1        0        0        0        0       15        0         1        4         0        0         0         0
+      7          0x80204580     0       7    0.22%        4        4        0       14       14        0        0        0        0        0        7        0         2        4         0        0         1         0
+      8          0x8748d180     0      21    0.22%        4        3        1       23       23        0        0        0        0        0       19        0         0        3         0        1         0         0
+      9          0x87738f00     0      13    0.22%        4        1        3       19       19        0        0        0        0        0       14        0         1        1         0        3         0         0
+     10          0x8c1ebac0     0       7    0.22%        4        3        1       11       11        0        0        0        0        0        7        0         0        3         0        1         0         0
+     11          0x8d20ef00     0       6    0.22%        4        3        1       10       10        0        0        0        0        0        6        0         0        3         0        1         0         0
+     12      0x799c94442c40     0       8    0.22%        4        3        1        9        6        4        2        0        1        0        2        0         0        3         0        1         0         0
+     13      0x799c9d3e6080     0       4    0.22%        4        1        3        4        4        0        0        0        0        0        0        0         0        1         0        3         0         0
+     14  0xffff888cf2660000     0      19    0.16%        3        3        0       25       25        0        0        0        0        0       22        0         0        3         0        0         0         0
+     15  0xffff88933e19f580     0       4    0.16%        3        3        0        4        4        0        0        0        0        0        1        0         0        3         0        0         0         0
+     16  0xffff88933e233600     0       1    0.16%        3        1        2        3        3        0        0        0        0        0        0        0         0        1         0        2         0         0
+     17  0xffff88933e234b00     0       1    0.16%        3        1        2        3        3        0        0        0        0        0        0        0         0        1         0        2         0         0
+     18  0xffff88933eab3600     0       1    0.16%        3        3        0        3        3        0        0        0        0        0        0        0         0        3         0        0         0         0
+     19          0x80080300     0      18    0.16%        3        0        3       22       22        0        0        0        0        0       18        0         1        0         0        3         0         0
+     20          0x80200940     0      10    0.16%        3        3        0       11       11        0        0        0        0        0        8        0         0        3         0        0         0         0
+     21          0x80279640     0       3    0.16%        3        0        3        4        3        1        1        0        0        0        0        0         0        0         0        3         0         0
+     22          0x8048a8c0     0       6    0.16%        3        0        3        6        6        0        0        0        0        0        3        0         0        0         0        3         0         0
+     23          0x8c343280     0       7    0.16%        3        3        0        9        9        0        0        0        0        0        5        1         0        3         0        0         0         0
+     24      0x799c9443c7c0     0       6    0.16%        3        1        2        7        4        3        1        0        2        0        1        0         0        1         0        2         0         0
+     25      0x799c9443ebc0     0       7    0.16%        3        2        1        9        3        8        5        0        1        0        0        0         0        2         0        1         0         0
+     26      0x799c9443ec00     0       5    0.16%        3        1        2        6        6        0        0        0        0        0        3        0         0        1         0        2         0         0
+     27      0x799c9443fac0     0       7    0.16%        3        2        1        8        8        0        0        0        0        0        5        0         0        2         0        1         0         0
+     28      0x799c9443fb00     0       4    0.16%        3        2        1        6        6        0        0        0        0        0        3        0         0        2         0        1         0         0
+     29      0x799c94441c40     0       4    0.16%        3        3        0        4        4        0        0        0        0        0        1        0         0        3         0        0         0         0
+     30      0x799c94444c80     0       8    0.16%        3        3        0       10        7        4        2        0        1        0        4        0         0        3         0        0         0         0
+     31      0x799c94445d00     0       4    0.16%        3        1        2        4        4        0        0        0        0        0        0        1         0        1         0        2         0         0
+     32      0x799c94446c00     0       5    0.16%        3        3        0        6        3        3        0        0        3        0        0        0         0        3         0        0         0         0
+     33  0xffff888c080b1100     0       1    0.11%        2        2        0        3        3        0        0        0        0        0        1        0         0        2         0        0         0         0
+     34  0xffff888c0a92d340     0       1    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     35  0xffff888c0a92f340     0       1    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     36  0xffff888c0b007340     0       1    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     37  0xffff888c10027440     0       6    0.11%        2        1        1        9        9        0        0        0        0        0        7        0         0        1         0        1         0         0
+     38  0xffff888c19b85440     0       2    0.11%        2        2        0        4        4        0        0        0        0        0        2        0         0        2         0        0         0         0
+     39  0xffff888c2e2eb100     0      16    0.11%        2        2        0       21       20        1        1        0        0        0       18        0         0        2         0        0         0         0
+     40  0xffff888c33037d40     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     41  0xffff888d02da0140     0       4    0.11%        2        2        0        5        4        1        1        0        0        0        2        0         0        2         0        0         0         0
+     42  0xffff888d02da1c80     0       4    0.11%        2        1        1        4        4        0        0        0        0        0        1        0         0        1         0        1         1         0
+     43  0xffff88933e09f580     0       4    0.11%        2        2        0        5        2        3        3        0        0        0        0        0         0        2         0        0         0         0
+     44  0xffffcdc788a8bb80     0       1    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     45  0xffffcdc7898e3b40     0      20    0.11%        2        2        0       22        9       13       13        0        0        0        7        0         0        2         0        0         0         0
+     46  0xffffcdc78a3fbc40     0      14    0.11%        2        2        0       14        4       10       10        0        0        0        2        0         0        2         0        0         0         0
+     47  0xffffcdc78a403a40     0      22    0.11%        2        0        2       28       14       14       14        0        0        0       12        0         0        0         0        2         0         0
+     48  0xffffcdc78a403b00     0      25    0.11%        2        2        0       27       13       14       13        0        1        0       11        0         0        2         0        0         0         0
+     49          0x80000340     0       1    0.11%        2        2        0        4        4        0        0        0        0        0        2        0         0        2         0        0         0         0
+     50          0x80007200     0       3    0.11%        2        2        0        9        9        0        0        0        0        0        6        0         1        2         0        0         0         0
+     51          0x800802c0     0      19    0.11%        2        1        1       21       21        0        0        0        0        0       18        0         1        1         0        1         0         0
+     52          0x80174f00     0       7    0.11%        2        2        0        5        5        0        0        0        0        0        3        0         0        2         0        0         0         0
+     53          0x8027a100     0       3    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     54          0x8027a200     0       6    0.11%        2        2        0        6        5        1        1        0        0        0        2        1         0        2         0        0         0         0
+     55          0x8027e840     0       2    0.11%        2        2        0        3        3        0        0        0        0        0        1        0         0        2         0        0         0         0
+     56          0x803003c0     0       4    0.11%        2        1        1        5        5        0        0        0        0        0        3        0         0        1         0        1         0         0
+     57          0x803801c0     0      10    0.11%        2        2        0       12       12        0        0        0        0        0        9        0         1        2         0        0         0         0
+     58          0x81db95c0     0       4    0.11%        2        2        0        4        4        0        0        0        0        0        2        0         0        2         0        0         0         0
+     59          0x8748dd40     0       3    0.11%        2        2        0        3        3        0        0        0        0        0        0        0         1        2         0        0         0         0
+     60          0x87738b80     0       1    0.11%        2        2        0        3        3        0        0        0        0        0        0        1         0        2         0        0         0         0
+     61          0x8786bf00     0       5    0.11%        2        0        2        9        9        0        0        0        0        0        6        0         1        0         0        2         0         0
+     62          0x8c1edb40     0       7    0.11%        2        2        0        8        8        0        0        0        0        0        6        0         0        2         0        0         0         0
+     63          0x8d11e980     0       5    0.11%        2        1        1        7        7        0        0        0        0        0        4        0         1        1         0        1         0         0
+     64          0xffa02a40     0       2    0.11%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     65          0xffb81c40     0       4    0.11%        2        2        0        5        4        1        1        0        0        0        1        1         0        2         0        0         0         0
+     66          0xffe00740     0       5    0.11%        2        2        0        5        3        2        2        0        0        0        1        0         0        2         0        0         0         0
+     67      0x799c9443d380     0       5    0.11%        2        1        1        5        3        2        0        0        2        0        1        0         0        1         0        1         0         0
+     68      0x799c9443df00     0       4    0.11%        2        1        1        3        2        2        0        0        1        0        0        0         0        1         0        1         0         0
+     69      0x799c9443fa80     0       2    0.11%        2        1        1        3        2        1        0        0        1        0        0        0         0        1         0        1         0         0
+     70      0x799c94440240     0      11    0.11%        2        2        0       11        9        3        1        0        1        0        7        0         0        2         0        0         0         0
+     71      0x799c944402c0     0       9    0.11%        2        2        0       14        9        5        3        0        2        0        7        0         0        2         0        0         0         0
+     72      0x799c94440c00     0       2    0.11%        2        1        1        4        3        1        0        0        1        0        1        0         0        1         0        1         0         0
+     73      0x799c94440c40     0       9    0.11%        2        0        2       13       12        1        1        0        0        0       10        0         0        0         0        2         0         0
+     74      0x799c94443c80     0      10    0.11%        2        2        0       10        9        1        1        0        0        0        7        0         0        2         0        0         0         0
+
+=================================================
+      Shared Cache Line Distribution Pareto      
+=================================================
+#
+#        ----- HITM -----  ------- Store Refs ------  --------- Data address ---------                      ---------- cycles ----------    Total       cpu                                                                                                             Shared                                                                                                        
+#   Num  RmtHitm  LclHitm   L1 Hit  L1 Miss      N/A              Offset  Node  PA cnt        Code address  rmt hitm  lcl hitm      load  records       cnt                                                                                           Symbol            Object                                                                                       Source:Line  Node
+# .....  .......  .......  .......  .......  .......  ..................  ....  ......  ..................  ........  ........  ........  .......  ........  ...............................................................................................  ................  ................................................................................................  ....
+#
+  ----------------------------------------------------------------------
+      0        1        5        0        0        0          0x80007140
+  ----------------------------------------------------------------------
+         100.00%   20.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c839bbd9a       449        50         0        2         2  [.] void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)  [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)+1050   0
+           0.00%   20.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c83a0ca7f         0      1610         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2303                  0
+           0.00%   20.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c83a0cb1d         0       152         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2461                  0
+           0.00%   40.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x799c83a0c773         0        88        83        4         2  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+1523                  0
+
+  ----------------------------------------------------------------------
+      1        2        4        0        0        0          0x80300380
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x30     0       1      0x799c83a0cac4         0        44         0        2         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2372                 0
+         100.00%   50.00%    0.00%    0.00%    0.00%                0x38     0       1      0x799c83a0cac0       412        99         0        4         4  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2368                 0
+
+  ----------------------------------------------------------------------
+      2        4        1        0        0        0  0xffff88933ea33600
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x1c     0       1  0xffffffff91cb583d       362        86         0        5         5  [k] select_idle_sibling  [kernel.kallsyms]  select_idle_sibling+125   0
+
+  ----------------------------------------------------------------------
+      3        0        5        0        0        0          0x80000540
+  ----------------------------------------------------------------------
+           0.00%   20.00%    0.00%    0.00%    0.00%                0x20     0       1      0x799c839bba7d         0       149         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)  [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)+253   0
+           0.00%   20.00%    0.00%    0.00%    0.00%                0x20     0       1      0x799c83a0cac4         0        94         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2372                 0
+           0.00%   40.00%    0.00%    0.00%    0.00%                0x28     0       1      0x799c83a0cac0         0        92         0        2         2  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2368                 0
+           0.00%   20.00%    0.00%    0.00%    0.00%                0x28     0       1      0x799c83a0c852         0        86         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+1746                 0
+
+  ----------------------------------------------------------------------
+      4        2        3        1        0        0          0x80280240
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x799c8398f728       303         0         0        1         1  [.] void java.lang.VirtualThread.runContinuation()                                               [JIT] tid 272404  void java.lang.VirtualThread.runContinuation()+168                                                0
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x2c     0       1      0x799c839bbc7d         0        60         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)  [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)+765   0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x34     0       1      0x799c839d0674         0         0         0        1         1  [.] boolean io.netty.loom.scheduler.EventLoopScheduler.tryStealing(boolean)                      [JIT] tid 272404  boolean io.netty.loom.scheduler.EventLoopScheduler.tryStealing(boolean)+1012                      0
+          50.00%   33.33%    0.00%    0.00%    0.00%                0x38     0       1      0x799c83a0cab3       339        96         0        2         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2355                 0
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x38     0       1      0x799c839bba42         0       146         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)  [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)+194   0
+
+  ----------------------------------------------------------------------
+      5        0        4        0        0        0  0xffff888c32560d00
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffff9216f60d         0        42        11        5         1  [k] do_epoll_ctl  [kernel.kallsyms]  do_epoll_ctl+285   0
+
+  ----------------------------------------------------------------------
+      6        0        4        0        0        0          0x80100780
+  ----------------------------------------------------------------------
+           0.00%   25.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c839d0548         0        95         0        1         1  [.] boolean io.netty.loom.scheduler.EventLoopScheduler.tryStealing(boolean)                      [JIT] tid 272404  boolean io.netty.loom.scheduler.EventLoopScheduler.tryStealing(boolean)+712                        0
+           0.00%   25.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c83a0c89e         0       210         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+1822                  0
+           0.00%    0.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x799c83a0ca6a         0         0         0        0         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2282                  0
+           0.00%   25.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x799c83a0cab3         0        97         0        2         2  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2355                  0
+           0.00%   25.00%    0.00%    0.00%    0.00%                0x20     0       1      0x799c83a0c459         0        81        28        4         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+729                   0
+
+  ----------------------------------------------------------------------
+      7        0        4        0        0        0          0x80204580
+  ----------------------------------------------------------------------
+           0.00%   25.00%    0.00%    0.00%    0.00%                0x28     0       1      0x799c839bbd8c         0        92         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)  [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)+1036   0
+           0.00%   25.00%    0.00%    0.00%    0.00%                0x30     0       1      0x799c83a0c50c         0       296         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+908                   0
+           0.00%   25.00%    0.00%    0.00%    0.00%                0x30     0       1      0x799c83a0c7d7         0        93       683        2         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+1623                  0
+           0.00%   25.00%    0.00%    0.00%    0.00%                0x3c     0       1      0x799c839bba94         0        97         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)  [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)+276    0
+
+  ----------------------------------------------------------------------
+      8        1        3        0        0        0          0x8748d180
+  ----------------------------------------------------------------------
+           0.00%   33.33%    0.00%    0.00%    0.00%                 0x4     0       1      0x799c839fd570         0       152         0        1         1  [.] boolean io.netty.loom.scheduler.IdleCarrierTracker$$Lambda/0x0000000029091800.wake(io.netty.loom.scheduler.IdleCarrierTracker, int, io.netty.loom.scheduler.EventLoopScheduler)  [JIT] tid 272404  boolean io.netty.loom.scheduler.IdleCarrierTracker$$Lambda/0x0000000029091800.wake(io.netty.loom.scheduler.IdleCarrierTracker, int, io.netty.loom.scheduler.EventLoopScheduler)+112   0
+           0.00%   66.67%    0.00%    0.00%    0.00%                0x10     0       1      0x799c83a0cab3         0        78         0        2         2  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                                                                                                     [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2355                                                                                                     0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x799c839d050c       394         0         0        2         2  [.] boolean io.netty.loom.scheduler.EventLoopScheduler.tryStealing(boolean)                                                                                                          [JIT] tid 272404  boolean io.netty.loom.scheduler.EventLoopScheduler.tryStealing(boolean)+652                                                                                                           0
+
+  ----------------------------------------------------------------------
+      9        3        1        0        0        0          0x87738f00
+  ----------------------------------------------------------------------
+          66.67%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x799c839c527e       258         0         0        5         4  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)                                            [JIT] tid 272404  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+510                                              0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x28     0       1      0x799c839e9fc6         0       201         0        2         2  [.] void io.github.pderop.looma.impl.ActorRuntime.workFinished()                                                                            [JIT] tid 272404  void io.github.pderop.looma.impl.ActorRuntime.workFinished()+70                                                                               0
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x38     0       1      0x799c8399990e       372         0         0        1         1  [.] void io.github.pderop.looma.examples.user.FrontendServer.send(long, boolean, java.util.Random, java.util.concurrent.atomic.AtomicLong)  [JIT] tid 272404  void io.github.pderop.looma.examples.user.FrontendServer.send(long, boolean, java.util.Random, java.util.concurrent.atomic.AtomicLong)+1422   0
+
+  ----------------------------------------------------------------------
+     10        1        3        0        0        0          0x8c1ebac0
+  ----------------------------------------------------------------------
+           0.00%   66.67%    0.00%    0.00%    0.00%                 0x8     0       1      0x799c839d042d         0        97         0        3         2  [.] boolean io.netty.loom.scheduler.EventLoopScheduler.tryStealing(boolean)                      [JIT] tid 272404  boolean io.netty.loom.scheduler.EventLoopScheduler.tryStealing(boolean)+429                       0
+           0.00%   33.33%    0.00%    0.00%    0.00%                 0x8     0       1      0x799c83a0cac4         0        89         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2372                 0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x799c839bba50       371         0         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)  [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)+208   0
+
+  ----------------------------------------------------------------------
+     11        1        3        0        0        0          0x8d20ef00
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x799c83a0cac4       374         0         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()  [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2372   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x18     0       1      0x799c83a0cac0         0        98         0        3         3  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()  [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2368   0
+
+  ----------------------------------------------------------------------
+     12        1        3        2        0        1      0x799c94442c40
+  ----------------------------------------------------------------------
+           0.00%    0.00%   50.00%    0.00%    0.00%                 0xc     0       1      0x799c9c87fab0         0         0         0        1         1  [.] Parker::park(bool, long)  libjvm.so         os_posix.cpp:1951          0
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x18     0       1      0x799c9d6a693f         0        64         0        1         1  [.] 0x00000000000a693f        libc.so.6         libc.so.6[a693f]           0
+           0.00%    0.00%    0.00%    0.00%  100.00%                0x18     0       1      0x799c9d6a694a         0         0         0        1         1  [.] 0x00000000000a694a        libc.so.6         libc.so.6[a694a]           0
+           0.00%    0.00%   50.00%    0.00%    0.00%                0x18     0       1      0x799c9d6a8fa8         0         0         0        1         1  [.] 0x00000000000a8fa8        libc.so.6         libc.so.6[a8fa8]           0
+           0.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x799c9d6a908c         0         0         0        0         1  [.] pthread_mutex_unlock      libc.so.6         pthread_mutex_unlock+28    0
+           0.00%   66.67%    0.00%    0.00%    0.00%                0x1c     0       1      0x799c9d6a9088         0        79         0        2         2  [.] pthread_mutex_unlock      libc.so.6         pthread_mutex_unlock+24    0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x799c9d6a76a4       343         0         0        1         1  [.] pthread_mutex_lock        libc.so.6         pthread_mutex_lock+4       0
+
+  ----------------------------------------------------------------------
+     13        3        1        0        0        0      0x799c9d3e6080
+  ----------------------------------------------------------------------
+          66.67%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x799c839c5577       494         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 272404  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+1271   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x28     0       1      0x799c9cc163c0         0        82       368        1         2  [.] FastThreadsListHandle::FastThreadsListHandle(oopDesc*, JavaThread*)                           libjvm.so         atomicAccess.hpp:552                                                                                0
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x799c9cc163de       287         0       386        1         2  [.] FastThreadsListHandle::FastThreadsListHandle(oopDesc*, JavaThread*)                           libjvm.so         atomicAccess.hpp:552                                                                                0
+
+  ----------------------------------------------------------------------
+     14        0        3        0        0        0  0xffff888cf2660000
+  ----------------------------------------------------------------------
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x14     0       1  0xffffffff91ca8bfc         0        90         0        1         1  [k] try_to_wake_up                         [kernel.kallsyms]  try_to_wake_up+396                         0
+           0.00%   66.67%    0.00%    0.00%    0.00%                0x28     0       1  0xffffffff91ca93c5         0        55         0        2         1  [k] wake_up_q                              [kernel.kallsyms]  wake_up_q+69                               0
+
+  ----------------------------------------------------------------------
+     15        0        3        0        0        0  0xffff88933e19f580
+  ----------------------------------------------------------------------
+           0.00%   33.33%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffff91d741c9         0        45         0        2         1  [k] __mod_timer  [kernel.kallsyms]  __mod_timer+489   0
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff91d7407d         0        80         0        1         1  [k] __mod_timer  [kernel.kallsyms]  __mod_timer+157   0
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff91d74205         0       118         0        1         1  [k] __mod_timer  [kernel.kallsyms]  __mod_timer+549   0
+
+  ----------------------------------------------------------------------
+     16        2        1        0        0        0  0xffff88933e233600
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x1c     0       1  0xffffffff91cb583d       350       105         0        3         3  [k] select_idle_sibling  [kernel.kallsyms]  select_idle_sibling+125   0
+
+  ----------------------------------------------------------------------
+     17        2        1        0        0        0  0xffff88933e234b00
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91da12ac       387         0         0        2         2  [k] __smp_call_single_queue  [kernel.kallsyms]  __smp_call_single_queue+60   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91da12a3         0        82         0        1         1  [k] __smp_call_single_queue  [kernel.kallsyms]  __smp_call_single_queue+51   0
+
+  ----------------------------------------------------------------------
+     18        0        3        0        0        0  0xffff88933eab3600
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x1c     0       1  0xffffffff91cb583d         0       104         0        3         3  [k] select_idle_sibling  [kernel.kallsyms]  select_idle_sibling+125   0
+
+  ----------------------------------------------------------------------
+     19        3        0        0        0        0          0x80080300
+  ----------------------------------------------------------------------
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x799c839d0403       391         0         0        1         1  [.] boolean io.netty.loom.scheduler.EventLoopScheduler.tryStealing(boolean)                      [JIT] tid 272404  boolean io.netty.loom.scheduler.EventLoopScheduler.tryStealing(boolean)+387                        0
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x799c83a0c83b       386         0         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+1723                  0
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x799c839bbe1e       428         0         0        3         2  [.] void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)  [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)+1182   0
+
+  ----------------------------------------------------------------------
+     20        0        3        0        0        0          0x80200940
+  ----------------------------------------------------------------------
+           0.00%   33.33%    0.00%    0.00%    0.00%                 0x8     0       1      0x799c839d0469         0        79         0        1         1  [.] boolean io.netty.loom.scheduler.EventLoopScheduler.tryStealing(boolean)                                                                                                          [JIT] tid 272404  boolean io.netty.loom.scheduler.EventLoopScheduler.tryStealing(boolean)+489                                                                                                           0
+           0.00%   33.33%    0.00%    0.00%    0.00%                 0x8     0       1      0x799c83a0cac0         0        97         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                                                                                                     [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2368                                                                                                     0
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x3c     0       1      0x799c839fd570         0        87         0        1         1  [.] boolean io.netty.loom.scheduler.IdleCarrierTracker$$Lambda/0x0000000029091800.wake(io.netty.loom.scheduler.IdleCarrierTracker, int, io.netty.loom.scheduler.EventLoopScheduler)  [JIT] tid 272404  boolean io.netty.loom.scheduler.IdleCarrierTracker$$Lambda/0x0000000029091800.wake(io.netty.loom.scheduler.IdleCarrierTracker, int, io.netty.loom.scheduler.EventLoopScheduler)+112   0
+
+  ----------------------------------------------------------------------
+     21        3        0        1        0        0          0x80279640
+  ----------------------------------------------------------------------
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x799c8398f81f       406         0         0        1         1  [.] void java.lang.VirtualThread.runContinuation()           [JIT] tid 272404  void java.lang.VirtualThread.runContinuation()+415            0
+          66.67%    0.00%    0.00%    0.00%    0.00%                0x36     0       1      0x799c8398f7f1       384         0         0        2         2  [.] void java.lang.VirtualThread.runContinuation()           [JIT] tid 272404  void java.lang.VirtualThread.runContinuation()+369            0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x37     0       1      0x799c83a10f04         0         0         0        1         1  [.] void sun.nio.ch.Poller.subPollerLoop(sun.nio.ch.Poller)  [JIT] tid 272404  void sun.nio.ch.Poller.subPollerLoop(sun.nio.ch.Poller)+260   0
+
+  ----------------------------------------------------------------------
+     22        3        0        0        0        0          0x8048a8c0
+  ----------------------------------------------------------------------
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x799c8398e992        14         0         0        1         1  [.] void jdk.internal.vm.Continuation.run()                                                                       [JIT] tid 272404  void jdk.internal.vm.Continuation.run()+146                                                                        0
+          66.67%    0.00%    0.00%    0.00%    0.00%                0x34     0       1      0x799c8398ea10        22         0         0        2         2  [.] void jdk.internal.vm.Continuation.run()                                                                       [JIT] tid 272404  void jdk.internal.vm.Continuation.run()+272                                                                        0
+
+  ----------------------------------------------------------------------
+     23        0        3        0        0        0          0x8c343280
+  ----------------------------------------------------------------------
+           0.00%   33.33%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c839bba7d         0       143         0        2         2  [.] void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)  [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)+253   0
+           0.00%   33.33%    0.00%    0.00%    0.00%                 0x8     0       1      0x799c839d0429         0        80         0        1         1  [.] boolean io.netty.loom.scheduler.EventLoopScheduler.tryStealing(boolean)                      [JIT] tid 272404  boolean io.netty.loom.scheduler.EventLoopScheduler.tryStealing(boolean)+425                       0
+           0.00%   33.33%    0.00%    0.00%    0.00%                 0x8     0       1      0x799c83a0cac0         0        94         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2368                 0
+
+  ----------------------------------------------------------------------
+     24        2        1        1        0        2      0x799c9443c7c0
+  ----------------------------------------------------------------------
+           0.00%    0.00%    0.00%    0.00%   50.00%                0x1c     0       1      0x799c9c87fa0d         0         0         0        1         1  [.] Parker::park(bool, long)  libjvm.so  os_posix.cpp:1962         0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x1c     0       1      0x799c9c87fab0         0         0         0        1         1  [.] Parker::park(bool, long)  libjvm.so  os_posix.cpp:1951         0
+          50.00%  100.00%    0.00%    0.00%    0.00%                0x20     0       1      0x799c9d6a90ba       379        88         0        2         1  [.] pthread_mutex_unlock      libc.so.6  pthread_mutex_unlock+74   0
+           0.00%    0.00%    0.00%    0.00%   50.00%                0x28     0       1      0x799c9d6a908c         0         0         0        1         1  [.] pthread_mutex_unlock      libc.so.6  pthread_mutex_unlock+28   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x799c9d6a9093       435         0         0        2         2  [.] pthread_mutex_unlock      libc.so.6  pthread_mutex_unlock+35   0
+
+  ----------------------------------------------------------------------
+     25        1        2        5        0        1      0x799c9443ebc0
+  ----------------------------------------------------------------------
+           0.00%    0.00%   20.00%    0.00%    0.00%                 0x8     0       1      0x799c8398f772         0         0         0        1         1  [.] void java.lang.VirtualThread.runContinuation()           [JIT] tid 272404  void java.lang.VirtualThread.runContinuation()+242            0
+           0.00%    0.00%   20.00%    0.00%    0.00%                 0x8     0       1      0x799c8398fb03         0         0         0        1         1  [.] void java.lang.VirtualThread.runContinuation()           [JIT] tid 272404  void java.lang.VirtualThread.runContinuation()+1155           0
+           0.00%    0.00%   20.00%    0.00%    0.00%                 0x8     0       1      0x799c83a10ee5         0         0         0        1         1  [.] void sun.nio.ch.Poller.subPollerLoop(sun.nio.ch.Poller)  [JIT] tid 272404  void sun.nio.ch.Poller.subPollerLoop(sun.nio.ch.Poller)+229   0
+           0.00%    0.00%   20.00%    0.00%    0.00%                 0x8     0       1      0x799c83a10f08         0         0         0        1         1  [.] void sun.nio.ch.Poller.subPollerLoop(sun.nio.ch.Poller)  [JIT] tid 272404  void sun.nio.ch.Poller.subPollerLoop(sun.nio.ch.Poller)+264   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x38     0       1      0x799c9c87fc0a         0       169         0        1         1  [.] Parker::unpark()                                         libjvm.so         os_posix.cpp:1975                                             0
+           0.00%    0.00%    0.00%    0.00%    0.00%                0x38     0       1      0x799c9c87fc14         0         0         0        0         2  [.] Parker::unpark()                                         libjvm.so         os_posix.cpp:1976                                             0
+         100.00%   50.00%    0.00%    0.00%    0.00%                0x3c     0       1      0x799c9c87fc10       430       151         0        2         2  [.] Parker::unpark()                                         libjvm.so         os_posix.cpp:1978                                             0
+           0.00%    0.00%    0.00%    0.00%  100.00%                0x3c     0       1      0x799c9c87fa0d         0         0         0        1         1  [.] Parker::park(bool, long)                                 libjvm.so         os_posix.cpp:1962                                             0
+           0.00%    0.00%   20.00%    0.00%    0.00%                0x3c     0       1      0x799c9c87fab0         0         0         0        1         1  [.] Parker::park(bool, long)                                 libjvm.so         os_posix.cpp:1951                                             0
+
+  ----------------------------------------------------------------------
+     26        2        1        0        0        0      0x799c9443ec00
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c9d6a76d6       404         0         0        1         1  [.] pthread_mutex_lock    libc.so.6  pthread_mutex_lock+54     0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x799c9d6a76c4       361         0         0        1         1  [.] pthread_mutex_lock    libc.so.6  pthread_mutex_lock+36     0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1      0x799c9d6a9074         0        35         0        1         1  [.] pthread_mutex_unlock  libc.so.6  pthread_mutex_unlock+4    0
+
+  ----------------------------------------------------------------------
+     27        1        2        0        0        0      0x799c9443fac0
+  ----------------------------------------------------------------------
+         100.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1      0x799c9d6a9074       358       157         0        2         2  [.] pthread_mutex_unlock   libc.so.6  pthread_mutex_unlock+4     0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1      0x799c9d6a9093         0       164         0        1         1  [.] pthread_mutex_unlock   libc.so.6  pthread_mutex_unlock+35    0
+
+  ----------------------------------------------------------------------
+     28        1        2        0        0        0      0x799c9443fb00
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c9d6a2ab1         0       175         0        1         1  [.] pthread_cond_signal  libc.so.6  pthread_cond_signal+113   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c9d6a2bba         0       151         0        1         1  [.] pthread_cond_signal  libc.so.6  pthread_cond_signal+378   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x799c9d6a2fed       389         0         0        1         1  [.] pthread_cond_wait    libc.so.6  pthread_cond_wait+189     0
+
+  ----------------------------------------------------------------------
+     29        0        3        0        0        0      0x799c94441c40
+  ----------------------------------------------------------------------
+           0.00%   33.33%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c9d6a08f4         0        98         0        1         1  [.] 0x00000000000a08f4    libc.so.6         libc.so.6[a08f4]          0
+           0.00%   33.33%    0.00%    0.00%    0.00%                 0xc     0       1      0x799c9d6a9088         0       125         0        1         1  [.] pthread_mutex_unlock  libc.so.6         pthread_mutex_unlock+24   0
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x10     0       1      0x799c9d6a9074         0        58         0        1         1  [.] pthread_mutex_unlock  libc.so.6         pthread_mutex_unlock+4    0
+
+  ----------------------------------------------------------------------
+     30        0        3        2        0        1      0x799c94444c80
+  ----------------------------------------------------------------------
+           0.00%   33.33%    0.00%    0.00%    0.00%                 0xc     0       1      0x799c9c87fc10         0       156         0        1         1  [.] Parker::unpark()          libjvm.so         os_posix.cpp:1978               0
+           0.00%    0.00%   50.00%    0.00%    0.00%                 0xc     0       1      0x799c9c87fab0         0         0         0        1         1  [.] Parker::park(bool, long)  libjvm.so         os_posix.cpp:1951               0
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x10     0       1      0x799c9d6a90ba         0        86         0        1         1  [.] pthread_mutex_unlock      libc.so.6         pthread_mutex_unlock+74         0
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x18     0       1      0x799c9d6a693f         0        73         0        1         1  [.] 0x00000000000a693f        libc.so.6         libc.so.6[a693f]                0
+           0.00%    0.00%    0.00%    0.00%  100.00%                0x18     0       1      0x799c9d6a694a         0         0         0        1         1  [.] 0x00000000000a694a        libc.so.6         libc.so.6[a694a]                0
+           0.00%    0.00%   50.00%    0.00%    0.00%                0x18     0       1      0x799c9d6a908c         0         0         0        1         1  [.] pthread_mutex_unlock      libc.so.6         pthread_mutex_unlock+28         0
+
+  ----------------------------------------------------------------------
+     31        2        1        0        0        0      0x799c94445d00
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c9d6a2fd1       411         0         0        1         1  [.] pthread_cond_wait    libc.so.6  pthread_cond_wait+161     0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x14     0       1      0x799c9d6a2a45        10         0         0        1         1  [.] pthread_cond_signal  libc.so.6  pthread_cond_signal+5     0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x799c9d6a2fed         0       179         0        1         1  [.] pthread_cond_wait    libc.so.6  pthread_cond_wait+189     0
+
+  ----------------------------------------------------------------------
+     32        0        3        0        0        3      0x799c94446c00
+  ----------------------------------------------------------------------
+           0.00%   33.33%    0.00%    0.00%    0.00%                 0x8     0       1      0x799c9c87fc0a         0       160         0        1         1  [.] Parker::unpark()          libjvm.so  os_posix.cpp:1975         0
+           0.00%    0.00%    0.00%    0.00%   66.67%                 0x8     0       1      0x799c9c87fa17         0         0         0        2         1  [.] Parker::park(bool, long)  libjvm.so  os_posix.cpp:1964         0
+           0.00%   33.33%    0.00%    0.00%    0.00%                 0xc     0       1      0x799c9c87fc10         0       151         0        1         1  [.] Parker::unpark()          libjvm.so  os_posix.cpp:1978         0
+           0.00%    0.00%    0.00%    0.00%   33.33%                 0xc     0       1      0x799c9c87fa0d         0         0         0        1         1  [.] Parker::park(bool, long)  libjvm.so  os_posix.cpp:1962         0
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x1c     0       1      0x799c9d6a9088         0         9         0        1         1  [.] pthread_mutex_unlock      libc.so.6  pthread_mutex_unlock+24   0
+
+  ----------------------------------------------------------------------
+     33        0        2        0        0        0  0xffff888c080b1100
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffff920e8c1e         0       114         0        2         2  [k] fput                 [kernel.kallsyms]  fput+30                  0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffff9216d875         0        47         0        1         1  [k] ep_item_poll.isra.0  [kernel.kallsyms]  ep_item_poll.isra.0+21   0
+
+  ----------------------------------------------------------------------
+     34        2        0        0        0        0  0xffff888c0a92d340
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x26     0       1  0xffffffff92be7376       392         0         0        2         1  [k] kfree_skbmem  [kernel.kallsyms]  kfree_skbmem+6   0
+
+  ----------------------------------------------------------------------
+     35        2        0        0        0        0  0xffff888c0a92f340
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x26     0       1  0xffffffff92be7376       455         0         0        2         2  [k] kfree_skbmem  [kernel.kallsyms]  kfree_skbmem+6   0
+
+  ----------------------------------------------------------------------
+     36        2        0        0        0        0  0xffff888c0b007340
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x14     0       1  0xffffffff92d9ad64       342         0         0        2         2  [k] cubictcp_cwnd_event  [kernel.kallsyms]  cubictcp_cwnd_event+36   0
+
+  ----------------------------------------------------------------------
+     37        1        1        0        0        0  0xffff888c10027440
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x24     0       1  0xffffffff9216c0ad         0        78         0        1         1  [k] ep_start_scan  [kernel.kallsyms]  ep_start_scan+29   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x24     0       1  0xffffffff9216e318       345         0         0        1         1  [k] ep_poll        [kernel.kallsyms]  ep_poll+136        0
+
+  ----------------------------------------------------------------------
+     38        0        2        0        0        0  0xffff888c19b85440
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffff92f3bdca         0        96         0        1         1  [k] native_queued_spin_lock_slowpath  [kernel.kallsyms]  native_queued_spin_lock_slowpath+90    0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffff92f3bdea         0        17         0        1         1  [k] native_queued_spin_lock_slowpath  [kernel.kallsyms]  native_queued_spin_lock_slowpath+122   0
+
+  ----------------------------------------------------------------------
+     39        0        2        1        0        0  0xffff888c2e2eb100
+  ----------------------------------------------------------------------
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x18     0       1  0xffffffff91ca8b88         0         0         0        1         1  [k] try_to_wake_up                         [kernel.kallsyms]  try_to_wake_up+280                         0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x28     0       1  0xffffffff91ca93c5         0        54         0        1         1  [k] wake_up_q                              [kernel.kallsyms]  wake_up_q+69                               0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x28     0       1  0xffffffff91d9e6ff         0       142         0        1         1  [k] futex_wake_mark                        [kernel.kallsyms]  futex_wake_mark+31                         0
+
+  ----------------------------------------------------------------------
+     40        1        1        0        0        0  0xffff888c33037d40
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x18     0       1  0xffffffff92d148c5         0        89         0        1         1  [k] tcp_recvmsg_locked  [kernel.kallsyms]  tcp_recvmsg_locked+309   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x26     0       1  0xffffffff92be7376       439         0         0        1         1  [k] kfree_skbmem        [kernel.kallsyms]  kfree_skbmem+6           0
+
+  ----------------------------------------------------------------------
+     41        0        2        1        0        0  0xffff888d02da0140
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91d9e891         0       126         0        2         2  [k] futex_wake  [kernel.kallsyms]  futex_wake+145   0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x10     0       1  0xffffffff92f05977         0         0         0        1         1  [k] plist_add   [kernel.kallsyms]  plist_add+231    0
+
+  ----------------------------------------------------------------------
+     42        1        1        0        0        0  0xffff888d02da1c80
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffff92f058c3       320         0         0        1         1  [k] plist_add       [kernel.kallsyms]  plist_add+51        0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff92f05958         0        60         0        1         1  [k] plist_add       [kernel.kallsyms]  plist_add+200       0
+
+  ----------------------------------------------------------------------
+     43        0        2        3        0        0  0xffff88933e09f580
+  ----------------------------------------------------------------------
+           0.00%    0.00%   66.67%    0.00%    0.00%                 0x0     0       1  0xffffffff92f3b37c         0         0         0        2         1  [k] _raw_spin_unlock_irqrestore  [kernel.kallsyms]  _raw_spin_unlock_irqrestore+12   0
+           0.00%    0.00%   33.33%    0.00%    0.00%                 0x0     0       1  0xffffffff92f3bc49         0         0         0        1         1  [k] _raw_spin_unlock             [kernel.kallsyms]  _raw_spin_unlock+9               0
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffff91d741c9         0        52         0        1         1  [k] __mod_timer                  [kernel.kallsyms]  __mod_timer+489                  0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff91d7407d         0        96         0        1         1  [k] __mod_timer                  [kernel.kallsyms]  __mod_timer+157                  0
+
+  ----------------------------------------------------------------------
+     44        2        0        0        0        0  0xffffcdc788a8bb80
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1  0xffffffff92f058d8       416         0         0        2         2  [k] plist_add  [kernel.kallsyms]  plist_add+72   0
+
+  ----------------------------------------------------------------------
+     45        0        2       13        0        0  0xffffcdc7898e3b40
+  ----------------------------------------------------------------------
+           0.00%    0.00%    7.69%    0.00%    0.00%                 0x0     0       1  0xffffffff91ce5c55         0         0         0        1         1  [k] set_next_task_idle   [kernel.kallsyms]  set_next_task_idle+5      0
+           0.00%    0.00%    7.69%    0.00%    0.00%                 0x0     0       1  0xffffffff92bd496f         0         0         0        1         1  [k] sock_read_iter       [kernel.kallsyms]  sock_read_iter+159        0
+           0.00%    0.00%    7.69%    0.00%    0.00%                 0x8     0       1  0xffffffff920d7da8         0         0         0        1         1  [k] check_heap_object    [kernel.kallsyms]  check_heap_object+56      0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e924         0       154         0        1         1  [k] futex_wake           [kernel.kallsyms]  futex_wake+292            0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x10     0       1  0xffffffff91ce5c55         0         0         0        1         1  [k] set_next_task_idle   [kernel.kallsyms]  set_next_task_idle+5      0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x10     0       1  0xffffffff924de22c         0         0         0        1         1  [k] _copy_from_iter      [kernel.kallsyms]  _copy_from_iter+12        0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x10     0       1  0xffffffff92bd50a1         0         0         0        1         1  [k] sock_write_iter      [kernel.kallsyms]  sock_write_iter+17        0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x18     0       1  0xffffffff91f613fc         0         0         0        1         1  [k] ctx_sched_out        [kernel.kallsyms]  ctx_sched_out+348         0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffff91d9e924         0       138         0        1         1  [k] futex_wake           [kernel.kallsyms]  futex_wake+292            0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x20     0       1  0xffffffff91d9e6ee         0         0         0        1         1  [k] futex_wake_mark      [kernel.kallsyms]  futex_wake_mark+14        0
+           0.00%    0.00%   15.38%    0.00%    0.00%                0x28     0       1  0xffffffff91d9e6f3         0         0         0        2         1  [k] futex_wake_mark      [kernel.kallsyms]  futex_wake_mark+19        0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x30     0       1  0xffffffff91d9f6bc         0         0         0        1         1  [k] futex_wait           [kernel.kallsyms]  futex_wait+12             0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x38     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark      [kernel.kallsyms]  futex_wake_mark+5         0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x38     0       1  0xffffffff91d9f633         0         0         0        1         1  [k] __futex_wait         [kernel.kallsyms]  __futex_wait+163          0
+
+  ----------------------------------------------------------------------
+     46        0        2       10        0        0  0xffffcdc78a3fbc40
+  ----------------------------------------------------------------------
+           0.00%    0.00%   10.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91d99382         0         0         0        1         1  [k] get_futex_key     [kernel.kallsyms]  get_futex_key+34      0
+           0.00%    0.00%   10.00%    0.00%    0.00%                 0x0     0       1  0xffffffff92bd50a1         0         0         0        1         1  [k] sock_write_iter   [kernel.kallsyms]  sock_write_iter+17    0
+           0.00%    0.00%   10.00%    0.00%    0.00%                 0x8     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark   [kernel.kallsyms]  futex_wake_mark+5     0
+           0.00%    0.00%   10.00%    0.00%    0.00%                 0x8     0       1  0xffffffff92f30880         0         0         0        1         1  [k] __schedule        [kernel.kallsyms]  __schedule+368        0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e924         0       152         0        1         1  [k] futex_wake        [kernel.kallsyms]  futex_wake+292        0
+           0.00%    0.00%   10.00%    0.00%    0.00%                0x10     0       1  0xffffffff92bd496f         0         0         0        1         1  [k] sock_read_iter    [kernel.kallsyms]  sock_read_iter+159    0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffff91d9e924         0       151         0        1         1  [k] futex_wake        [kernel.kallsyms]  futex_wake+292        0
+           0.00%    0.00%   10.00%    0.00%    0.00%                0x20     0       1  0xffffffff91d99f77         0         0         0        1         1  [k] futex_q_lock      [kernel.kallsyms]  futex_q_lock+23       0
+           0.00%    0.00%   10.00%    0.00%    0.00%                0x28     0       1  0xffffffff92bd5095         0         0         0        1         1  [k] sock_write_iter   [kernel.kallsyms]  sock_write_iter+5     0
+           0.00%    0.00%   10.00%    0.00%    0.00%                0x30     0       1  0xffffffff91d9a045         0         0         0        1         1  [k] futex_unqueue     [kernel.kallsyms]  futex_unqueue+5       0
+           0.00%    0.00%   10.00%    0.00%    0.00%                0x38     0       1  0xffffffff923bfde0         0         0         0        1         1  [k] aa_inet_msg_perm  [kernel.kallsyms]  aa_inet_msg_perm+64   0
+           0.00%    0.00%   10.00%    0.00%    0.00%                0x38     0       1  0xffffffff924de2b8         0         0         0        1         1  [k] _copy_from_iter   [kernel.kallsyms]  _copy_from_iter+152   0
+
+  ----------------------------------------------------------------------
+     47        2        0       14        0        0  0xffffcdc78a403a40
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91d9e924       403         0         0        1         1  [k] futex_wake                    [kernel.kallsyms]  futex_wake+292                     0
+           0.00%    0.00%    7.14%    0.00%    0.00%                 0x0     0       1  0xffffffff91f61129         0         0         0        1         1  [k] __pmu_ctx_sched_out           [kernel.kallsyms]  __pmu_ctx_sched_out+9              0
+           0.00%    0.00%    7.14%    0.00%    0.00%                 0x0     0       1  0xffffffff9216c0f1         0         0         0        1         1  [k] ep_start_scan                 [kernel.kallsyms]  ep_start_scan+97                   0
+           0.00%    0.00%    7.14%    0.00%    0.00%                 0x0     0       1  0xffffffff92dd533c         0         0         0        1         1  [k] inet6_recvmsg                 [kernel.kallsyms]  inet6_recvmsg+44                   0
+           0.00%    0.00%    7.14%    0.00%    0.00%                 0x8     0       1  0xffffffff91cd93e3         0         0         0        1         1  [k] __update_load_avg_se          [kernel.kallsyms]  __update_load_avg_se+19            0
+           0.00%    0.00%    7.14%    0.00%    0.00%                 0x8     0       1  0xffffffff91d9939c         0         0         0        1         1  [k] get_futex_key                 [kernel.kallsyms]  get_futex_key+60                   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e924       414         0         0        1         1  [k] futex_wake                    [kernel.kallsyms]  futex_wake+292                     0
+           0.00%    0.00%    7.14%    0.00%    0.00%                0x10     0       1  0xffffffff920bda5d         0         0         0        1         1  [k] try_charge_memcg              [kernel.kallsyms]  try_charge_memcg+77                0
+           0.00%    0.00%    7.14%    0.00%    0.00%                0x10     0       1  0xffffffff92bd496f         0         0         0        1         1  [k] sock_read_iter                [kernel.kallsyms]  sock_read_iter+159                 0
+           0.00%    0.00%    7.14%    0.00%    0.00%                0x28     0       1  0xffffffff91ce5c59         0         0         0        1         1  [k] set_next_task_idle            [kernel.kallsyms]  set_next_task_idle+9               0
+           0.00%    0.00%    7.14%    0.00%    0.00%                0x28     0       1  0xffffffff920d7d7e         0         0         0        1         1  [k] check_heap_object             [kernel.kallsyms]  check_heap_object+14               0
+           0.00%    0.00%    7.14%    0.00%    0.00%                0x28     0       1  0xffffffff92be060d         0         0         0        1         1  [k] sock_rfree                    [kernel.kallsyms]  sock_rfree+125                     0
+           0.00%    0.00%    7.14%    0.00%    0.00%                0x38     0       1  0xffffffff91cbc455         0         0         0        1         1  [k] dequeue_task_fair             [kernel.kallsyms]  dequeue_task_fair+5                0
+           0.00%    0.00%    7.14%    0.00%    0.00%                0x38     0       1  0xffffffff92bd5095         0         0         0        1         1  [k] sock_write_iter               [kernel.kallsyms]  sock_write_iter+5                  0
+           0.00%    0.00%    7.14%    0.00%    0.00%                0x38     0       1  0xffffffff92bdf445         0         0         0        1         1  [k] release_sock                  [kernel.kallsyms]  release_sock+5                     0
+           0.00%    0.00%    7.14%    0.00%    0.00%                0x38     0       1  0xffffffff92f30831         0         0         0        1         1  [k] __schedule                    [kernel.kallsyms]  __schedule+289                     0
+
+  ----------------------------------------------------------------------
+     48        0        2       13        0        1  0xffffcdc78a403b00
+  ----------------------------------------------------------------------
+           0.00%    0.00%    7.69%    0.00%    0.00%                 0x0     0       1  0xffffffff91ce5c55         0         0         0        1         1  [k] set_next_task_idle       [kernel.kallsyms]  set_next_task_idle+5          0
+           0.00%    0.00%    7.69%    0.00%    0.00%                 0x0     0       1  0xffffffff920e6b13         0         0         0        1         1  [k] vfs_read                 [kernel.kallsyms]  vfs_read+851                  0
+           0.00%    0.00%    7.69%    0.00%    0.00%                 0x8     0       1  0xffffffff91cf01f8         0         0         0        1         1  [k] psi_group_change         [kernel.kallsyms]  psi_group_change+24           0
+           0.00%    0.00%    7.69%    0.00%    0.00%                 0x8     0       1  0xffffffff92d2e0d2         0         0         0        1         1  [k] tcp_current_mss          [kernel.kallsyms]  tcp_current_mss+50            0
+           0.00%    0.00%   15.38%    0.00%    0.00%                0x10     0       1  0xffffffff924de22c         0         0         0        2         1  [k] _copy_from_iter          [kernel.kallsyms]  _copy_from_iter+12            0
+           0.00%    0.00%    0.00%    0.00%  100.00%                0x18     0       1  0xffffffff91d9f633         0         0         0        1         1  [k] __futex_wait             [kernel.kallsyms]  __futex_wait+163              0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x18     0       1  0xffffffff924de22e         0         0         0        1         1  [k] _copy_from_iter          [kernel.kallsyms]  _copy_from_iter+14            0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x18     0       1  0xffffffff92d2e4d2         0         0         0        1         1  [k] tcp_schedule_loss_probe  [kernel.kallsyms]  tcp_schedule_loss_probe+146   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffff91d9e924         0       150         0        1         1  [k] futex_wake               [kernel.kallsyms]  futex_wake+292                0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x20     0       1  0xffffffff92d10fd9         0         0         0        1         1  [k] tcp_poll                 [kernel.kallsyms]  tcp_poll+9                    0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x28     0       1  0xffffffff9216d8e6         0         0         0        1         1  [k] ep_item_poll.isra.0      [kernel.kallsyms]  ep_item_poll.isra.0+134       0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x28     0       1  0xffffffff92bd5095         0         0         0        1         1  [k] sock_write_iter          [kernel.kallsyms]  sock_write_iter+5             0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x28     0       1  0xffffffff92be060d         0         0         0        1         1  [k] sock_rfree               [kernel.kallsyms]  sock_rfree+125                0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x28     0       1  0xffffffff92d10fd9         0         0         0        1         1  [k] tcp_poll                 [kernel.kallsyms]  tcp_poll+9                    0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffff91d9e924         0       163         0        1         1  [k] futex_wake               [kernel.kallsyms]  futex_wake+292                0
+
+  ----------------------------------------------------------------------
+     49        0        2        0        0        0          0x80000340
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x14     0       1      0x799c839bbe22         0       149         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)                                                                                      [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)+1186                                                                                      0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x14     0       1      0x799c839fd587         0        86         0        1         1  [.] boolean io.netty.loom.scheduler.IdleCarrierTracker$$Lambda/0x0000000029091800.wake(io.netty.loom.scheduler.IdleCarrierTracker, int, io.netty.loom.scheduler.EventLoopScheduler)  [JIT] tid 272404  boolean io.netty.loom.scheduler.IdleCarrierTracker$$Lambda/0x0000000029091800.wake(io.netty.loom.scheduler.IdleCarrierTracker, int, io.netty.loom.scheduler.EventLoopScheduler)+135   0
+
+  ----------------------------------------------------------------------
+     50        0        2        0        0        0          0x80007200
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c839bbdbe         0        96         0        3         2  [.] void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)  [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)+1086   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x799c83a0c50c         0         0         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+908                   0
+
+  ----------------------------------------------------------------------
+     51        1        1        0        0        0          0x800802c0
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c839a174c         0         0         0        1         1  [.] int io.netty.loom.scheduler.EventLoopScheduler.drainContinuations(long)                      [JIT] tid 272404  int io.netty.loom.scheduler.EventLoopScheduler.drainContinuations(long)+1868                      0
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x799c83a0cab3         0        89         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2355                 0
+
+  ----------------------------------------------------------------------
+     52        0        2        0        0        0          0x80174f00
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1      0x799c83a0cac0         0       104         0        2         2  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2368                 0
+
+  ----------------------------------------------------------------------
+     53        2        0        0        0        0          0x8027a100
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x799c8398f81f       516         0         0        2         1  [.] void java.lang.VirtualThread.runContinuation()  [JIT] tid 272404  void java.lang.VirtualThread.runContinuation()+415   0
+
+  ----------------------------------------------------------------------
+     54        0        2        1        0        0          0x8027a200
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c8398e992         0       116         0        1         1  [.] void jdk.internal.vm.Continuation.run()                                                                                                                                 [JIT] tid 272404  void jdk.internal.vm.Continuation.run()+146   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x799c8398e97e         0        82         0        1         1  [.] void jdk.internal.vm.Continuation.run()                                                                                                                                 [JIT] tid 272404  void jdk.internal.vm.Continuation.run()+126   0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x10     0       1      0x799c8398eb4f         0         0         0        1         1  [.] void jdk.internal.vm.Continuation.run()                                                                                                                                 [JIT] tid 272404  void jdk.internal.vm.Continuation.run()+591   0
+
+  ----------------------------------------------------------------------
+     55        0        2        0        0        0          0x8027e840
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x38     0       1      0x799c83a15d3c         0       126         0        2         2  [.] void sun.nio.ch.Poller.pollerLoop()             [JIT] tid 272404  void sun.nio.ch.Poller.pollerLoop()+316              0
+
+  ----------------------------------------------------------------------
+     56        1        1        0        0        0          0x803003c0
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1      0x799c83a0c89e         0        93         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+1822                 0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x38     0       1      0x799c83a0cab3       389         0         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2355                 0
+
+  ----------------------------------------------------------------------
+     57        0        2        0        0        0          0x803801c0
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1      0x799c83a0cab3         0        78         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2355                 0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x28     0       1      0x799c83a0c459         0        94         0        2         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+729                  0
+
+  ----------------------------------------------------------------------
+     58        0        2        0        0        0          0x81db95c0
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x799c8398e97e         0        17         0        1         1  [.] void jdk.internal.vm.Continuation.run()                                                                                                                                 [JIT] tid 272404  void jdk.internal.vm.Continuation.run()+126                                                                       0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x34     0       1      0x799c9bed4120         0        87         0        1         1  [.] AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<286822ul, G1BarrierSet>, (AccessInternal::BarrierType)3, 286822ul>::oop_access_barrier(oopDesc*, long)  libjvm.so         accessBackend.hpp:252                                                                                             0
+
+  ----------------------------------------------------------------------
+     59        0        2        0        0        0          0x8748dd40
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x799c839bbc54         0        89         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)  [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)+724   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x28     0       1      0x799c839bbc54         0       126         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)  [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)+724   0
+
+  ----------------------------------------------------------------------
+     60        0        2        0        0        0          0x87738b80
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x20     0       1      0x799c8398f977         0        84        13        3         2  [.] void java.lang.VirtualThread.runContinuation()  [JIT] tid 272404  void java.lang.VirtualThread.runContinuation()+759   0
+
+  ----------------------------------------------------------------------
+     61        2        0        0        0        0          0x8786bf00
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x799c83a0cac0       401         0         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2368                 0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x799c839bba50       377         0         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)  [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.execute(java.lang.Thread$VirtualThreadTask)+208   0
+
+  ----------------------------------------------------------------------
+     62        0        2        0        0        0          0x8c1edb40
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x18     0       1      0x799c83a0cac4         0        92         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2372                 0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x20     0       1      0x799c83a0c852         0        84         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+1746                 0
+
+  ----------------------------------------------------------------------
+     63        1        1        0        0        0          0x8d11e980
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x799c839d0429       368         0         0        1         1  [.] boolean io.netty.loom.scheduler.EventLoopScheduler.tryStealing(boolean)                      [JIT] tid 272404  boolean io.netty.loom.scheduler.EventLoopScheduler.tryStealing(boolean)+425                       0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x28     0       1      0x799c83a0cac0         0        98         0        1         1  [.] void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()                 [JIT] tid 272404  void io.netty.loom.scheduler.EventLoopScheduler.virtualThreadSchedulerLoop()+2368                 0
+
+  ----------------------------------------------------------------------
+     64        0        2        0        0        0          0xffa02a40
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x18     0       1      0x799c9c1dd8a1         0       152         0        1         1  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)  libjvm.so  oop.inline.hpp:281     0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x799c9c1ce21d         0        94         0        1         1  [.] Continuation::prepare_thaw(JavaThread*, bool)                                         libjvm.so  atomicAccess.hpp:552   0
+
+  ----------------------------------------------------------------------
+     65        0        2        1        0        0          0xffb81c40
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x799c9c1ce21d         0        99         0        1         1  [.] Continuation::prepare_thaw(JavaThread*, bool)                                         libjvm.so  atomicAccess.hpp:552              0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x20     0       1      0x799c9c1ce229         0        82         0        1         1  [.] Continuation::prepare_thaw(JavaThread*, bool)                                         libjvm.so  continuationFreezeThaw.cpp:2036   0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x24     0       1      0x799c9c1dd90e         0         0         0        1         1  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)  libjvm.so  oop.inline.hpp:282                0
+
+  ----------------------------------------------------------------------
+     66        0        2        2        0        0          0xffe00740
+  ----------------------------------------------------------------------
+           0.00%    0.00%   50.00%    0.00%    0.00%                 0x4     0       1      0x799c9c1ce765         0         0         0        1         1  [.] FreezeBase::freeze_fast_copy(stackChunkOopDesc*, int)                                                                                                                   libjvm.so  atomicAccess.hpp:622             0
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x799c9c1dd8fc         0        15         0        1         1  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)                                                                                    libjvm.so  oop.inline.hpp:281               0
+           0.00%    0.00%   50.00%    0.00%    0.00%                 0xc     0       1      0x799c9c1dd90e         0         0         0        1         1  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)                                                                                    libjvm.so  oop.inline.hpp:282               0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x14     0       1      0x799c9bed4120         0        82         0        1         1  [.] AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<286822ul, G1BarrierSet>, (AccessInternal::BarrierType)3, 286822ul>::oop_access_barrier(oopDesc*, long)  libjvm.so  accessBackend.hpp:252            0
+
+  ----------------------------------------------------------------------
+     67        1        1        0        0        2      0x799c9443d380
+  ----------------------------------------------------------------------
+           0.00%    0.00%    0.00%    0.00%  100.00%                0x28     0       1      0x799c9c87fc14         0         0         0        2         2  [.] Parker::unpark()       libjvm.so  os_posix.cpp:1976          0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x799c9c87fc10         0       152         0        1         1  [.] Parker::unpark()       libjvm.so  os_posix.cpp:1978          0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x38     0       1      0x799c9d6a76dc       451         0         0        1         1  [.] pthread_mutex_lock     libc.so.6  pthread_mutex_lock+60      0
+
+  ----------------------------------------------------------------------
+     68        1        1        0        0        1      0x799c9443df00
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x20     0       1      0x799c9d6a90ba         0       142         0        1         1  [.] pthread_mutex_unlock  libc.so.6  pthread_mutex_unlock+74   0
+           0.00%    0.00%    0.00%    0.00%  100.00%                0x28     0       1      0x799c9d6a908c         0         0         0        1         2  [.] pthread_mutex_unlock  libc.so.6  pthread_mutex_unlock+28   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x799c9d6a9088       369         0         0        1         1  [.] pthread_mutex_unlock  libc.so.6  pthread_mutex_unlock+24   0
+
+  ----------------------------------------------------------------------
+     69        1        1        0        0        1      0x799c9443fa80
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x38     0       1      0x799c9c87fc0a       458       140         0        2         2  [.] Parker::unpark()          libjvm.so  os_posix.cpp:1975   0
+           0.00%    0.00%    0.00%    0.00%  100.00%                0x3c     0       1      0x799c9c87fa0d         0         0         0        1         1  [.] Parker::park(bool, long)  libjvm.so  os_posix.cpp:1962   0
+
+  ----------------------------------------------------------------------
+     70        0        2        1        0        1      0x799c94440240
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c839e096c         0       106         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)                                                                                 [JIT] tid 272404  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+620                               0
+           0.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c8398e96c         0         0         0        0         1  [.] void jdk.internal.vm.Continuation.run()                                                                                                                        [JIT] tid 272404  void jdk.internal.vm.Continuation.run()+108                                                                      0
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x799c9bd47970         0        97         0        1         1  [.] AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<548964ul, G1BarrierSet>, (AccessInternal::BarrierType)2, 548964ul>::oop_access_barrier(void*)  libjvm.so         access.inline.hpp:88                                                                                             0
+           0.00%    0.00%    0.00%    0.00%  100.00%                0x10     0       1      0x799c8398f82a         0         0         0        1         1  [.] void java.lang.VirtualThread.runContinuation()                                                                                                                 [JIT] tid 272404  void java.lang.VirtualThread.runContinuation()+426                                                               0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x30     0       1      0x799c8398f8bd         0         0         0        1         1  [.] void java.lang.VirtualThread.runContinuation()                                                                                                                 [JIT] tid 272404  void java.lang.VirtualThread.runContinuation()+573                                                               0
+
+  ----------------------------------------------------------------------
+     71        0        2        3        0        2      0x799c944402c0
+  ----------------------------------------------------------------------
+           0.00%    0.00%    0.00%    0.00%   50.00%                 0x0     0       1      0x799c8398eae4         0         0         0        1         1  [.] void jdk.internal.vm.Continuation.run()                                                                                                                                          [JIT] tid 272404  void jdk.internal.vm.Continuation.run()+484                                                                                                                                           0
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x799c9bd47970         0        94         0        1         1  [.] AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<548964ul, G1BarrierSet>, (AccessInternal::BarrierType)2, 548964ul>::oop_access_barrier(void*)                    libjvm.so         access.inline.hpp:88                                                                                                                                                                  0
+           0.00%    0.00%    0.00%    0.00%   50.00%                0x10     0       1      0x799c8398f8bd         0         0         0        1         1  [.] void java.lang.VirtualThread.runContinuation()                                                                                                                                   [JIT] tid 272404  void java.lang.VirtualThread.runContinuation()+573                                                                                                                                    0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x28     0       1      0x799c839f3923         0        29         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runLoop()                                                                                                                             [JIT] tid 272404  void io.github.pderop.looma.impl.ActorCell.runLoop()+1059                                                                                                                             0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x30     0       1      0x799c8398f8bd         0         0         0        3         1  [.] void java.lang.VirtualThread.runContinuation()                                                                                                                                   [JIT] tid 272404  void java.lang.VirtualThread.runContinuation()+573                                                                                                                                    0
+
+  ----------------------------------------------------------------------
+     72        1        1        0        0        1      0x799c94440c00
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x38     0       1      0x799c9d6a693f       327        58         0        2         1  [.] 0x00000000000a693f     libc.so.6         libc.so.6[a693f]           0
+           0.00%    0.00%    0.00%    0.00%  100.00%                0x38     0       1      0x799c9d6a694a         0         0         0        1         1  [.] 0x00000000000a694a     libc.so.6         libc.so.6[a694a]           0
+
+  ----------------------------------------------------------------------
+     73        2        0        1        0        0      0x799c94440c40
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c9d6a6914       320         0         0        2         1  [.] 0x00000000000a6914     libc.so.6         libc.so.6[a6914]           0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x20     0       1      0x799c9d6a2b8f         0         0         0        1         1  [.] pthread_cond_signal    libc.so.6         pthread_cond_signal+335    0
+
+  ----------------------------------------------------------------------
+     74        0        2        1        0        0      0x799c94443c80
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x799c9d6a76c4         0        85         0        1         1  [.] pthread_mutex_lock    libc.so.6  pthread_mutex_lock+36     0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x38     0       1      0x799c9d6a2fce         0        80         0        1         1  [.] pthread_cond_wait     libc.so.6  pthread_cond_wait+158     0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x3c     0       1      0x799c9d6a2baa         0         0         0        1         1  [.] pthread_cond_signal   libc.so.6  pthread_cond_signal+362   0

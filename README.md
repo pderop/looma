@@ -47,8 +47,11 @@ mvn clean install
 # 3. Carrier affinity in one trace: an actor, its child and its offloaded work, all on one carrier
 scripts/run-hello.sh
 
-# 4. The benchmark: carrier-affine against the JDK builtin, same binary
-scripts/run-user-bench.sh --rate 50000
+# 4. The benchmark: carrier-affine against the JDK builtin, same binary. One repetition of both
+#    cases, about 21 minutes; the results go to bench/<date>-<time>/summary.md. The default CPUs are those of
+#    an AMD Ryzen 9 9950X. On another machine, give yours: --cpus-carriers, --cpus-client and
+#    --cpus-backend (docs/benchmark.md, "Where things run").
+scripts/bench.sh --reps 1
 ```
 
 The benchmark pins with `taskset` and `sched_setaffinity`, so it measures something only on Linux.
@@ -111,7 +114,7 @@ The carrier-affine scheduler also needs `looma-netty-scheduler` on the classpath
 | --- | --- |
 | [`docs/api.md`](docs/api.md) | The API: actors, messages, `tell`/`ask`, hierarchy, supervision, placement, pools, offloading, shutdown. |
 | [`docs/schedulers.md`](docs/schedulers.md) | The two schedulers: choosing one in code or by flags, placement, work stealing (`GLOBAL`, `CLUSTER_LOCAL`, `actorsStayHome()`), the engine and the SPI, and why carrier affinity. |
-| [`docs/benchmark.md`](docs/benchmark.md) | The benchmark: workload, sizes, running it, every option, reading the report, the controls, profiling, and the results per machine. |
+| [`docs/benchmark.md`](docs/benchmark.md) | The benchmark: the question and the answer, the program, the schedulers it compares, running it, reading `summary.md`, and the results per machine. |
 | [`netty-loom-scheduler/README.md`](netty-loom-scheduler/README.md) | The copy of the Netty scheduler: upstream commit, Looma's two patches, refresh procedure. |
 
 ## Modules

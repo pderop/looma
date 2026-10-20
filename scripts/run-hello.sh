@@ -13,7 +13,7 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
 
 source "$SCRIPT_DIR/loom-jdk.sh"
-CP=$("$SCRIPT_DIR/examples-classpath.sh")
+CP=$("$SCRIPT_DIR/classpath.sh")
 
 exec "$LOOM_JAVA" \
 	--enable-preview \
