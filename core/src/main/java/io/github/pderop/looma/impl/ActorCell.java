@@ -48,10 +48,9 @@ import io.github.pderop.looma.spi.MailboxQueue;
  * factory at {@link #start()}. {@code tell} offers an envelope and
  * {@link LockSupport#unpark unpark}s that thread. The loop drains until the
  * mailbox is empty, then parks. Serialization is the virtual thread itself:
- * there is no 0/1 scheduling gate and no per-message task. Cooperative
- * {@link Thread#yield()} every {@value #YIELD_EVERY} drained envelopes keeps a
- * CPU-bound mailbox from holding a carrier indefinitely — virtual threads are
- * not time-sliced.
+ * there is no 0/1 scheduling gate and no per-message task. Virtual threads are
+ * not time-sliced, and this loop never yields: an actor whose mailbox never
+ * empties holds its carrier for as long as it keeps receiving.
  *
  * <p>
  * Every lifecycle transition — the first {@code preStart}, a restart's
@@ -62,14 +61,6 @@ import io.github.pderop.looma.spi.MailboxQueue;
  * message being delivered.
  */
 final class ActorCell implements ActorContext {
-
-	/**
-	 * How many consecutive drained envelopes this loop tolerates before calling
-	 * {@link Thread#yield()}. Virtual threads are not preemptible, so a mailbox
-	 * that never empties would otherwise hold its platform carrier. Parking on an
-	 * empty mailbox is itself a yield point, so the counter resets there.
-	 */
-	private static final int YIELD_EVERY = 8;
 
 	/**
 	 * A cell's life-cycle state, transitioned exclusively by compare-and-swap so
@@ -385,7 +376,7 @@ final class ActorCell implements ActorContext {
 	 */
 	void start() {
 		enqueue(Envelope.lifecycle(this::runPreStart));
-		Thread thread = runtime.countedThreadFactory(dispatcher.vThreadFactory()).newThread(this::runLoop);
+		Thread thread = runtime.countedThreadFactory(dispatcher.loopThreadFactory()).newThread(this::runLoop);
 		loopThread = thread;
 		thread.start();
 	}
@@ -511,19 +502,13 @@ final class ActorCell implements ActorContext {
 	 */
 	private void runLoop() {
 		Thread.currentThread().setName("looma-" + path);
-		int rounds = 0;
 		while (state.get() != State.STOPPED) {
 			Envelope envelope = mailbox.poll();
 			if (envelope != null) {
 				runEnvelope(envelope);
 				Thread.interrupted();
-				if (++rounds >= YIELD_EVERY) {
-					rounds = 0;
-					Thread.yield();
-				}
 				continue;
 			}
-			rounds = 0;
 			if (state.get() == State.STOPPED) {
 				break;
 			}

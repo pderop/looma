@@ -15,6 +15,8 @@ package io.github.pderop.looma.spi;
 
 import java.util.ServiceLoader;
 
+import io.github.pderop.looma.Carriers;
+
 /**
  * A {@link ServiceLoader}-discoverable factory for one {@link ActorScheduler}.
  *
@@ -43,4 +45,39 @@ public interface ActorSchedulerProvider {
 	 * provider.
 	 */
 	ActorScheduler create();
+
+	/**
+	 * Installs this provider's scheduler in this JVM as a carrier-affine pool
+	 * shaped by {@code carriers}, as {@code ActorSystem.Builder.carriers(...)}
+	 * asks. On success {@link #isAvailable()} reports {@code true} and
+	 * {@link #create(Carriers.Affine)} is called next.
+	 *
+	 * <p>
+	 * Called before the JVM's first virtual thread when the caller got the order
+	 * right, and that is the only moment it can work: the JDK resolves its
+	 * scheduler once, during {@code VirtualThread.<clinit>}. An implementation that
+	 * configures itself through system properties sets them here and then checks
+	 * that they took.
+	 *
+	 * @return {@code false} when this provider offers no carrier-affine scheduler,
+	 *         so that the next one is tried; the default
+	 * @throws IllegalStateException
+	 *             when this provider is the right one but cannot be installed as
+	 *             asked: the JVM already runs virtual threads under another
+	 *             scheduler, or under this one configured differently
+	 */
+	default boolean install(Carriers.Affine carriers) {
+		return false;
+	}
+
+	/**
+	 * Creates a new {@link ActorScheduler} for a system built with
+	 * {@code carriers}, after {@link #install(Carriers.Affine)} accepted them. The
+	 * pool belongs to the JVM; what {@code carriers} adds on top of it, such as
+	 * {@link Carriers.Affine#actorsStealable()}, belongs to this one system. The
+	 * default ignores it and calls {@link #create()}.
+	 */
+	default ActorScheduler create(Carriers.Affine carriers) {
+		return create();
+	}
 }

@@ -19,6 +19,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.github.pderop.looma.ActorRef;
 import io.github.pderop.looma.ActorSystem;
+import io.github.pderop.looma.Carriers;
 
 /**
  * Asks a single actor a few questions: they are handled one at a time, in
@@ -28,16 +29,15 @@ import io.github.pderop.looma.ActorSystem;
  * {@link AuditLogActor}).
  *
  * <p>
- * Run with {@code scripts/run-hello.sh} (see it for the JVM args this needs —
- * {@code --enable-preview} and
- * {@code -Djdk.virtualThreadScheduler.implClass=io.netty.loom.scheduler.NettyScheduler}
- * at minimum). Without them the actor system still runs, on the JDK builtin
- * scheduler, and the {@code carrier-N} suffixes below simply stop varying.
+ * Asks for two carriers through {@link ActorSystem.Builder#carriers}, so the
+ * only JVM flag it needs is {@code --enable-preview} — run it with
+ * {@code scripts/run-hello.sh}. Without the flag, or on a stock JDK, there is
+ * no carrier-affine scheduler to install and {@code build()} says so.
  */
 public class Main {
 
 	public static void main(String[] args) throws InterruptedException {
-		ActorSystem actorSystem = ActorSystem.builder().build();
+		ActorSystem actorSystem = ActorSystem.builder().carriers(Carriers.affine(2)).build();
 
 		ActorRef hello = actorSystem.spawn("hello", MyActor::new);
 

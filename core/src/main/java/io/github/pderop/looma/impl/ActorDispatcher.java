@@ -59,6 +59,16 @@ interface ActorDispatcher {
 	ThreadFactory vThreadFactory();
 
 	/**
+	 * Returns the raw factory for this carrier's actor loops: the same as
+	 * {@link #vThreadFactory()} unless the scheduler keeps actor loops apart (see
+	 * {@code ActorScheduler.actorLoopFactory}). Wrapped by {@link ActorRuntime}
+	 * like the other one.
+	 */
+	default ThreadFactory loopThreadFactory() {
+		return vThreadFactory();
+	}
+
+	/**
 	 * Returns the id of the carrier this binding represents.
 	 *
 	 * <p>

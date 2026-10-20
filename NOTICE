@@ -5,9 +5,9 @@ See the LICENSE file for details.
 
 ===============================================================================
 
-Vendored code: carrier-affine virtual thread scheduler
+Copied code: carrier-affine virtual thread scheduler
 
-looma contains code vendored, unmodified, under the Java package io.netty.loom
+looma contains a copy of code under the Java package io.netty.loom
 (and its .scheduler.jfr and .topology subpackages), inside the netty-loom-scheduler
 module (see netty-loom-scheduler/README.md for the exact directories and the refresh
 procedure), from:
@@ -22,12 +22,23 @@ procedure), from:
 
 Copyright 2025-2026 The Netty VirtualThread Scheduler Project
 
-In accordance with Apache License, Version 2.0, Section 4(b): these files are an
-unmodified copy of the originals at the commit above. No package, class, structural
-or logical changes were made, and no system property, JFR event name or test body was
-altered. The netty-loom-scheduler module reaches this code through a separate adapter,
-io.github.pderop.looma.scheduler.netty, which is this project's own code and is
-not part of this vendored copy.
+In accordance with Apache License, Version 2.0, Section 4(b): these files are a copy
+of the originals at the commit above, unmodified except for two files:
 
-The original Apache-2.0 copyright header is preserved at the top of each vendored file,
+  io/netty/loom/scheduler/EventLoopScheduler.java -- modified by the Looma project to
+  add a per-carrier "home queue" that work stealing never reads, and a factory for
+  virtual threads queued on it.
+  io/netty/loom/scheduler/IdleCarrierTracker.java -- modified by the Looma project so
+  that the idle carrier woken to steal is found by a scan from a random member, not
+  always from the first.
+
+Each file says so at its top, every change in it is marked "Looma:", and the complete
+diff against the originals is netty-loom-scheduler/looma-home-queue.patch.
+
+No other package, class, system property, JFR event name or test body was altered.
+The netty-loom-scheduler module reaches this code through a separate adapter,
+io.github.pderop.looma.scheduler.netty, which is this project's own code and is
+not part of this copy.
+
+The original Apache-2.0 copyright header is preserved at the top of each copied file,
 in addition to this NOTICE.

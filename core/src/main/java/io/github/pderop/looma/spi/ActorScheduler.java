@@ -74,12 +74,22 @@ public interface ActorScheduler extends AutoCloseable {
 	int carrierCount();
 
 	/**
-	 * Returns the factory that creates an actor's loop virtual thread — and every
-	 * extra virtual thread that actor hands out through
-	 * {@code ActorContext.vThreadFactory()} — placed on carrier {@code index},
-	 * {@code 0 <= index < carrierCount()}.
+	 * Returns the factory that creates every extra virtual thread an actor hands
+	 * out through {@code ActorContext.vThreadFactory()} — and its loop too, unless
+	 * {@link #actorLoopFactory(int)} says otherwise — placed on carrier
+	 * {@code index}, {@code 0 <= index < carrierCount()}.
 	 */
 	ThreadFactory vThreadFactory(int index);
+
+	/**
+	 * Returns the factory that creates an actor's loop virtual thread on carrier
+	 * {@code index}. By default the same as {@link #vThreadFactory(int)}; a
+	 * scheduler that keeps actor loops on their home carrier while letting the
+	 * other virtual threads be stolen returns a different one.
+	 */
+	default ThreadFactory actorLoopFactory(int index) {
+		return vThreadFactory(index);
+	}
 
 	/**
 	 * Returns the id of the carrier the <b>calling thread</b> belongs to, or

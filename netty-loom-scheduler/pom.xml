@@ -51,7 +51,7 @@
                 </configuration>
             </plugin>
             <!--
-                Four executions, and every one of them filters explicitly. Without <includes>
+                Five executions, and every one of them filters explicitly. Without <includes>
                 the default execution would also pick up the Carrier* tests, which need the
                 carrier pool to actually be installed: discovery would fall through to the
                 JdkActorScheduler builtin and CarrierAffinityTest would fail.
@@ -72,7 +72,11 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <executions>
-                    <!-- The vendored scheduler's own tests. -->
+                    <!--
+                        The copied scheduler's own tests. The include is rooted, with no leading
+                        **/ : surefire 3.6 matches "**/io/netty/loom/**/*Test.java" against nothing,
+                        and this execution then reports green with zero tests run.
+                    -->
                     <execution>
                         <id>default-test</id>
                         <goals>
@@ -81,11 +85,12 @@
                         <configuration>
                             <argLine>--enable-preview --enable-native-access=ALL-UNNAMED -Djdk.virtualThreadScheduler.implClass=io.netty.loom.scheduler.NettyScheduler -Djdk.traceVirtualThreadLocals=false -Dio.netty.loom.schedulers=2 --add-opens=java.base/java.lang=ALL-UNNAMED</argLine>
                             <includes>
-                                <include>**/io/netty/loom/**/*Test.java</include>
+                                <include>io/netty/loom/**/*Test.java</include>
                             </includes>
                             <excludes>
                                 <exclude>**/ReplaceBuiltinSchedulerTest.java</exclude>
                                 <exclude>**/EventLoopSchedulerWorkStealingTest.java</exclude>
+                                <exclude>**/HomeVirtualThreadTest.java</exclude>
                             </excludes>
                         </configuration>
                     </execution>
@@ -115,6 +120,28 @@
                             <includes>
                                 <include>**/scheduler/netty/*Test.java</include>
                                 <include>**/EventLoopSchedulerWorkStealingTest.java</include>
+                                <include>**/HomeVirtualThreadTest.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                    <!--
+                        ActorSystem.Builder.carriers(...) installing the scheduler itself: NO
+                        scheduler flag at all, and one fresh JVM per test class (reuseForks=false),
+                        because each class tests a different first-and-only scheduler resolution of
+                        its process. The subpackage keeps them out of the two executions above,
+                        whose glob stops at scheduler/netty.
+                    -->
+                    <execution>
+                        <id>install-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <argLine>--enable-preview --enable-native-access=ALL-UNNAMED</argLine>
+                            <reuseForks>false</reuseForks>
+                            <includes>
+                                <include>**/scheduler/netty/install/*Test.java</include>
                             </includes>
                         </configuration>
                     </execution>

@@ -12,6 +12,10 @@
  * either express or implied. See the License for the specific language governing permissions
  * and limitations under the License.
  */
+// Modified by the Looma project: adds a per-carrier home queue that no stealer
+// reads, and homeVirtualThreadFactory() to create virtual threads queued on it.
+// Every change is marked "Looma:"; the full diff against the original is
+// netty-loom-scheduler/looma-home-queue.patch.
 package io.netty.loom.scheduler;
 
 import java.lang.invoke.MethodHandles;
@@ -124,6 +128,9 @@ public final class EventLoopScheduler {
 		long vThreadId;
 		final VThreadType type;
 		final EventLoopScheduler eventLoopScheduler;
+		// Looma: false for a VT that only its home carrier may run -- queued on the
+		// home queue, which no stealer reads. See homeVirtualThreadFactory().
+		final boolean stealable;
 		// Set to the carrier that last mounted this VT (in runContinuation,
 		// never cleared). Differs from eventLoopScheduler when the VT was
 		// stolen. Used in execute() to skip self-wakeup and in
@@ -132,10 +139,15 @@ public final class EventLoopScheduler {
 		EventLoopScheduler runningScheduler;
 
 		SchedulingContext(long vThreadId, EventLoopScheduler eventLoopScheduler, VThreadType type) {
+			this(vThreadId, eventLoopScheduler, type, true);
+		}
+
+		SchedulingContext(long vThreadId, EventLoopScheduler eventLoopScheduler, VThreadType type, boolean stealable) {
 			this.vThreadId = vThreadId;
 			this.eventLoopScheduler = eventLoopScheduler;
 			this.runningScheduler = eventLoopScheduler;
 			this.type = type;
+			this.stealable = stealable;
 		}
 
 		void setVThreadId(long id) {
@@ -206,8 +218,12 @@ public final class EventLoopScheduler {
 
 	private final int id;
 	private final MpscUnboundedQueue<Thread.VirtualThreadTask> runQueue;
+	// Looma: continuations of non-stealable VTs. Drained by this carrier alone,
+	// never by a stealer, hence no consumer ticket.
+	private final MpscUnboundedQueue<Thread.VirtualThreadTask> homeQueue;
 	private final Thread carrierThread;
 	private final ThreadFactory vThreadFactory;
+	private final ThreadFactory homeVThreadFactory;
 	private final ThreadFactory pinnedPollerThreadFactory;
 	@SuppressWarnings("FieldMayBeFinal")
 	private volatile int carrierState;
@@ -228,8 +244,10 @@ public final class EventLoopScheduler {
 		this.id = id;
 		this.onCarrierStart = onCarrierStart;
 		runQueue = new MpscUnboundedQueue<>(resumedContinuationsExpectedCount);
-		vThreadFactory = newVThreadFactory(this, VThreadType.VT, nettyScheduler);
-		pinnedPollerThreadFactory = newVThreadFactory(this, VThreadType.PINNED_POLLER, nettyScheduler);
+		homeQueue = new MpscUnboundedQueue<>(resumedContinuationsExpectedCount);
+		vThreadFactory = newVThreadFactory(this, VThreadType.VT, nettyScheduler, true);
+		homeVThreadFactory = newVThreadFactory(this, VThreadType.VT, nettyScheduler, false);
+		pinnedPollerThreadFactory = newVThreadFactory(this, VThreadType.PINNED_POLLER, nettyScheduler, true);
 		carrierThread = threadFactory.newThread(this::virtualThreadSchedulerLoop);
 		carrierThread.setName("carrier-" + id);
 		carrierThread.setDaemon(true);
@@ -324,7 +342,7 @@ public final class EventLoopScheduler {
 	 */
 	public boolean maybeYield(boolean hadIoWork) {
 		assert isValidPinnedPoller();
-		if (hasRunnableContinuations()) {
+		if (hasPendingContinuations()) {
 			Thread.yield();
 			return true;
 		}
@@ -370,8 +388,20 @@ public final class EventLoopScheduler {
 		}
 	}
 
+	/**
+	 * Whether this carrier has continuations a stealer may take: the run queue
+	 * only, never the home queue.
+	 */
 	boolean hasRunnableContinuations() {
 		return !runQueue.isEmpty();
+	}
+
+	/**
+	 * Looma: whether this carrier has any continuation to run, stealable or not —
+	 * what decides whether it may park.
+	 */
+	private boolean hasPendingContinuations() {
+		return !runQueue.isEmpty() || !homeQueue.isEmpty();
 	}
 
 	/**
@@ -388,7 +418,7 @@ public final class EventLoopScheduler {
 	 */
 	public boolean canParkPoller() {
 		assert isValidPinnedPoller();
-		return !hasRunnableContinuations() && (int) CARRIER_STATE.getAcquire(this) == PARKED;
+		return !hasPendingContinuations() && (int) CARRIER_STATE.getAcquire(this) == PARKED;
 	}
 
 	/**
@@ -401,7 +431,7 @@ public final class EventLoopScheduler {
 	 * {@code false} and the poller skipped blocking I/O. Use try-finally.
 	 */
 	public boolean tryParkPoller() {
-		if (hasRunnableContinuations() || (int) CARRIER_STATE.getAcquire(this) >= SEARCHING) {
+		if (hasPendingContinuations() || (int) CARRIER_STATE.getAcquire(this) >= SEARCHING) {
 			return false;
 		}
 		return tryPark();
@@ -458,10 +488,10 @@ public final class EventLoopScheduler {
 	}
 
 	private static ThreadFactory newVThreadFactory(EventLoopScheduler scheduler, VThreadType type,
-			NettyScheduler nettyScheduler) {
+			NettyScheduler nettyScheduler, boolean stealable) {
 		var unstartedBuilder = Thread.ofVirtual();
 		return runnable -> {
-			var schedulingContext = new SchedulingContext(-1, scheduler, type);
+			var schedulingContext = new SchedulingContext(-1, scheduler, type, stealable);
 			var vTask = nettyScheduler.newThread(unstartedBuilder, null,
 					() -> EventLoopScheduler.runWithContext(runnable, schedulingContext));
 			schedulingContext.setVThreadId(vTask.thread().threadId());
@@ -484,6 +514,16 @@ public final class EventLoopScheduler {
 		return vThreadFactory;
 	}
 
+	/**
+	 * Looma: returns a factory that creates virtual threads only this carrier ever
+	 * runs. Their continuations go to a queue of their own that no stealer reads, so
+	 * they keep their home carrier even with work stealing enabled, while virtual
+	 * threads from {@link #virtualThreadFactory()} stay stealable.
+	 */
+	public ThreadFactory homeVirtualThreadFactory() {
+		return homeVThreadFactory;
+	}
+
 	/** Returns the platform thread backing this carrier. */
 	public Thread carrierThread() {
 		return carrierThread;
@@ -501,30 +541,29 @@ public final class EventLoopScheduler {
 	}
 
 	private boolean canParkScheduler() {
-		return !hasRunnableContinuations() && pinnedContinuationToRun == null;
+		return !hasPendingContinuations() && pinnedContinuationToRun == null;
 	}
 
 	private int drainContinuations(long deadlineNs) {
 		var event = SchedulerJfrUtil.beginVirtualThreadTaskRunsEvent();
 		final long startDrainingNs = System.nanoTime();
-		int queueDepthBefore = event != null ? runQueue.size() : 0;
+		// Looma: the queue depth counts the home queue too, since this drain runs both.
+		int queueDepthBefore = event != null ? runQueue.size() + homeQueue.size() : 0;
 		var ready = this.runQueue;
+		var home = this.homeQueue;
 		int runContinuations = 0;
+		// Looma: the two queues take turns, so that neither can starve the other --
+		// a home VT that re-enqueues itself on yield included.
+		boolean homeTurn = true;
 		for (;;) {
-			Thread.VirtualThreadTask task;
-			if (WORK_STEALING_ENABLED) {
-				if (ready.isEmpty()) {
-					break;
-				}
-				int ticket = acquireConsumer();
-				task = ready.poll();
-				releaseConsumer(ticket);
-			} else {
-				task = ready.poll();
+			Thread.VirtualThreadTask task = homeTurn ? home.poll() : pollRunQueue(ready);
+			if (task == null) {
+				task = homeTurn ? pollRunQueue(ready) : home.poll();
 			}
 			if (task == null) {
 				break;
 			}
+			homeTurn = !homeTurn;
 			runContinuations++;
 			runContinuation(task);
 			long nowNs = System.nanoTime();
@@ -534,11 +573,26 @@ public final class EventLoopScheduler {
 			}
 		}
 		if (event != null) {
-			int queueDepthAfter = runQueue.size();
+			int queueDepthAfter = runQueue.size() + homeQueue.size();
 			SchedulerJfrUtil.commitVirtualThreadTaskRunsEvent(event, carrierThread, runContinuations, queueDepthBefore,
 					queueDepthAfter);
 		}
 		return runContinuations;
+	}
+
+	private Thread.VirtualThreadTask pollRunQueue(MpscUnboundedQueue<Thread.VirtualThreadTask> ready) {
+		if (!WORK_STEALING_ENABLED) {
+			return ready.poll();
+		}
+		if (ready.isEmpty()) {
+			return null;
+		}
+		int ticket = acquireConsumer();
+		try {
+			return ready.poll();
+		} finally {
+			releaseConsumer(ticket);
+		}
 	}
 
 	private static boolean isPinnedPoller(Thread.VirtualThreadTask task) {
@@ -555,7 +609,10 @@ public final class EventLoopScheduler {
 			pinnedContinuationToRun = task;
 			pinnedTask = true;
 		}
-		if (!pinnedTask) {
+		boolean homeTask = !pinnedTask && !context.stealable;
+		if (homeTask) {
+			homeQueue.offer(task);
+		} else if (!pinnedTask) {
 			runQueue.offer(task);
 		}
 		if (submitEventEnabled) {
@@ -569,7 +626,8 @@ public final class EventLoopScheduler {
 				// external submission — wake the target carrier/poller
 				woke = wakeup();
 			}
-			if (!woke && WORK_STEALING_ENABLED) {
+			// Looma: a home task cannot be stolen, so there is no one to signal.
+			if (!woke && WORK_STEALING_ENABLED && !homeTask) {
 				signalWork();
 			}
 		}

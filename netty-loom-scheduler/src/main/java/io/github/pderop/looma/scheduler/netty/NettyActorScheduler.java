@@ -56,6 +56,13 @@ final class NettyActorScheduler implements ActorScheduler {
 	private final ThreadFactory[] factories;
 
 	/**
+	 * The actor loops' factories: the same as {@link #factories}, or each carrier's
+	 * {@link EventLoopScheduler#homeVirtualThreadFactory()} when the actor loops
+	 * must never be stolen.
+	 */
+	private final ThreadFactory[] loopFactories;
+
+	/**
 	 * Carrier id to last-level-cache cluster, or {@code null} when no topology was
 	 * installed in this JVM.
 	 *
@@ -71,10 +78,16 @@ final class NettyActorScheduler implements ActorScheduler {
 	private final int[] carrierToCluster;
 
 	NettyActorScheduler(EventLoopSchedulerGroup group) {
+		this(group, true);
+	}
+
+	NettyActorScheduler(EventLoopSchedulerGroup group, boolean actorsStealable) {
 		int size = group.size();
 		this.factories = new ThreadFactory[size];
+		this.loopFactories = new ThreadFactory[size];
 		for (int i = 0; i < size; i++) {
 			factories[i] = group.scheduler(i).virtualThreadFactory();
+			loopFactories[i] = actorsStealable ? factories[i] : group.scheduler(i).homeVirtualThreadFactory();
 		}
 		this.carrierToCluster = readClusterMap(group, size);
 	}
@@ -104,6 +117,11 @@ final class NettyActorScheduler implements ActorScheduler {
 	@Override
 	public ThreadFactory vThreadFactory(int index) {
 		return factories[index];
+	}
+
+	@Override
+	public ThreadFactory actorLoopFactory(int index) {
+		return loopFactories[index];
 	}
 
 	/**

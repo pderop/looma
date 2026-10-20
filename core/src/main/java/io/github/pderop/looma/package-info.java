@@ -38,6 +38,9 @@
  * <li>{@link io.github.pderop.looma.SupervisionStrategy} and
  * {@link io.github.pderop.looma.Directive} — what happens to an actor whose
  * {@code onReceive} threw: resume, restart, or stop.
+ * <li>{@link io.github.pderop.looma.Carriers} — which virtual-thread scheduler
+ * carries the process and how many carriers it has, when chosen in code rather
+ * than by JVM flags.
  * <li>{@link io.github.pderop.looma.Placement} and
  * {@link io.github.pderop.looma.SpawnOptions} — the optional home-carrier
  * placement, supervision strategy, and pool size a {@code spawn} can carry.
@@ -70,12 +73,14 @@
  *
  * <h2>Where the carrier affinity comes from</h2>
  *
- * Application code never names a scheduler:
  * {@code ActorSystem.builder().build()} takes the
  * {@link io.github.pderop.looma.spi.ActorScheduler} that {@code ServiceLoader}
- * discovers, and otherwise the JDK builtin one. Which of the two a process gets
- * is a deployment decision — JVM flags and classpath — not a code one, which is
- * exactly what makes the identical workload runnable and comparable under both.
+ * discovers, and otherwise the JDK builtin one, so which of the two a process
+ * gets is left to its JVM flags and classpath.
+ * {@link io.github.pderop.looma.ActorSystem.Builder#carriers(io.github.pderop.looma.Carriers)}
+ * makes that choice in code instead, before the process's first virtual thread.
+ * Either way the actor code is the same, which is what makes the identical
+ * workload runnable and comparable under both.
  *
  * @see io.github.pderop.looma.spi
  */
