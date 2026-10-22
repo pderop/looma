@@ -3,8 +3,8 @@
 #
 # Set LOOM_JDK_REQUIRED=0 before sourcing to skip the "is this really a Loom build" probe below,
 # for a JVM that installs no scheduler and uses no preview feature and therefore runs on a stock
-# JDK. run-user-bench.sh does not use it: it launches carrier runs from the same script as the
-# control runs, so it needs the Loom JDK anyway.
+# JDK. No script here uses it today: each one launches carrier runs, so it needs the Loom JDK
+# anyway.
 #
 # There is only ONE JDK in play: Maven runs on the Loom JDK 28 itself -- `sdk env` reads
 # .sdkmanrc, which names 28-loom -- so $JAVA_HOME already is the Loom JDK and these scripts simply

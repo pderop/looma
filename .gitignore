@@ -1,5 +1,7 @@
 target/
 *.log
+# The GC logs of a published campaign are kept: summary.md counts its GCs from them.
+!docs/results/**/*.gc.log
 out/
 
 # IDEs
@@ -16,3 +18,13 @@ out/
 
 # Cross-session working notes, never part of the repo
 session-context/
+
+# Benchmark campaigns: stdout, results.tsv, flame graphs, JFR recordings, perf captures.
+# Numbers from a run are quoted in docs/benchmark.md; the run directory is never committed.
+bench/
+
+# Local backup of retired benchmarks, never part of the repo
+backup/
+
+# Local rsync to the AMD bench box, never part of the repo
+scripts/sync-amd.sh

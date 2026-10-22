@@ -1,0 +1,368 @@
+--- a/netty-loom-scheduler/src/main/java/io/netty/loom/scheduler/EventLoopScheduler.java	2026-10-19 19:08:52
++++ b/netty-loom-scheduler/src/main/java/io/netty/loom/scheduler/EventLoopScheduler.java	2026-10-20 21:00:00
+@@ -12,6 +12,10 @@
+  * either express or implied. See the License for the specific language governing permissions
+  * and limitations under the License.
+  */
++// Modified by the Looma project: adds a per-carrier home queue that no stealer
++// reads, and homeVirtualThreadFactory() to create virtual threads queued on it.
++// Every change is marked "Looma:"; the full diff against the original is
++// netty-loom-scheduler/looma-home-queue.patch.
+ package io.netty.loom.scheduler;
+ 
+ import java.lang.invoke.MethodHandles;
+@@ -124,6 +128,9 @@
+ 		long vThreadId;
+ 		final VThreadType type;
+ 		final EventLoopScheduler eventLoopScheduler;
++		// Looma: false for a VT that only its home carrier may run -- queued on the
++		// home queue, which no stealer reads. See homeVirtualThreadFactory().
++		final boolean stealable;
+ 		// Set to the carrier that last mounted this VT (in runContinuation,
+ 		// never cleared). Differs from eventLoopScheduler when the VT was
+ 		// stolen. Used in execute() to skip self-wakeup and in
+@@ -132,10 +139,15 @@
+ 		EventLoopScheduler runningScheduler;
+ 
+ 		SchedulingContext(long vThreadId, EventLoopScheduler eventLoopScheduler, VThreadType type) {
++			this(vThreadId, eventLoopScheduler, type, true);
++		}
++
++		SchedulingContext(long vThreadId, EventLoopScheduler eventLoopScheduler, VThreadType type, boolean stealable) {
+ 			this.vThreadId = vThreadId;
+ 			this.eventLoopScheduler = eventLoopScheduler;
+ 			this.runningScheduler = eventLoopScheduler;
+ 			this.type = type;
++			this.stealable = stealable;
+ 		}
+ 
+ 		void setVThreadId(long id) {
+@@ -206,8 +218,12 @@
+ 
+ 	private final int id;
+ 	private final MpscUnboundedQueue<Thread.VirtualThreadTask> runQueue;
++	// Looma: continuations of non-stealable VTs. Drained by this carrier alone,
++	// never by a stealer, hence no consumer ticket.
++	private final MpscUnboundedQueue<Thread.VirtualThreadTask> homeQueue;
+ 	private final Thread carrierThread;
+ 	private final ThreadFactory vThreadFactory;
++	private final ThreadFactory homeVThreadFactory;
+ 	private final ThreadFactory pinnedPollerThreadFactory;
+ 	@SuppressWarnings("FieldMayBeFinal")
+ 	private volatile int carrierState;
+@@ -228,8 +244,10 @@
+ 		this.id = id;
+ 		this.onCarrierStart = onCarrierStart;
+ 		runQueue = new MpscUnboundedQueue<>(resumedContinuationsExpectedCount);
+-		vThreadFactory = newVThreadFactory(this, VThreadType.VT, nettyScheduler);
+-		pinnedPollerThreadFactory = newVThreadFactory(this, VThreadType.PINNED_POLLER, nettyScheduler);
++		homeQueue = new MpscUnboundedQueue<>(resumedContinuationsExpectedCount);
++		vThreadFactory = newVThreadFactory(this, VThreadType.VT, nettyScheduler, true);
++		homeVThreadFactory = newVThreadFactory(this, VThreadType.VT, nettyScheduler, false);
++		pinnedPollerThreadFactory = newVThreadFactory(this, VThreadType.PINNED_POLLER, nettyScheduler, true);
+ 		carrierThread = threadFactory.newThread(this::virtualThreadSchedulerLoop);
+ 		carrierThread.setName("carrier-" + id);
+ 		carrierThread.setDaemon(true);
+@@ -324,7 +342,7 @@
+ 	 */
+ 	public boolean maybeYield(boolean hadIoWork) {
+ 		assert isValidPinnedPoller();
+-		if (hasRunnableContinuations()) {
++		if (hasPendingContinuations()) {
+ 			Thread.yield();
+ 			return true;
+ 		}
+@@ -370,11 +388,23 @@
+ 		}
+ 	}
+ 
++	/**
++	 * Whether this carrier has continuations a stealer may take: the run queue
++	 * only, never the home queue.
++	 */
+ 	boolean hasRunnableContinuations() {
+ 		return !runQueue.isEmpty();
+ 	}
+ 
+ 	/**
++	 * Looma: whether this carrier has any continuation to run, stealable or not —
++	 * what decides whether it may park.
++	 */
++	private boolean hasPendingContinuations() {
++		return !runQueue.isEmpty() || !homeQueue.isEmpty();
++	}
++
++	/**
+ 	 * Returns {@code true} if the carrier is still in PARKED state and no work is
+ 	 * pending. The transport's {@code canBlock()} should delegate to this method
+ 	 * right before the actual blocking I/O syscall.
+@@ -388,7 +418,7 @@
+ 	 */
+ 	public boolean canParkPoller() {
+ 		assert isValidPinnedPoller();
+-		return !hasRunnableContinuations() && (int) CARRIER_STATE.getAcquire(this) == PARKED;
++		return !hasPendingContinuations() && (int) CARRIER_STATE.getAcquire(this) == PARKED;
+ 	}
+ 
+ 	/**
+@@ -401,7 +431,7 @@
+ 	 * {@code false} and the poller skipped blocking I/O. Use try-finally.
+ 	 */
+ 	public boolean tryParkPoller() {
+-		if (hasRunnableContinuations() || (int) CARRIER_STATE.getAcquire(this) >= SEARCHING) {
++		if (hasPendingContinuations() || (int) CARRIER_STATE.getAcquire(this) >= SEARCHING) {
+ 			return false;
+ 		}
+ 		return tryPark();
+@@ -458,10 +488,10 @@
+ 	}
+ 
+ 	private static ThreadFactory newVThreadFactory(EventLoopScheduler scheduler, VThreadType type,
+-			NettyScheduler nettyScheduler) {
++			NettyScheduler nettyScheduler, boolean stealable) {
+ 		var unstartedBuilder = Thread.ofVirtual();
+ 		return runnable -> {
+-			var schedulingContext = new SchedulingContext(-1, scheduler, type);
++			var schedulingContext = new SchedulingContext(-1, scheduler, type, stealable);
+ 			var vTask = nettyScheduler.newThread(unstartedBuilder, null,
+ 					() -> EventLoopScheduler.runWithContext(runnable, schedulingContext));
+ 			schedulingContext.setVThreadId(vTask.thread().threadId());
+@@ -482,6 +512,16 @@
+ 	 */
+ 	public ThreadFactory virtualThreadFactory() {
+ 		return vThreadFactory;
++	}
++
++	/**
++	 * Looma: returns a factory that creates virtual threads only this carrier ever
++	 * runs. Their continuations go to a queue of their own that no stealer reads, so
++	 * they keep their home carrier even with work stealing enabled, while virtual
++	 * threads from {@link #virtualThreadFactory()} stay stealable.
++	 */
++	public ThreadFactory homeVirtualThreadFactory() {
++		return homeVThreadFactory;
+ 	}
+ 
+ 	/** Returns the platform thread backing this carrier. */
+@@ -501,30 +541,29 @@
+ 	}
+ 
+ 	private boolean canParkScheduler() {
+-		return !hasRunnableContinuations() && pinnedContinuationToRun == null;
++		return !hasPendingContinuations() && pinnedContinuationToRun == null;
+ 	}
+ 
+ 	private int drainContinuations(long deadlineNs) {
+ 		var event = SchedulerJfrUtil.beginVirtualThreadTaskRunsEvent();
+ 		final long startDrainingNs = System.nanoTime();
+-		int queueDepthBefore = event != null ? runQueue.size() : 0;
++		// Looma: the queue depth counts the home queue too, since this drain runs both.
++		int queueDepthBefore = event != null ? runQueue.size() + homeQueue.size() : 0;
+ 		var ready = this.runQueue;
++		var home = this.homeQueue;
+ 		int runContinuations = 0;
++		// Looma: the two queues take turns, so that neither can starve the other --
++		// a home VT that re-enqueues itself on yield included.
++		boolean homeTurn = true;
+ 		for (;;) {
+-			Thread.VirtualThreadTask task;
+-			if (WORK_STEALING_ENABLED) {
+-				if (ready.isEmpty()) {
+-					break;
+-				}
+-				int ticket = acquireConsumer();
+-				task = ready.poll();
+-				releaseConsumer(ticket);
+-			} else {
+-				task = ready.poll();
++			Thread.VirtualThreadTask task = homeTurn ? home.poll() : pollRunQueue(ready);
++			if (task == null) {
++				task = homeTurn ? pollRunQueue(ready) : home.poll();
+ 			}
+ 			if (task == null) {
+ 				break;
+ 			}
++			homeTurn = !homeTurn;
+ 			runContinuations++;
+ 			runContinuation(task);
+ 			long nowNs = System.nanoTime();
+@@ -534,13 +573,28 @@
+ 			}
+ 		}
+ 		if (event != null) {
+-			int queueDepthAfter = runQueue.size();
++			int queueDepthAfter = runQueue.size() + homeQueue.size();
+ 			SchedulerJfrUtil.commitVirtualThreadTaskRunsEvent(event, carrierThread, runContinuations, queueDepthBefore,
+ 					queueDepthAfter);
+ 		}
+ 		return runContinuations;
+ 	}
+ 
++	private Thread.VirtualThreadTask pollRunQueue(MpscUnboundedQueue<Thread.VirtualThreadTask> ready) {
++		if (!WORK_STEALING_ENABLED) {
++			return ready.poll();
++		}
++		if (ready.isEmpty()) {
++			return null;
++		}
++		int ticket = acquireConsumer();
++		try {
++			return ready.poll();
++		} finally {
++			releaseConsumer(ticket);
++		}
++	}
++
+ 	private static boolean isPinnedPoller(Thread.VirtualThreadTask task) {
+ 		return ((SchedulingContext) task.attachment()).type() == VThreadType.PINNED_POLLER;
+ 	}
+@@ -555,7 +609,10 @@
+ 			pinnedContinuationToRun = task;
+ 			pinnedTask = true;
+ 		}
+-		if (!pinnedTask) {
++		boolean homeTask = !pinnedTask && !context.stealable;
++		if (homeTask) {
++			homeQueue.offer(task);
++		} else if (!pinnedTask) {
+ 			runQueue.offer(task);
+ 		}
+ 		if (submitEventEnabled) {
+@@ -569,7 +626,8 @@
+ 				// external submission — wake the target carrier/poller
+ 				woke = wakeup();
+ 			}
+-			if (!woke && WORK_STEALING_ENABLED) {
++			// Looma: a home task cannot be stolen, so there is no one to signal.
++			if (!woke && WORK_STEALING_ENABLED && !homeTask) {
+ 				signalWork();
+ 			}
+ 		}
+--- a/netty-loom-scheduler/src/main/java/io/netty/loom/scheduler/IdleCarrierTracker.java	2026-10-19 19:08:52
++++ b/netty-loom-scheduler/src/main/java/io/netty/loom/scheduler/IdleCarrierTracker.java	2026-10-21 21:00:00
+@@ -12,6 +12,9 @@
+  * either express or implied. See the License for the specific language governing permissions
+  * and limitations under the License.
+  */
++// Modified by the Looma project: wakeFirstIdle() starts its scan at a random member
++// instead of the first. Every change is marked "Looma:"; the full diff against the
++// original is netty-loom-scheduler/looma-home-queue.patch.
+ package io.netty.loom.scheduler;
+ 
+ import java.lang.invoke.MethodHandles;
+@@ -99,20 +102,71 @@
+ 	}
+ 
+ 	boolean wakeFirstIdle(EventLoopScheduler victim) {
+-		for (int w = 0; w < words.length; w++) {
+-			long word = (long) WORDS.getVolatile(words, w);
++		// Looma: start the scan at a random member rather than at the first. From the
++		// first, the lowest-numbered idle carrier is the one woken to steal every time,
++		// so the first carriers do more of the work than the last ones. From a random
++		// member, the work is spread over all of them. With no member, there is nothing
++		// to wake.
++		if (capacity == 0) {
++			return false;
++		}
++		int start = java.util.concurrent.ThreadLocalRandom.current().nextInt(capacity);
++		return wakeFrom(start, victim, WAKE_MEMBER);
++	}
++
++	// Looma: the scan of wakeFirstIdle, from the member start.
++	//
++	// Each member has one bit in words: bit k of word w is member 64 * w + k, and it is 1
++	// when that member is idle. The scan reads each word once, starting with the word of
++	// start, and comes back to the first word after the last one. A word with no idle
++	// member is skipped in one step. The scan stops at the first member that waker wakes.
++	//
++	// Within a word, it starts at the bit of start, r, and goes round: r, r + 1, ..., 63,
++	// then 0, ..., r - 1. For that, it rotates the word right by r: bit r comes to bit 0,
++	// and bits 0 to r - 1 go to the top. It then takes the bits from the lowest up, and
++	// adds r back to find the member.
++	//
++	// For example, with 12 members (one word), start = 5, and members 2, 7 and 10 idle:
++	//
++	//   member   11 10 9 8 7 6 5 4 3 2 1 0
++	//   word      0  1 0 0 1 0 0 0 0 1 0 0
++	//
++	// Rotated right by 5, member 5 is at bit 0: member 7 is at bit 2, member 10 at bit 5,
++	// and member 2 at bit 61. From the lowest bit up, the scan tries 7, 10, then 2.
++	//
++	// With more than 64 members, every word is read from the same bit r, and every idle
++	// member is still tried once.
++	//
++	// Each word is read when the scan gets to it, so the scan sees the idle members of
++	// that moment, as the original scan did.
++	boolean wakeFrom(int start, EventLoopScheduler victim, Waker waker) {
++		int r = start & 63;
++		int w = start >>> 6;
++		for (int i = 0; i < words.length; i++) {
++			long word = Long.rotateRight((long) WORDS.getVolatile(words, w), r);
+ 			while (word != 0) {
+-				int bit = Long.numberOfTrailingZeros(word);
+-				int idx = (w << 6) + bit;
+-				if (idx < capacity && members[idx].wakeupAsSearcher(victim)) {
++				int idx = (w << 6) + ((Long.numberOfTrailingZeros(word) + r) & 63);
++				if (idx < capacity && waker.wake(this, idx, victim)) {
+ 					return true;
+ 				}
+-				word &= ~(1L << bit);
++				word &= word - 1; // clears the lowest bit set
+ 			}
++			if (++w == words.length) {
++				w = 0;
++			}
+ 		}
+ 		return false;
+ 	}
+ 
++	// Looma: wakes the member at an index. A test gives its own, to see the order of the
++	// scan without real carriers.
++	interface Waker {
++		boolean wake(IdleCarrierTracker tracker, int index, EventLoopScheduler victim);
++	}
++
++	private static final Waker WAKE_MEMBER = (tracker, index, victim) -> tracker.members[index]
++			.wakeupAsSearcher(victim);
++
+ 	private int toIndex(int carrierId) {
+ 		return idToIndex != null ? idToIndex[carrierId] : carrierId;
+ 	}
+--- a/netty-loom-scheduler/src/main/java/io/netty/loom/scheduler/NettyScheduler.java	2026-10-19 19:08:52
++++ b/netty-loom-scheduler/src/main/java/io/netty/loom/scheduler/NettyScheduler.java	2026-10-22 21:00:00
+@@ -12,6 +12,9 @@
+  * either express or implied. See the License for the specific language governing permissions
+  * and limitations under the License.
+  */
++// Modified by the Looma project: the constructor starts the JDK's pollers before the
++// carriers exist. Every change is marked "Looma:"; the full diff against the
++// original is netty-loom-scheduler/looma-home-queue.patch.
+ package io.netty.loom.scheduler;
+ 
+ /**
+@@ -46,10 +49,25 @@
+ 	public NettyScheduler(Thread.VirtualThreadScheduler jdkBuiltinScheduler) {
+ 		this.jdkBuiltinScheduler = jdkBuiltinScheduler;
+ 		this.perCarrierPollers = Integer.getInteger("jdk.pollerMode", -1) == 3;
++		startJdkPollers();
+ 		this.group = new EventLoopSchedulerGroup(this);
+ 		INSTANCE = this;
+ 	}
+ 
++	// Looma: the JDK starts its Master-Poller and Write-Poller threads the first time
++	// a virtual thread waits on a socket, from the carrier that runs it. On Linux, a new
++	// thread runs only on the CPUs of the thread that starts it, so both pollers would
++	// stay on that carrier's one CPU for good. Started here, before any carrier pins itself,
++	// they get the CPUs of the thread that installs this scheduler. On a JDK without
++	// this class, the pollers start as before.
++	private static void startJdkPollers() {
++		try {
++			Class.forName("sun.nio.ch.Poller");
++		} catch (ClassNotFoundException | LinkageError e) {
++			// Nothing to do: the JDK starts its pollers later, as usual.
++		}
++	}
++
+ 	public static NettyScheduler instance() {
+ 		return ensureInstalled();
+ 	}

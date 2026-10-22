@@ -13,65 +13,49 @@
  */
 package io.github.pderop.looma.examples.user;
 
-import io.github.pderop.looma.spi.ActorScheduler;
-
 /**
- * Counts how often the actor holding one of these came back from an empty
- * mailbox on a different carrier than it left on — the mechanism, observed
- * rather than inferred.
+ * Counts how often an actor runs a message on another carrier than the message
+ * before it. One message in {@value #SAMPLE} is checked.
  *
  * <p>
- * Kept out of {@link UserGroup} so the workload reads as the workload.
- * {@link #resumed()} and {@link #parking()} bracket one message.
+ * Between the two messages the actor may have parked, if its mailbox was empty,
+ * or gone straight on, if the next message was already there. Only a park lets
+ * it move, so at high rates, where actors park less often, the share goes down.
+ *
+ * <p>
+ * The carrier is read from the thread name: a virtual thread's
+ * {@code toString()} ends with {@code @} and the name of its carrier. We do not
+ * ask the scheduler: it would give the actor's home carrier, which does not
+ * change when the actor is stolen.
  */
 final class CarrierTracker {
 
-	/**
-	 * {@code -Dcache.migrationSample=N}: trace one message in {@code N}, {@code 0}
-	 * switches it off. It samples because of the fallback in {@link #mark()}, which
-	 * allocates; sampling stays on under the affine scheduler too, where the mark
-	 * is free, so both sides carry the same overhead.
-	 */
-	private static final int SAMPLE = Integer.getInteger("cache.migrationSample", 64);
+	private static final int SAMPLE = 64;
 
-	private final ActorScheduler scheduler;
-
-	/** Where this actor was when it last went back to its mailbox, or unsampled. */
-	private Object parkedOn;
-
-	private long cursor;
+	private long parks;
 
 	private long traced;
 
 	private long migrated;
 
-	CarrierTracker(ActorScheduler scheduler) {
-		this.scheduler = scheduler;
-	}
+	/** The carrier of the checked message, or null. */
+	private String parkedOn;
 
-	static String describe() {
-		return SAMPLE > 0 ? "1 message in " + SAMPLE : "off";
-	}
-
-	/**
-	 * Called as a message arrives, before any state is touched: the mailbox was
-	 * empty in between, so the loop parked, and which core it came back on is the
-	 * entire experiment.
-	 */
-	void resumed() {
-		if (parkedOn != null) {
-			traced++;
-			if (!parkedOn.equals(mark())) {
-				migrated++;
-			}
-			parkedOn = null;
+	/** Call at the end of a message. */
+	void parking() {
+		if (++parks % SAMPLE == 0) {
+			parkedOn = carrier();
 		}
 	}
 
-	/** Called once the reply is sent, to mark the park about to start. */
-	void parking() {
-		if (SAMPLE > 0 && ++cursor % SAMPLE == 0) {
-			parkedOn = mark();
+	/** Call at the start of the next message. */
+	void resumed() {
+		if (parkedOn != null) {
+			traced++;
+			if (!parkedOn.equals(carrier())) {
+				migrated++;
+			}
+			parkedOn = null;
 		}
 	}
 
@@ -89,19 +73,8 @@ final class CarrierTracker {
 		parkedOn = null;
 	}
 
-	/**
-	 * The scheduler answers directly when it has carriers, which costs nothing. The
-	 * JDK builtin has none and returns {@code -1} — and that is the run whose
-	 * migration rate matters most — so there it falls back to the pool worker's
-	 * name, which {@code toString} appends after {@code '@'}.
-	 */
-	private Object mark() {
-		int carrier = scheduler.currentCarrierId();
-		if (carrier >= 0) {
-			return Integer.valueOf(carrier); // cached below 128: no allocation
-		}
+	private static String carrier() {
 		String description = Thread.currentThread().toString();
-		int at = description.lastIndexOf('@');
-		return at < 0 ? description : description.substring(at + 1);
+		return description.substring(description.lastIndexOf('@') + 1);
 	}
 }

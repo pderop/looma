@@ -16,7 +16,10 @@ package io.github.pderop.looma.impl;
 import java.util.Iterator;
 import java.util.Optional;
 import java.util.ServiceLoader;
+import java.util.function.Predicate;
 
+import io.github.pderop.looma.Carriers;
+import io.github.pderop.looma.spi.ActorScheduler;
 import io.github.pderop.looma.spi.ActorSchedulerProvider;
 
 /**
@@ -56,6 +59,12 @@ import io.github.pderop.looma.spi.ActorSchedulerProvider;
 final class ActorSchedulers {
 
 	private static volatile Optional<ActorSchedulerProvider> discovered;
+
+	/**
+	 * What {@link #install(Carriers)} installed in this JVM, or {@code null}. The
+	 * scheduler belongs to the JVM, so it can be affine or builtin, not both.
+	 */
+	private static Carriers installed;
 
 	private ActorSchedulers() {
 	}
@@ -98,6 +107,68 @@ final class ActorSchedulers {
 	private static final int MAX_PROVIDER_FAILURES = 64;
 
 	private static Optional<ActorSchedulerProvider> discoverUncached() {
+		return firstProvider(ActorSchedulerProvider::isAvailable, false);
+	}
+
+	/**
+	 * Installs the scheduler {@code carriers} asks for and returns an
+	 * {@link ActorScheduler} over it — what
+	 * {@code ActorSystem.Builder.carriers(...)} resolves to.
+	 *
+	 * <p>
+	 * An affine pool is installed by the first provider that
+	 * {@link ActorSchedulerProvider#install(Carriers.Affine) accepts} it; when none
+	 * does this throws rather than falling back, since a caller who asked for
+	 * carriers by count would otherwise measure the builtin and read it as theirs.
+	 * The builtin is configured here, by the JDK's own two properties, which belong
+	 * to no provider.
+	 *
+	 * @throws IllegalStateException
+	 *             when the scheduler asked for cannot be installed in this JVM
+	 */
+	static synchronized ActorScheduler install(Carriers carriers) {
+		// Affine against affine is the provider's call: two systems may differ in
+		// actorsStayHome().
+		boolean bothAffine = installed instanceof Carriers.Affine && carriers instanceof Carriers.Affine;
+		if (installed != null && !bothAffine && !installed.equals(carriers)) {
+			throw new IllegalStateException(
+					"this JVM's scheduler is already installed as " + installed + " and cannot also be " + carriers);
+		}
+		ActorScheduler scheduler = switch (carriers) {
+			case Carriers.Affine affine -> {
+				ActorSchedulerProvider provider = firstProvider(p -> p.install(affine), true)
+						.orElseThrow(() -> new IllegalStateException("no ActorSchedulerProvider could install " + affine
+								+ ": a carrier-affine scheduler needs looma-netty-scheduler on the classpath of a"
+								+ " Loom JDK started with --enable-preview"));
+				discovered = Optional.of(provider);
+				yield provider.create(affine);
+			}
+			case Carriers.Builtin builtin -> {
+				String implClass = System.getProperty("jdk.virtualThreadScheduler.implClass");
+				if (implClass != null) {
+					throw new IllegalStateException("-Djdk.virtualThreadScheduler.implClass=" + implClass
+							+ " is set, so this JVM does not run the builtin scheduler: cannot build with " + builtin);
+				}
+				SystemProperties.setOnce("jdk.virtualThreadScheduler.parallelism",
+						Integer.toString(builtin.parallelism()));
+				yield new JdkActorScheduler();
+			}
+		};
+		installed = carriers;
+		return scheduler;
+	}
+
+	/**
+	 * Returns the first provider on the classpath that {@code accept} is
+	 * {@code true} for — the one walk both {@link #discover()} and
+	 * {@link #install(Carriers)} make, with the failure handling described on this
+	 * class. With {@code rethrowIllegalState}, an {@link IllegalStateException}
+	 * from {@code accept} is not skipped: during an install it is a provider saying
+	 * that it is the right one and cannot do what was asked, which no later
+	 * provider can fix. Discovery skips it like any other failure.
+	 */
+	private static Optional<ActorSchedulerProvider> firstProvider(Predicate<ActorSchedulerProvider> accept,
+			boolean rethrowIllegalState) {
 		Iterator<ActorSchedulerProvider> providers = ServiceLoader
 				.load(ActorSchedulerProvider.class, ActorSchedulerProvider.class.getClassLoader()).iterator();
 		int failures = 0;
@@ -114,16 +185,19 @@ final class ActorSchedulers {
 				continue;
 			}
 			try {
-				if (provider.isAvailable()) {
+				if (accept.test(provider)) {
 					return Optional.of(provider);
 				}
 			} catch (Throwable e) {
+				if (rethrowIllegalState && e instanceof IllegalStateException) {
+					throw e;
+				}
 				failures++;
 				logAndSkip(e);
 			}
 		}
-		System.err.println("[looma] giving up on ActorSchedulerProvider discovery after " + MAX_PROVIDER_FAILURES
-				+ " failures; falling back to the JDK virtual-thread scheduler");
+		System.err.println(
+				"[looma] giving up on ActorSchedulerProvider discovery after " + MAX_PROVIDER_FAILURES + " failures");
 		return Optional.empty();
 	}
 

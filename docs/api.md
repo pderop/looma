@@ -1,7 +1,8 @@
 # The Looma API
 
-Everything an application touches lives in one package, `io.github.pderop.looma`. Nine types, no
-annotations, no configuration file, no scheduler ever named in code.
+Everything an application touches lives in one package, `io.github.pderop.looma`. Ten types, no
+annotations, no configuration file. The actor code never names a scheduler; `main` may, through
+`Carriers`.
 
 ```java
 import io.github.pderop.looma.*;
@@ -16,9 +17,10 @@ import io.github.pderop.looma.*;
 | `Message` | The marker interface every payload implements. |
 | `SupervisionStrategy` / `Directive` | What happens when `onReceive` throws. |
 | `Placement` / `SpawnOptions` | Optional home-carrier placement, supervision, and pool size at spawn time. |
+| `Carriers` | Which scheduler carries the process, and how it is sized, when chosen in code. |
 
 The scheduler SPI (`io.github.pderop.looma.spi`) is for people *implementing* a scheduler, not for
-people using actors — see [`carrier.md`](carrier.md) and [`jdk.md`](jdk.md).
+people using actors — see [`schedulers.md`](schedulers.md).
 
 ---
 
@@ -133,9 +135,9 @@ public class Connection implements Actor {
 message is delivered — but not necessarily before `spawn` returns to the caller.
 
 Allocate per-actor state in `preStart`, not in the constructor: `preStart` already runs on the
-actor's home carrier, so its pages are **first-touched by the core that will use them**. Under an
-affine scheduler that is the difference between state that starts hot and state that has to be
-migrated once.
+actor's home carrier, so, with carriers pinned to CPUs, its memory is **first touched by the core
+that will use it**. Under an affine scheduler that is the difference between state that starts hot
+and state that has to be migrated once.
 
 ## 3. Starting a system, spawning actors
 
@@ -146,14 +148,28 @@ ActorRef account = system.spawn("account", Account::new);
 ```
 
 `ActorSystem.builder()` is the only entry point; no caller ever names an implementation type. The
-builder has exactly two knobs, and applications normally use neither:
+builder has three knobs, and applications normally need at most the first:
 
 ```java
 ActorSystem system = ActorSystem.builder()
-        .scheduler(someScheduler)                  // bypasses discovery — tests and benchmark controls
+        .carriers(Carriers.affine(8).pinned())     // chooses and sizes the JVM's scheduler, in code
         .mailboxQueueFactory(myQueueFactory)       // per-actor envelope queue; default ConcurrentLinkedQueue
         .build();
+
+ActorSystem.builder().scheduler(someScheduler);    // bypasses everything — tests only
 ```
+
+`carriers(...)` is the code form of the scheduler's JVM flags: `Carriers.affine(n)` for the
+carrier-affine pool (refined with `.pinned()`, `.workStealing(...)` and `.actorsStayHome()`),
+`Carriers.builtin(n)` for the JDK's own with its parallelism fixed. Without it, the system takes
+whatever the flags installed. Because the JDK resolves its scheduler once per process, `build()`
+must run **before the JVM's first virtual thread**, and throws rather than run on the wrong
+scheduler — see [`schedulers.md`](schedulers.md#in-code-carriers) for every case it refuses.
+
+`.actorsStayHome()` matters only with work stealing on: stealing then takes only the virtual
+threads actors create through `ActorContext.vThreadFactory()`, never an actor's own loop, so every
+actor keeps its home carrier and its state in that core's cache, while the work it offloads can
+still be balanced across carriers.
 
 The `factory` passed to `spawn` is a `Supplier<Actor>`, not an instance, because the engine calls it
 **again** to obtain a fresh instance after a `RESTART`.
@@ -323,8 +339,9 @@ public void onReceive(Message message, ActorRef sender, ActorContext context) {
 `vThreadFactory()` is the only offload mechanism, and it is the one that carries the actor's
 affinity to the work:
 
-- under the **carrier-affine** scheduler, the new virtual thread is pinned to this actor's home
-  carrier, so it reads and writes on the same core the actor does;
+- under the **carrier-affine** scheduler, the new virtual thread has this actor's home carrier as
+  its own, so it runs on the same core the actor does — unless work stealing moves it, which
+  `actorsStayHome()` still allows for these threads;
 - under the **JDK builtin** scheduler, it is a plain virtual thread on the JDK's default scheduler.
 
 The engine counts every thread created through this factory as in-flight work, so `awaitTermination`
@@ -343,8 +360,8 @@ actor's fields: take what it needs by value and hand the outcome back as a messa
 A **native frame** on the stack — a JNI call, or a foreign-function downcall — cannot unmount the
 virtual thread at all, so it holds its **carrier** rather than merely its own loop. Under the JDK
 builtin scheduler that costs one `ForkJoinPool` worker and the pool compensates by growing; under the
-carrier-affine scheduler the carrier is pinned to a CPU and there is nothing to grow, so every actor
-that calls it home stops until the pin is released. Keep native calls off the actor loop and off
+carrier-affine scheduler the pool is fixed and there is nothing to grow, so every actor that calls
+that carrier home stops until the pin is released. Keep native calls off the actor loop and off
 anything forked from it.
 
 `synchronized` is **not** a pin on the JDKs this project targets: [JEP 491](https://openjdk.org/jeps/491)
@@ -447,6 +464,32 @@ Rules and bounds:
 cross-carrier hop instead of the same-core delivery the default gives for nothing. Reach for an
 explicit placement when the actor's *own* workload wants a specific or spread-out assignment, not by
 default.
+
+### Placing by key
+
+An application whose work belongs to a key (a customer, a session, a tenant) keeps everything that
+serves one key on one carrier with `Placement.carrier` alone: the actor for key `k` on carrier
+`k % carrierCount()`, shard `i` of each service on carrier `i % carrierCount()`, and each message
+routed to shard `k % shards`.
+
+```java
+int carriers = system.carrierCount();
+ActorRef[] pricers = new ActorRef[64];
+for (int i = 0; i < pricers.length; i++) {
+    int index = i;
+    pricers[i] = system.spawn("pricing-" + i, () -> new Pricing(index),
+            SpawnOptions.placedOn(Placement.carrier(i % carriers)));
+}
+system.spawn("session-" + customer, () -> new Session(customer, pricers),
+        SpawnOptions.placedOn(Placement.carrier(customer % carriers)));
+
+// in Session: the session and its pricer share a carrier
+pricers[customer % pricers.length].tell(quote, context.self());
+```
+
+The pricer for `customer` is on carrier `(customer % 64) % carriers`, which is `customer % carriers`
+only when `carriers` divides `64`. With any other shard count some keys cross carriers; the mapping
+is the application's, and so is the choice of what to do about it.
 
 ### Pools: N actors of one type behind one reference
 
@@ -594,6 +637,6 @@ Stated plainly, so nothing is inferred from silence:
 
 ## See also
 
-- [`carrier.md`](carrier.md) — the carrier-affine scheduler and its system properties.
-- [`jdk.md`](jdk.md) — the JDK builtin scheduler and the engine internals, documented once.
+- [`schedulers.md`](schedulers.md) — the two schedulers, choosing one, work stealing, and the
+  engine internals, documented once.
 - The javadoc on every type above; it is the normative reference for the exact exception contracts.

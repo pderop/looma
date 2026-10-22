@@ -14,25 +14,29 @@
 package io.github.pderop.looma.examples.user;
 
 /**
- * One user in the map its {@link UserGroup} serves from: a few counters, plus
- * one friend.
+ * A user: a few counters and one friend.
  *
  * <p>
- * {@link #friend()} is what makes this a memory workload rather than a
- * benchmark trick: a recommendation walks the social graph, so the next lookup
- * cannot start until the current user has arrived.
+ * The walk goes from friend to friend. The CPU must read a user before it knows
+ * the next one, so it cannot read ahead.
  *
  * <p>
- * Not thread-safe, and it does not need to be: only the group that owns this
- * user can reach it, and a group is an actor — one message at a time.
+ * Not thread-safe: only the actor that owns the user touches it.
  */
 final class User {
 
 	/**
-	 * A friend, and the next user a walk visits. Not {@code final} only because a
-	 * cycle cannot be closed before every user in it exists.
+	 * The next user of the walk. Not final: the cycle is closed once all users
+	 * exist.
+	 *
+	 * <p>
+	 * An {@code Integer}, held as an {@code Object}. With --enable-preview,
+	 * {@code Integer} is a value class, and the JVM may store an {@code Integer}
+	 * field as a plain number. Then, at each step, the walk could have to create
+	 * the {@code Integer} again to look it up in the map. An {@code Object} field
+	 * keeps a reference to the key itself.
 	 */
-	private Integer friend;
+	private Object friend;
 
 	private int visits;
 
@@ -41,7 +45,7 @@ final class User {
 	private long lastVisitNanos;
 
 	Integer friend() {
-		return friend;
+		return (Integer) friend;
 	}
 
 	void setFriend(Integer friend) {
@@ -53,13 +57,9 @@ final class User {
 	}
 
 	/**
-	 * One step of a walk: reached, {@code depth} friends from where it started,
-	 * now.
-	 *
-	 * <p>
-	 * A write rather than a read on purpose — it leaves the line dirty, so a core
-	 * that picks this user up next must take the line away from the previous owner
-	 * rather than merely share it. That is the traffic a migration causes.
+	 * Called at each step of the walk. It writes to the user on purpose: the cache
+	 * line becomes dirty, so if the actor moves to another core, that core must
+	 * take the line from the old one. This is the cost of a migration.
 	 */
 	void recordVisit(long nowNanos, int depth) {
 		visits++;

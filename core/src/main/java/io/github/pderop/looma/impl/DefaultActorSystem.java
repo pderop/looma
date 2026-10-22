@@ -23,6 +23,7 @@ import io.github.pderop.looma.Actor;
 import io.github.pderop.looma.ActorContext;
 import io.github.pderop.looma.ActorRef;
 import io.github.pderop.looma.ActorSystem;
+import io.github.pderop.looma.Carriers;
 import io.github.pderop.looma.Placement;
 import io.github.pderop.looma.SpawnOptions;
 import io.github.pderop.looma.spi.ActorScheduler;
@@ -72,12 +73,13 @@ import io.github.pderop.looma.spi.MailboxQueueFactory;
  * {@code 1}, so every placement collapses to that one factory.
  *
  * <p>
- * A {@code tell} offers into the actor's mailbox and unparks its loop. The loop
- * drains until empty, then parks. How (or whether) a parked continuation
- * resumes on the same carrier is entirely up to the {@link ActorScheduler} in
- * use. Being run elsewhere moves where a continuation <em>executes</em>; it
- * never moves an actor's home carrier, which is fixed for its lifetime the
- * moment its placement is resolved, at spawn time.
+ * A {@code tell} offers into the actor's mailbox, and starts a virtual thread
+ * for it if none runs: it drains the mailbox until empty, then ends. How (or
+ * whether) that virtual thread runs on the actor's home carrier is entirely up
+ * to the {@link ActorScheduler} in use. Being run elsewhere moves where a
+ * continuation <em>executes</em>; it never moves an actor's home carrier, which
+ * is fixed for its lifetime the moment its placement is resolved, at spawn
+ * time.
  */
 public final class DefaultActorSystem implements ActorSystem {
 
@@ -117,7 +119,7 @@ public final class DefaultActorSystem implements ActorSystem {
 		this.scheduler = scheduler;
 		this.dispatchers = new CarrierDispatcher[scheduler.carrierCount()];
 		for (int i = 0; i < dispatchers.length; i++) {
-			dispatchers[i] = new CarrierDispatcher(scheduler.vThreadFactory(i), i);
+			dispatchers[i] = new CarrierDispatcher(scheduler.vThreadFactory(i), scheduler.actorLoopFactory(i), i);
 		}
 		this.runtime = new ActorRuntime(new Dispatchers(), mailboxQueueFactory, this::afterTermination);
 	}
@@ -217,15 +219,20 @@ public final class DefaultActorSystem implements ActorSystem {
 	 *
 	 * <p>
 	 * {@link #build()} resolves the {@link ActorScheduler} in this order: an
-	 * explicit {@link #scheduler(ActorScheduler)} wins; else discovery
+	 * explicit {@link #scheduler(ActorScheduler)} wins; else
+	 * {@link #carriers(Carriers)} installs the one it describes
+	 * ({@code ActorSchedulers.install()}); else discovery
 	 * ({@code ActorSchedulers.discover()}) is tried, falling back to
-	 * {@link JdkActorScheduler} if nothing is found. The mailbox queue factory
-	 * defaults to {@link ConcurrentLinkedMailboxQueue#factory()} unless
+	 * {@link JdkActorScheduler} if nothing is found. Setting both of the first two
+	 * is refused at {@link #build()}. The mailbox queue factory defaults to
+	 * {@link ConcurrentLinkedMailboxQueue#factory()} unless
 	 * {@link #mailboxQueueFactory} was set.
 	 */
 	static final class Builder implements ActorSystem.Builder {
 
 		private ActorScheduler scheduler;
+
+		private Carriers carriers;
 
 		private MailboxQueueFactory mailboxQueueFactory;
 
@@ -235,6 +242,15 @@ public final class DefaultActorSystem implements ActorSystem {
 		@Override
 		public Builder scheduler(ActorScheduler scheduler) {
 			this.scheduler = scheduler;
+			return this;
+		}
+
+		@Override
+		public Builder carriers(Carriers carriers) {
+			if (carriers == null) {
+				throw new NullPointerException("carriers");
+			}
+			this.carriers = carriers;
 			return this;
 		}
 
@@ -253,8 +269,15 @@ public final class DefaultActorSystem implements ActorSystem {
 		}
 
 		private ActorScheduler resolveScheduler() {
+			if (scheduler != null && carriers != null) {
+				throw new IllegalStateException("scheduler(...) and carriers(...) both set: an explicit scheduler"
+						+ " is already installed, so there is nothing left for carriers(...) to choose");
+			}
 			if (scheduler != null) {
 				return scheduler;
+			}
+			if (carriers != null) {
+				return ActorSchedulers.install(carriers);
 			}
 			return ActorSchedulers.discover().map(ActorSchedulerProvider::create).orElseGet(JdkActorScheduler::new);
 		}
@@ -315,16 +338,24 @@ public final class DefaultActorSystem implements ActorSystem {
 
 		private final ThreadFactory vThreadFactory;
 
+		private final ThreadFactory loopThreadFactory;
+
 		private final int carrierId;
 
-		private CarrierDispatcher(ThreadFactory vThreadFactory, int carrierId) {
+		private CarrierDispatcher(ThreadFactory vThreadFactory, ThreadFactory loopThreadFactory, int carrierId) {
 			this.vThreadFactory = vThreadFactory;
+			this.loopThreadFactory = loopThreadFactory;
 			this.carrierId = carrierId;
 		}
 
 		@Override
 		public ThreadFactory vThreadFactory() {
 			return vThreadFactory;
+		}
+
+		@Override
+		public ThreadFactory loopThreadFactory() {
+			return loopThreadFactory;
 		}
 
 		@Override

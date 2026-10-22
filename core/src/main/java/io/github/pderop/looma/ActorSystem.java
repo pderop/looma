@@ -33,8 +33,9 @@ import io.github.pderop.looma.spi.MailboxQueueFactory;
  * stop). What varies is which {@code io.github.pderop.looma.spi.ActorScheduler}
  * supplies the factory that starts those loops — two shapes ship in this
  * project: a carrier-affine one, discovered through the SPI and backed by a
- * JVM-wide pool of carrier threads installed once per process via
- * {@code -Djdk.virtualThreadScheduler.implClass} and outliving any single
+ * JVM-wide pool of carrier threads installed once per process — by
+ * {@link Builder#carriers(Carriers)} or by
+ * {@code -Djdk.virtualThreadScheduler.implClass} — and outliving any single
  * {@code ActorSystem}; or, when none is installed, the JDK builtin scheduler,
  * whose factories create plain virtual threads on the JDK's default virtual
  * thread scheduler. Both are directly comparable for exactly this reason; see
@@ -49,9 +50,11 @@ public interface ActorSystem {
 	 * <p>
 	 * With nothing else set, {@link Builder#build()} takes the scheduler that
 	 * {@code ServiceLoader} discovery finds, or the JDK builtin scheduler when it
-	 * finds none — so the plain {@code ActorSystem.builder().build()} is the right
-	 * call in application code, and which scheduler carries it is a deployment
-	 * decision (JVM flags and classpath), not a code one.
+	 * finds none — so the plain {@code ActorSystem.builder().build()} leaves which
+	 * scheduler carries it to the deployment (JVM flags and classpath).
+	 * {@link Builder#carriers(Carriers)} makes the same choice in code instead, for
+	 * a program that owns its {@code main} and would rather not depend on the
+	 * command line that started it.
 	 */
 	static Builder builder() {
 		return DefaultActorSystem.newBuilder();
@@ -62,11 +65,12 @@ public interface ActorSystem {
 	 * {@link ActorSystem#builder()}.
 	 *
 	 * <p>
-	 * {@link #scheduler(ActorScheduler)} bypasses discovery: setting it is a
-	 * statement that this caller knows which scheduler it wants, which is exactly
-	 * what a benchmark control or a test needs and exactly what an application
-	 * should not do. {@link #mailboxQueueFactory} is orthogonal: it does not choose
-	 * a scheduler, only the per-actor envelope queue.
+	 * {@link #carriers(Carriers)} installs the scheduler it describes instead of
+	 * discovering whatever the JVM flags installed.
+	 * {@link #scheduler(ActorScheduler)} bypasses both and hands the system an
+	 * instance: what a test injecting a specific scheduler needs, and what an
+	 * application should not do. {@link #mailboxQueueFactory} is orthogonal: it
+	 * does not choose a scheduler, only the per-actor envelope queue.
 	 */
 	interface Builder {
 
@@ -75,6 +79,46 @@ public interface ActorSystem {
 		 * discovery entirely. Used by tests that need to inject a specific scheduler.
 		 */
 		Builder scheduler(ActorScheduler scheduler);
+
+		/**
+		 * Chooses and sizes this JVM's virtual-thread scheduler in code — what the
+		 * {@code -Djdk.virtualThreadScheduler.*} and {@code -Dio.netty.loom.*} flags
+		 * otherwise do. {@link #build()} sets the properties those flags would have
+		 * set, then checks that they took.
+		 *
+		 * <p>
+		 * <b>{@link #build()} must run before this JVM's first virtual thread.</b> The
+		 * scheduler is resolved once per process, while the JDK initialises virtual
+		 * threads, and cannot be changed afterwards. So {@link #build()} throws
+		 * {@link IllegalStateException}:
+		 * <ul>
+		 * <li>for {@link Carriers#affine(int)}, when no provider on the classpath can
+		 * install one — no scheduler module, or a JVM started without
+		 * {@code --enable-preview};
+		 * <li>for {@link Carriers#affine(int)}, when a virtual thread already ran under
+		 * another scheduler, or under this one configured differently;
+		 * <li>for {@link Carriers#builtin(int)}, when
+		 * {@code -Djdk.virtualThreadScheduler.implClass} names another scheduler;
+		 * <li>for {@link Carriers#affine(int)}, when
+		 * {@code -Djdk.virtualThreadScheduler.implClass} is set, whatever its value:
+		 * the pool is configured by the flags or by the code, not by both;
+		 * <li>for either, when a property it sets already holds another value — from a
+		 * {@code -D} flag — or when an earlier system in this JVM was built with
+		 * another pool. A second system on the same pool is fine, and may differ in
+		 * {@link Carriers.Affine#actorsStayHome()} only.
+		 * </ul>
+		 * The one case that cannot be detected is {@link Carriers#builtin(int)} after
+		 * the JDK's scheduler was initialised by an earlier virtual thread: the
+		 * parallelism is then silently the JDK's default.
+		 *
+		 * <p>
+		 * {@code --enable-preview} and {@code --enable-native-access} are not
+		 * properties and stay on the command line.
+		 *
+		 * @throws NullPointerException
+		 *             if {@code carriers} is {@code null}
+		 */
+		Builder carriers(Carriers carriers);
 
 		/**
 		 * Sets the factory that creates one mailbox queue per actor. When unset, each

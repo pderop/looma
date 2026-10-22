@@ -12,6 +12,9 @@
  * either express or implied. See the License for the specific language governing permissions
  * and limitations under the License.
  */
+// Modified by the Looma project: wakeFirstIdle() starts its scan at a random member
+// instead of the first. Every change is marked "Looma:"; the full diff against the
+// original is netty-loom-scheduler/looma-home-queue.patch.
 package io.netty.loom.scheduler;
 
 import java.lang.invoke.MethodHandles;
@@ -99,19 +102,70 @@ final class IdleCarrierTracker {
 	}
 
 	boolean wakeFirstIdle(EventLoopScheduler victim) {
-		for (int w = 0; w < words.length; w++) {
-			long word = (long) WORDS.getVolatile(words, w);
+		// Looma: start the scan at a random member rather than at the first. From the
+		// first, the lowest-numbered idle carrier is the one woken to steal every time,
+		// so the first carriers do more of the work than the last ones. From a random
+		// member, the work is spread over all of them. With no member, there is nothing
+		// to wake.
+		if (capacity == 0) {
+			return false;
+		}
+		int start = java.util.concurrent.ThreadLocalRandom.current().nextInt(capacity);
+		return wakeFrom(start, victim, WAKE_MEMBER);
+	}
+
+	// Looma: the scan of wakeFirstIdle, from the member start.
+	//
+	// Each member has one bit in words: bit k of word w is member 64 * w + k, and it is 1
+	// when that member is idle. The scan reads each word once, starting with the word of
+	// start, and comes back to the first word after the last one. A word with no idle
+	// member is skipped in one step. The scan stops at the first member that waker wakes.
+	//
+	// Within a word, it starts at the bit of start, r, and goes round: r, r + 1, ..., 63,
+	// then 0, ..., r - 1. For that, it rotates the word right by r: bit r comes to bit 0,
+	// and bits 0 to r - 1 go to the top. It then takes the bits from the lowest up, and
+	// adds r back to find the member.
+	//
+	// For example, with 12 members (one word), start = 5, and members 2, 7 and 10 idle:
+	//
+	//   member   11 10 9 8 7 6 5 4 3 2 1 0
+	//   word      0  1 0 0 1 0 0 0 0 1 0 0
+	//
+	// Rotated right by 5, member 5 is at bit 0: member 7 is at bit 2, member 10 at bit 5,
+	// and member 2 at bit 61. From the lowest bit up, the scan tries 7, 10, then 2.
+	//
+	// With more than 64 members, every word is read from the same bit r, and every idle
+	// member is still tried once.
+	//
+	// Each word is read when the scan gets to it, so the scan sees the idle members of
+	// that moment, as the original scan did.
+	boolean wakeFrom(int start, EventLoopScheduler victim, Waker waker) {
+		int r = start & 63;
+		int w = start >>> 6;
+		for (int i = 0; i < words.length; i++) {
+			long word = Long.rotateRight((long) WORDS.getVolatile(words, w), r);
 			while (word != 0) {
-				int bit = Long.numberOfTrailingZeros(word);
-				int idx = (w << 6) + bit;
-				if (idx < capacity && members[idx].wakeupAsSearcher(victim)) {
+				int idx = (w << 6) + ((Long.numberOfTrailingZeros(word) + r) & 63);
+				if (idx < capacity && waker.wake(this, idx, victim)) {
 					return true;
 				}
-				word &= ~(1L << bit);
+				word &= word - 1; // clears the lowest bit set
+			}
+			if (++w == words.length) {
+				w = 0;
 			}
 		}
 		return false;
 	}
+
+	// Looma: wakes the member at an index. A test gives its own, to see the order of the
+	// scan without real carriers.
+	interface Waker {
+		boolean wake(IdleCarrierTracker tracker, int index, EventLoopScheduler victim);
+	}
+
+	private static final Waker WAKE_MEMBER = (tracker, index, victim) -> tracker.members[index]
+			.wakeupAsSearcher(victim);
 
 	private int toIndex(int carrierId) {
 		return idToIndex != null ? idToIndex[carrierId] : carrierId;

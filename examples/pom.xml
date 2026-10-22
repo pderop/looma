@@ -18,15 +18,11 @@
             <artifactId>looma-core</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- Open-loop latency percentiles in the user benchmark. No dependency of its own. -->
         <dependency>
-            <groupId>org.apache.httpcomponents.client5</groupId>
-            <artifactId>httpclient5</artifactId>
-            <version>5.6.4</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>2.22.2</version>
+            <groupId>org.hdrhistogram</groupId>
+            <artifactId>HdrHistogram</artifactId>
+            <version>2.2.2</version>
         </dependency>
     </dependencies>
 
