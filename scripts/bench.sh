@@ -50,7 +50,7 @@ REPS=3
 OUT=
 WARMUP=5
 MEASURE=20
-SCHEDULERS="stealing-local hybrid jdk jdk-pinned"
+SCHEDULERS="stealing-local stealing-local-home jdk jdk-pinned"
 COMMAND_LINE="$0 $*"
 
 while [ $# -gt 0 ]; do

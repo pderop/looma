@@ -88,7 +88,11 @@ public sealed interface Carriers {
 		 */
 		CLUSTER_LOCAL,
 
-		/** Stealing between any two carriers. */
+		/**
+		 * Stealing between any two carriers. Only one idle carrier at a time searches
+		 * for work in the whole pool: with pinned carriers on several L3s, prefer
+		 * {@link #CLUSTER_LOCAL}, which has one per L3.
+		 */
 		GLOBAL
 	}
 

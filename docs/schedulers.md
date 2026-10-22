@@ -31,7 +31,7 @@ Setting both 1 and 2 is refused at `build()`.
 
 ```java
 ActorSystem system = ActorSystem.builder()
-        .carriers(Carriers.affine(8).pinned().workStealing(Carriers.WorkStealing.GLOBAL))
+        .carriers(Carriers.affine(8).pinned().workStealing(Carriers.WorkStealing.CLUSTER_LOCAL))
         .build();
 
 // the builtin, sized the same, as a control:
@@ -40,7 +40,7 @@ ActorSystem control = ActorSystem.builder().carriers(Carriers.builtin(8)).build(
 
 | `Carriers` | Meaning | Properties it sets |
 | --- | --- | --- |
-| `affine(n)` | the carrier-affine scheduler, `n` carriers | `jdk.virtualThreadScheduler.implClass=io.netty.loom.scheduler.NettyScheduler`, `io.netty.loom.schedulers=n`, `jdk.pollerMode=3` (one read poller per carrier, kept on it) |
+| `affine(n)` | the carrier-affine scheduler, `n` carriers | `jdk.virtualThreadScheduler.implClass=io.netty.loom.scheduler.NettyScheduler`, `io.netty.loom.schedulers=n`, `jdk.pollerMode=3` (one read poller per carrier) |
 | `.pinned()` | each carrier pinned to one CPU of the process's affinity mask, grouped by L3 (Linux) | `io.netty.loom.topology=io.netty.loom.topology.LinuxCarrierTopology`; unpinned requires it absent |
 | `.workStealing(OFF)` | no stealing (the default) | `io.netty.loom.workstealing.enabled=false`; `scope` required absent |
 | `.workStealing(GLOBAL / CLUSTER_LOCAL)` | stealing between any carriers / only within an L3 | `io.netty.loom.workstealing.enabled=true`, `io.netty.loom.workstealing.scope=…` |
@@ -238,9 +238,15 @@ home carrier again.
 **`actorsStayHome()`** keeps the actor loops out of that. Each carrier then has a second queue, the
 home queue, which only that carrier drains and no stealer reads. Actor loops are created on it
 (`ActorScheduler.actorLoopFactory`), while the threads an actor offloads come from the ordinary
-factory and stay stealable. The carrier alternates between its two queues. This is one of the two
+factory and stay stealable. The carrier alternates between its two queues. This is one of the three
 changes Looma makes to its copy of the scheduler — see
 [`netty-loom-scheduler/README.md`](../netty-loom-scheduler/README.md).
+
+To steal, the scheduler wakes an idle carrier, and lets only one such carrier search for work at a
+time in each group of carriers. Under `GLOBAL`, the group is the whole pool; under
+`CLUSTER_LOCAL`, there is one group per L3. When that one carrier is slow to start, no other can be
+woken, and work waits in the queue of a busy carrier. So with pinned carriers on several L3s,
+prefer `CLUSTER_LOCAL`, with or without `actorsStayHome()`.
 
 Stealing is off by default.
 

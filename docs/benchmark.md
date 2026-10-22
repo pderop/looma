@@ -8,9 +8,9 @@ request makes an actor read a few hundred of its objects. The benchmark compares
 scheduler spends per request, the latency, and how often actors moved to another core.
 
 **The answer**, on an AMD Ryzen 9 9950X: when an actor's data fits in its core's L2 cache, the
-schedulers that keep actors on their core spend 32% to 39% less CPU per request than the JDK's
-scheduler. When the data fits in no cache, the JDK's scheduler cannot keep up with the rate. With
-its workers pinned, it keeps up, but spends 11% to 15% more CPU per request. The numbers:
+schedulers that keep actors on their core spend 32.9% to 41.9% less CPU per request than the
+JDK's scheduler. When the data fits in no cache, the JDK's scheduler cannot keep up with the rate.
+With its workers pinned, it keeps up, but spends 16% to 18% more CPU per request. The numbers:
 [`results/2026-10-22-ryzen9-9950x/summary.md`](results/2026-10-22-ryzen9-9950x/summary.md).
 
 - Code: [`examples/…/examples/user`](../examples/src/main/java/io/github/pderop/looma/examples/user)
@@ -25,7 +25,7 @@ its workers pinned, it keeps up, but spends 11% to 15% more CPU per request. The
 - **Park**: a virtual thread that waits (for a socket, for a lock) gives its carrier back.
   When it is woken up, the scheduler picks a carrier for it again, maybe another one.
 - **Carrier-affine scheduler**: each virtual thread has a home carrier, and resumes on it. In
-  this benchmark, `stealing-local` and `hybrid` are carrier-affine.
+  this benchmark, `stealing-local` and `stealing-local-home` are carrier-affine.
 - **Work stealing**: an idle carrier takes work queued on another carrier.
 - **Pinned**: an OS thread that may run on one CPU only.
 - **CPU, core**: Linux shows two CPUs per core when the core runs two threads at once (SMT). The
@@ -100,7 +100,7 @@ All runs use the same jar and the same JVM flags. Only `-Dbench.scheduler` chang
 | Scheduler | What it is |
 | --- | --- |
 | `stealing-local` | The Netty carrier-affine scheduler. One carrier per CPU, each pinned to its CPU. An idle carrier can steal work, but only from carriers that share its L3 cache. |
-| `hybrid` | The same scheduler, with a Looma patch: an idle carrier can steal work from any carrier, but never an actor. Only the GET threads can move. |
+| `stealing-local-home` | `stealing-local` with `actorsStayHome()`, a Looma patch: an idle carrier can steal work only from carriers that share its L3 cache, and never an actor. Only the GET threads can move. |
 | `jdk` | The JDK's default scheduler, with as many carriers as the others. Its carriers are not pinned. |
 | `jdk-pinned` | The JDK's default scheduler, with each carrier pinned to one CPU (Linux only). |
 
@@ -125,8 +125,8 @@ Who pins what:
 
 - The script starts the benchmark JVM with `taskset` on the carrier CPUs, and the backend with
   `taskset` on the backend CPUs.
-- The carriers of `stealing-local` and `hybrid` pin themselves. Each one takes one CPU of the
-  JVM's list.
+- The carriers of `stealing-local` and `stealing-local-home` pin themselves. Each one takes one
+  CPU of the JVM's list.
 - The client threads pin themselves too, to the client CPUs.
 - The JDK's Master-Poller, the thread that wakes the virtual threads whose socket has data,
   runs on the carrier CPUs, like the other threads of the JVM.
@@ -192,8 +192,8 @@ Everything goes to `bench/<date>-<time>/` (`--out` changes it):
 - **`summary.md`**: the results.
 - **`<case>-c2c-<scheduler>.txt`**: the full `perf c2c` report of each case and scheduler.
 - **`runs/<case>-<run>-<scheduler>-<depth>.out`** and **`.gc.log`**: the console and the GC log
-  of each run, for example `runs/default-r1-hybrid-256.out`, `runs/big-c2c-jdk-256.out` or
-  `runs/default-epsilon-hybrid-256.out`.
+  of each run, for example `runs/default-r1-stealing-local-home-256.out`,
+  `runs/big-c2c-jdk-256.out` or `runs/default-epsilon-stealing-local-home-256.out`.
 - **`runs/<case>-stat-<scheduler>.csv`**: the `perf stat` counts of each thread.
 - **`runs/<case>-c2c-<scheduler>.data`**: the `perf c2c` data, which only `perf report` reads.
 
@@ -251,14 +251,14 @@ The line:
 
 | case | scheduler | instructions | cycles | requests | instructions/req | IPC | cycles per instruction | cycles/req | note |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| default | jdk | 275,266,910,425 | 320,310,885,643 | 2,100,000 | 131,079 | 0.86 | 1.16 | 152,529 | |
+| default | jdk | 287,653,929,416 | 307,912,670,779 | 2,100,000 | 136,978 | 0.93 | 1.07 | 146,625 | |
 
 It comes from `runs/default-stat-jdk.csv`, the output of `perf stat` during the stat
 run of `jdk`. The file has one line per thread and counter, for example:
 
 ```
-ForkJoi..rker-4-325065,25626616931,,cycles,6358832890,100.00,,
-ForkJoi..rker-4-325065,21946411701,,instructions,6358878240,100.00,,
+ForkJoi..rker-4-372117,24476905534,,cycles,6123516595,100.00,,
+ForkJoi..rker-4-372117,22422909869,,instructions,6123503855,100.00,,
 ```
 
 Split on the commas, field 1 is the thread, field 2 is a number, and field 4 is the word that
@@ -275,10 +275,10 @@ the word. The comment at the top of the file lists every field.
 4. The other columns divide these three numbers:
 
    ```
-   instructions/req       = instructions / requests  = 275,266,910,425 / 2,100,000       = 131,079
-   cycles/req             = cycles / requests        = 320,310,885,643 / 2,100,000       = 152,529
-   IPC                    = instructions / cycles    = 275,266,910,425 / 320,310,885,643 = 0.86
-   cycles per instruction = cycles / instructions    = 320,310,885,643 / 275,266,910,425 = 1.16
+   instructions/req       = instructions / requests  = 287,653,929,416 / 2,100,000       = 136,978
+   cycles/req             = cycles / requests        = 307,912,670,779 / 2,100,000       = 146,625
+   IPC                    = instructions / cycles    = 287,653,929,416 / 307,912,670,779 = 0.93
+   cycles per instruction = cycles / instructions    = 307,912,670,779 / 287,653,929,416 = 1.07
    ```
 
    IPC is the instructions run per cycle; cycles per instruction is its inverse. So
@@ -328,11 +328,11 @@ walk   = cpu µs/req at depth 256 - cpu µs/req at depth 0
 - cpu µs/req Epsilon: the line `cpu` of the console of the epsilon run,
   `runs/<case>-epsilon-<scheduler>-256.out`.
 - heap used: at exit, Epsilon writes the heap in its GC log, `runs/<case>-epsilon-<scheduler>-256.gc.log`,
-  as a line like this one, from `runs/default-epsilon-hybrid-256.gc.log`:
-  `space 12582912K,  70% used [0x0000000500000000, 0x000000071bd2cd90, 0x0000000800000000)`.
+  as a line like this one, from `runs/default-epsilon-stealing-local-home-256.gc.log`:
+  `space 12582912K,  74% used [0x0000000500000000, 0x0000000738b5e230, 0x0000000800000000)`.
   The three addresses are the start of the heap, its top (where the next object would go) and
-  its end. heap used = top - start: here 0x71bd2cd90 - 0x500000000 = 9,056,734,608 bytes, so
-  8,637 MiB.
+  its end. heap used = top - start: here 0x738b5e230 - 0x500000000 = 9,541,378,608 bytes, so
+  9,099 MiB.
 
 ```
 difference = cpu µs/req Epsilon - cpu µs/req G1
@@ -407,8 +407,8 @@ backend      CPUs 8,9,24,25     the backend: cores 8 and 9 (CCD1)
 ```
 
 - Each carrier has a core to itself: its SMT twin stays idle.
-- The carriers are on both CCDs, so `stealing-local` (stealing within one L3 only) differs from
-  `hybrid` (stealing anywhere, but never an actor).
+- The carriers are on both CCDs, 6 on each. `stealing-local` and `stealing-local-home` steal
+  only within one CCD: an actor of `stealing-local` that moves stays in its CCD.
 - The sizes: one group is about 640 KiB, which fits in a 1 MiB L2. The 12 groups take about
   7.5 MiB, several times one L2. But the 6 groups of a CCD (3.8 MiB) fit in its 32 MiB L3: an
   actor that moves within a CCD finds its data in the L3. So this layout measures the L2 against
@@ -452,9 +452,16 @@ clients and the backend.
 
 **Why `jdk-pinned`.** It tells whether pinning alone makes the difference.
 
-**Why `stealing-local` and `hybrid`.** Stealing uses idle CPUs, but it moves actors away from
-their data. `stealing-local` only moves them within the same L3 cache. `hybrid` never moves
-actors: it only moves the GET threads, which have no data.
+**Why `stealing-local` and `stealing-local-home`.** Stealing uses idle CPUs, but it moves actors
+away from their data. `stealing-local` only moves them within the same L3 cache.
+`stealing-local-home` never moves actors: it only moves the GET threads, which have no data. Both
+steal within one L3 only, so they differ in one thing: whether an actor can move.
+
+**Why stealing within one L3.** To steal, the scheduler wakes an idle carrier, and lets only one
+such carrier search for work at a time in each group of carriers. With stealing from any carrier,
+the group is the whole machine. When that one carrier is slow to start, no other can be woken,
+and work waits in the queue of a busy carrier. With stealing within one L3, there is one group
+per CCD.
 
 **Why count the StackChunks.** A parked virtual thread keeps its stack in a `StackChunk`, on the
 heap. If chunks were kept alive and piled up, the GC would have more to do under some

@@ -38,10 +38,9 @@ factory, the virtual threads an actor offloads from the ordinary one. The test i
 
 In `IdleCarrierTracker`, `wakeFirstIdle()` picks the idle carrier to wake as a searcher by
 scanning from a random member instead of the first. Scanning from the first wakes the
-lowest-numbered idle carrier every time. On the AMD Ryzen 9 9950X, 12 carriers at 300k req/s,
-the busiest carrier used 2.45-2.48 times the CPU of the idlest with `hybrid` and 2.16-2.27 times
-with `stealing-local`; from a random member, 1.15-1.18 times with both, at the same CPU per
-request and a p99.9 10-20% lower. The test is `WakeFromRandomMemberTest` (Looma's own file):
+lowest-numbered idle carrier every time, so the first carriers do more of the work than the
+last ones. From a random member, the work is spread over all of them. The test is
+`WakeFromRandomMemberTest` (Looma's own file):
 it checks the order of the scan, from every start, with one word and with several.
 
 In `NettyScheduler`, the constructor starts the JDK's pollers before it creates the carriers.
@@ -50,7 +49,7 @@ waits on a socket, from the carrier that runs it. On Linux, a new thread runs on
 the thread that starts it. So both pollers stayed for good on that carrier's one CPU, and that
 carrier had more work than the others. Started from the constructor, they may run on the CPUs
 of the thread that installs the scheduler. The read pollers do not change: there is still one
-per carrier, and each one stays on its carrier.
+per carrier, as before.
 
 ## The copied files are not edited, and never formatted
 

@@ -1,7 +1,7 @@
 # User benchmark
 
 ```
-date         2026-10-22 12:56:45 +0000
+date         2026-10-22 15:54:04 +0000
 host         gabuzo-amd, Linux 7.0.0-38-generic
 cpu model    AMD Ryzen 9 9950X 16-Core Processor
 turbo        off
@@ -10,7 +10,7 @@ carriers     CPUs 2-7,10-15
 clients      CPUs 0,1,16,17
 backend      CPUs 8,9,24,25
 heap         2g, G1; the epsilon runs 12g, Epsilon
-command      scripts/bench.sh --out /home/pderop/work/projects/looma-test/bench/20261022-1256
+command      scripts/bench.sh --out /home/pderop/work/projects/looma-test/bench/20261022-1554
 ```
 
 ## The runs
@@ -53,14 +53,14 @@ cycles per instruction = cycles / instructions = 1 / IPC
 
 | case | scheduler | instructions | cycles | requests | instructions/req | IPC | cycles per instruction | cycles/req | note |
 |---|---|---|---|---|---|---|---|---|---|
-| default | stealing-local | 206,586,407,927 | 210,892,374,142 | 2,100,000 | 98,374 | 0.98 | 1.02 | 100,425 |  |
-| default | hybrid | 192,845,105,696 | 192,047,860,579 | 2,100,000 | 91,831 | 1.00 | 1.00 | 91,451 |  |
-| default | jdk | 275,266,910,425 | 320,310,885,643 | 2,100,000 | 131,079 | 0.86 | 1.16 | 152,529 |  |
-| default | jdk-pinned | 267,871,084,770 | 394,911,851,258 | 2,100,000 | 127,558 | 0.68 | 1.47 | 188,053 |  |
-| big | stealing-local | 140,415,362,296 | 605,913,417,514 | 2,100,000 | 66,864 | 0.23 | 4.32 | 288,530 |  |
-| big | hybrid | 148,809,197,070 | 602,921,500,405 | 2,100,000 | 70,862 | 0.25 | 4.05 | 287,105 |  |
-| big | jdk | 110,645,350,346 | 594,548,721,490 | 2,100,000 | 52,688 | 0.19 | 5.37 | 283,118 | this run: not a measurement |
-| big | jdk-pinned | 132,964,588,640 | 669,419,906,678 | 2,100,000 | 63,316 | 0.20 | 5.03 | 318,771 |  |
+| default | stealing-local | 201,064,843,881 | 210,578,556,577 | 2,100,000 | 95,745 | 0.95 | 1.05 | 100,276 |  |
+| default | stealing-local-home | 236,306,340,145 | 184,856,852,410 | 2,100,000 | 112,527 | 1.28 | 0.78 | 88,027 |  |
+| default | jdk | 287,653,929,416 | 307,912,670,779 | 2,100,000 | 136,978 | 0.93 | 1.07 | 146,625 |  |
+| default | jdk-pinned | 262,910,519,371 | 383,148,076,911 | 2,100,000 | 125,195 | 0.69 | 1.46 | 182,451 |  |
+| big | stealing-local | 149,214,620,942 | 608,290,265,907 | 2,100,000 | 71,055 | 0.25 | 4.08 | 289,662 |  |
+| big | stealing-local-home | 146,833,675,385 | 601,534,826,296 | 2,100,000 | 69,921 | 0.24 | 4.10 | 286,445 |  |
+| big | jdk | 108,805,830,498 | 595,723,129,908 | 2,100,000 | 51,812 | 0.18 | 5.48 | 283,678 | this run: not a measurement |
+| big | jdk-pinned | 126,226,586,798 | 684,551,538,431 | 2,100,000 | 60,108 | 0.18 | 5.42 | 325,977 |  |
 
 ## perf c2c
 
@@ -82,14 +82,14 @@ DRAM     = Load DRAM / Load Operations
 
 | case | scheduler | migrations | Load Operations | Load Remote HITM | Load DRAM | other L3 | DRAM | note |
 |---|---|---|---|---|---|---|---|---|
-| default | stealing-local | 44.1% | 28,105 | 99 | 13 | 0.35% | 0.05% |  |
-| default | hybrid | 0.0% | 25,987 | 155 | 7 | 0.60% | 0.03% |  |
-| default | jdk | 71.6% | 37,865 | 439 | 128 | 1.16% | 0.34% |  |
-| default | jdk-pinned | 66.5% | 53,335 | 958 | 90 | 1.80% | 0.17% |  |
-| big | stealing-local | 10.7% | 60,491 | 154 | 2,778 | 0.25% | 4.59% |  |
-| big | hybrid | 0.0% | 59,945 | 406 | 2,427 | 0.68% | 4.05% |  |
-| big | jdk | 5.2% | 50,323 | 241 | 3,097 | 0.48% | 6.15% | this run: not a measurement |
-| big | jdk-pinned | 8.2% | 70,642 | 335 | 3,117 | 0.47% | 4.41% |  |
+| default | stealing-local | 44.9% | 27,864 | 82 | 9 | 0.29% | 0.03% |  |
+| default | stealing-local-home | 0.0% | 25,222 | 110 | 13 | 0.44% | 0.05% |  |
+| default | jdk | 70.9% | 37,419 | 425 | 127 | 1.14% | 0.34% |  |
+| default | jdk-pinned | 64.7% | 50,362 | 938 | 111 | 1.86% | 0.22% |  |
+| big | stealing-local | 11.5% | 59,987 | 195 | 2,412 | 0.33% | 4.02% |  |
+| big | stealing-local-home | 0.0% | 68,939 | 201 | 2,897 | 0.29% | 4.20% |  |
+| big | jdk | 3.3% | 55,463 | 235 | 3,021 | 0.42% | 5.45% | this run: not a measurement |
+| big | jdk-pinned | 14.3% | 67,245 | 358 | 3,550 | 0.53% | 5.28% |  |
 
 ## Controls
 
@@ -102,22 +102,22 @@ failed, or a pinning failed (the line pinning). req/s and GCs: the lowest and th
 
 | case | scheduler | depth | req/s | GCs | live StackChunks | note |
 |---|---|---|---|---|---|---|
-| default | stealing-local | 256 | 149,999–150,000 | 8–9 | 28 → 25 |  |
+| default | stealing-local | 256 | 149,999 | 9 | 25 → 27 |  |
 | default | stealing-local | 0 | 149,999 | 9 |  |  |
-| default | hybrid | 256 | 149,999–150,000 | 9 | 25 → 25 |  |
-| default | hybrid | 0 | 149,995–149,999 | 9 |  |  |
-| default | jdk | 256 | 149,999–150,000 | 7 | 22 → 21 |  |
-| default | jdk | 0 | 149,999–150,000 | 7 |  |  |
-| default | jdk-pinned | 256 | 149,999 | 7 | 37 → 26 |  |
+| default | stealing-local-home | 256 | 149,999–150,000 | 8–9 | 30 → 27 |  |
+| default | stealing-local-home | 0 | 149,999–150,005 | 9 |  |  |
+| default | jdk | 256 | 149,999–150,000 | 7 | 25 → 27 |  |
+| default | jdk | 0 | 149,999 | 7 |  |  |
+| default | jdk-pinned | 256 | 149,999–150,000 | 7 | 17 → 18 |  |
 | default | jdk-pinned | 0 | 149,999–150,000 | 7 |  |  |
-| big | stealing-local | 256 | 150,000–150,002 | 7–8 | 139 → 57 |  |
+| big | stealing-local | 256 | 149,999–150,007 | 7–8 | 272 → 79 |  |
 | big | stealing-local | 0 | 149,999 | 10 |  |  |
-| big | hybrid | 256 | 149,996–150,002 | 7–8 | 108 → 26 |  |
-| big | hybrid | 0 | 149,999 | 9–11 |  |  |
-| big | jdk | 256 | 148,659–150,397 | 6–7 | 49 → 46 | not a measurement, c2c run: not a measurement, stat run: not a measurement |
-| big | jdk | 0 | 149,999–150,000 | 8 |  |  |
-| big | jdk-pinned | 256 | 149,996–150,007 | 6–7 | 27 → 31 |  |
-| big | jdk-pinned | 0 | 149,999–150,000 | 8 |  |  |
+| big | stealing-local-home | 256 | 149,997–150,001 | 8 | 559 → 32 |  |
+| big | stealing-local-home | 0 | 149,996–149,999 | 10 |  |  |
+| big | jdk | 256 | 149,618–149,962 | 6 | 436 → 25 | not a measurement, c2c run: not a measurement, stat run: not a measurement |
+| big | jdk | 0 | 149,999–150,000 | 8–9 |  |  |
+| big | jdk-pinned | 256 | 149,999–150,010 | 6–7 | 38 → 43 |  |
+| big | jdk-pinned | 0 | 149,999–150,000 | 8–9 |  |  |
 
 ## In short
 
@@ -133,22 +133,22 @@ walk   = cpu µs/req at depth 256 - cpu µs/req at depth 0
 
 | case | scheduler | depth | cpu µs/req | cpu range | vs jdk | walk µs | p50 µs | p99 µs | p99.9 µs | migrations |
 |---|---|---|---|---|---|---|---|---|---|---|
-| default | stealing-local | 256 | 24.27 | 23.35–24.94 | -32.4% | 7.04 | 28–29 | 41–48 | 199–367 | 36.1% |
-| default | stealing-local | 0 | 17.23 | 16.91–17.47 | -34.7% |  | 20–21 | 28–30 | 90–172 | 35.2% |
-| default | hybrid | 256 | 21.86 | 21.36–22.46 | -39.1% | 4.69 | 26 | 38 | 1,786–2,210 | 0.0% |
-| default | hybrid | 0 | 17.18 | 16.81–17.59 | -34.9% |  | 21–22 | 32 | 693–2,263 | 0.0% |
-| default | jdk | 256 | 35.89 | 35.56–36.44 |  | 9.50 | 32–34 | 83–87 | 2,501–3,017 | 71.2% |
-| default | jdk | 0 | 26.39 | 24.78–27.82 |  |  | 18–22 | 29–31 | 1,425–1,460 | 86.2% |
-| default | jdk-pinned | 256 | 43.54 | 43.41–43.69 | +21.3% | 14.70 | 42 | 88–89 | 134–584 | 65.6% |
-| default | jdk-pinned | 0 | 28.85 | 28.31–29.13 | +9.3% |  | 20–22 | 28–30 | 40–84 | 86.0% |
-| big | stealing-local | 256 | 65.02 | 64.86–65.15 |  | 47.53 | 205–218 | 676–724 | 967–1,059 | 11.1% |
-| big | stealing-local | 0 | 17.49 | 17.36–17.65 | -34.0% |  | 20–21 | 28–29 | 33–34 | 37.7% |
-| big | hybrid | 256 | 67.23 | 66.72–68.00 |  | 49.62 | 173–182 | 593–622 | 1,612–2,523 | 0.0% |
-| big | hybrid | 0 | 17.60 | 17.24–18.08 | -33.5% |  | 21 | 31 | 1,422–1,852 | 0.0% |
-| big | jdk | 256 | not a measurement |  |  |  | 1,118–1,970 | 34,701–57,115 | 55,312–91,357 | 3.5% |
-| big | jdk | 0 | 26.48 | 25.02–27.34 |  |  | 18–22 | 28–31 | 332–1,375 | 86.2% |
-| big | jdk-pinned | 256 | 74.69 | 73.71–75.81 |  | 45.82 | 360–460 | 1,255–1,654 | 1,828–2,468 | 12.4% |
-| big | jdk-pinned | 0 | 28.87 | 28.43–29.53 | +9.1% |  | 19–22 | 29–30 | 36 | 85.8% |
+| default | stealing-local | 256 | 23.93 | 23.38–24.28 | -32.9% | 6.81 | 28–29 | 44–47 | 212–354 | 34.5% |
+| default | stealing-local | 0 | 17.12 | 16.93–17.35 | -33.6% |  | 20–21 | 28–29 | 140–303 | 35.8% |
+| default | stealing-local-home | 256 | 20.71 | 20.63–20.78 | -41.9% | 4.34 | 24–25 | 34–36 | 60–282 | 0.0% |
+| default | stealing-local-home | 0 | 16.37 | 16.16–16.69 | -36.5% |  | 20–21 | 28–30 | 137–342 | 0.0% |
+| default | jdk | 256 | 35.64 | 35.26–35.92 |  | 9.86 | 32–34 | 86–87 | 2,818–3,144 | 70.9% |
+| default | jdk | 0 | 25.77 | 24.47–27.61 |  |  | 18–22 | 28–31 | 51–1,890 | 85.8% |
+| default | jdk-pinned | 256 | 43.59 | 43.39–43.91 | +22.3% | 14.92 | 41–44 | 85–92 | 147–401 | 65.7% |
+| default | jdk-pinned | 0 | 28.67 | 28.44–28.96 | +11.2% |  | 20–21 | 30 | 41–86 | 85.4% |
+| big | stealing-local | 256 | 65.09 | 65.03–65.13 |  | 47.56 | 208–213 | 694–733 | 991–1,615 | 11.7% |
+| big | stealing-local | 0 | 17.53 | 17.00–17.80 | -34.6% |  | 20–21 | 28–29 | 33–35 | 36.2% |
+| big | stealing-local-home | 256 | 64.02 | 62.48–65.01 |  | 47.20 | 150–167 | 485–536 | 837–849 | 0.0% |
+| big | stealing-local-home | 0 | 16.81 | 16.71–16.94 | -37.3% |  | 20–21 | 28–30 | 34–36 | 0.0% |
+| big | jdk | 256 | not a measurement |  |  |  | 822–1,083 | 22,495–32,555 | 37,257–51,151 | 5.5% |
+| big | jdk | 0 | 26.80 | 26.40–27.52 |  |  | 18–21 | 28–31 | 281–1,066 | 86.4% |
+| big | jdk-pinned | 256 | 75.38 | 74.67–75.78 |  | 46.52 | 414–469 | 1,571–1,647 | 2,372–2,644 | 11.0% |
+| big | jdk-pinned | 0 | 28.86 | 28.44–29.16 | +7.7% |  | 19–21 | 28–30 | 34–44 | 84.9% |
 
 ## Epsilon
 
@@ -164,11 +164,11 @@ difference = cpu µs/req Epsilon - cpu µs/req G1
 
 | case | scheduler | cpu µs/req G1 | cpu µs/req Epsilon | difference | heap used | note |
 |---|---|---|---|---|---|---|
-| default | stealing-local | 24.27 | 25.40 | +1.13 | 8,645 MiB |  |
-| default | hybrid | 21.86 | 22.54 | +0.68 | 8,637 MiB |  |
-| default | jdk | 35.89 | 38.10 | +2.21 | 6,659 MiB |  |
-| default | jdk-pinned | 43.54 | 45.28 | +1.74 | 6,896 MiB |  |
-| big | stealing-local | 65.02 | 71.09 | +6.07 | 5,884 MiB |  |
-| big | hybrid | 67.23 | 73.22 | +5.99 | 6,274 MiB |  |
-| big | jdk | not a measurement | not a measurement |  | 5,258 MiB | this run: not a measurement |
-| big | jdk-pinned | 74.69 | 78.49 | +3.80 | 4,978 MiB |  |
+| default | stealing-local | 23.93 | 24.96 | +1.03 | 9,688 MiB |  |
+| default | stealing-local-home | 20.71 | 21.51 | +0.80 | 9,099 MiB |  |
+| default | jdk | 35.64 | 36.54 | +0.90 | 6,728 MiB |  |
+| default | jdk-pinned | 43.59 | 44.12 | +0.53 | 6,872 MiB |  |
+| big | stealing-local | 65.09 | 71.31 | +6.22 | 5,928 MiB |  |
+| big | stealing-local-home | 64.02 | 70.99 | +6.97 | 6,227 MiB |  |
+| big | jdk | not a measurement | not a measurement |  | 5,162 MiB | this run: not a measurement |
+| big | jdk-pinned | 75.38 | 78.46 | +3.08 | 4,966 MiB |  |

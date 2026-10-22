@@ -162,14 +162,14 @@ public final class Main {
 	 * carriers.
 	 */
 	private static Carriers carriers(int count) {
-		String name = System.getProperty("bench.scheduler", "hybrid");
+		String name = System.getProperty("bench.scheduler", "stealing-local-home");
 		return switch (name) {
 			case "stealing-local" -> Carriers.affine(count).pinned().workStealing(Carriers.WorkStealing.CLUSTER_LOCAL);
-			case "hybrid" ->
-				Carriers.affine(count).pinned().workStealing(Carriers.WorkStealing.GLOBAL).actorsStayHome();
+			case "stealing-local-home" ->
+				Carriers.affine(count).pinned().workStealing(Carriers.WorkStealing.CLUSTER_LOCAL).actorsStayHome();
 			case "jdk" -> Carriers.builtin(count);
 			default -> throw new IllegalArgumentException(
-					"bench.scheduler must be stealing-local, hybrid or jdk, not '" + name + "'");
+					"bench.scheduler must be stealing-local, stealing-local-home or jdk, not '" + name + "'");
 		};
 	}
 
