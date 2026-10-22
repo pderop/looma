@@ -115,7 +115,7 @@ The carrier-affine scheduler also needs `looma-netty-scheduler` on the classpath
 | [`docs/api.md`](docs/api.md) | The API: actors, messages, `tell`/`ask`, hierarchy, supervision, placement, pools, offloading, shutdown. |
 | [`docs/schedulers.md`](docs/schedulers.md) | The two schedulers: choosing one in code or by flags, placement, work stealing (`GLOBAL`, `CLUSTER_LOCAL`, `actorsStayHome()`), the engine and the SPI, and why carrier affinity. |
 | [`docs/benchmark.md`](docs/benchmark.md) | The benchmark: the question and the answer, the program, the schedulers it compares, running it, reading `summary.md`, and the results per machine. |
-| [`netty-loom-scheduler/README.md`](netty-loom-scheduler/README.md) | The copy of the Netty scheduler: upstream commit, Looma's two patches, refresh procedure. |
+| [`netty-loom-scheduler/README.md`](netty-loom-scheduler/README.md) | The copy of the Netty scheduler: upstream commit, Looma's three patches, refresh procedure. |
 
 ## Modules
 
@@ -206,7 +206,7 @@ call gets a fresh one (`#35` to `#37`), on the same carrier.
 
 The carrier-affine scheduler in `netty-loom-scheduler/src/main/java/io/netty/loom` is a copy of
 [franz1981/Netty-VirtualThread-Scheduler](https://github.com/franz1981/Netty-VirtualThread-Scheduler)
-(Apache-2.0), by Francesco Nigro, with documented changes in two files — see
+(Apache-2.0), by Francesco Nigro, with documented changes in three files — see
 [`netty-loom-scheduler/README.md`](netty-loom-scheduler/README.md) and [`NOTICE`](NOTICE).
 
 ## License

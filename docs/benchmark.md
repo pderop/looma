@@ -8,9 +8,9 @@ request makes an actor read a few hundred of its objects. The benchmark compares
 scheduler spends per request, the latency, and how often actors moved to another core.
 
 **The answer**, on an AMD Ryzen 9 9950X: when an actor's data fits in its core's L2 cache, the
-schedulers that keep actors on their core spend about half the CPU of the JDK's scheduler per
-request. When the data fits in no cache, the JDK's scheduler cannot keep up with the rate. With
-its workers pinned, it keeps up, but spends 12% to 16% more CPU per request. The numbers:
+schedulers that keep actors on their core spend 32% to 39% less CPU per request than the JDK's
+scheduler. When the data fits in no cache, the JDK's scheduler cannot keep up with the rate. With
+its workers pinned, it keeps up, but spends 11% to 15% more CPU per request. The numbers:
 [`results/2026-10-22-ryzen9-9950x/summary.md`](results/2026-10-22-ryzen9-9950x/summary.md).
 
 - Code: [`examples/…/examples/user`](../examples/src/main/java/io/github/pderop/looma/examples/user)
@@ -116,8 +116,7 @@ the core and the caches of each CPU.
 - **`--cpus-carriers`**: one carrier and one group per CPU. Give one CPU per core: the script
   refuses two CPUs of the same core.
 - **`--cpus-client`**: the load, one `FrontendServer` thread per CPU.
-- **`--cpus-backend`**: the backend, one thread per CPU, and the JDK's Master-Poller. This thread
-  watches the sockets of every virtual thread and wakes the ones whose data arrived.
+- **`--cpus-backend`**: the backend, one thread per CPU.
 
 The client threads run in the benchmark JVM, but their CPU time is not counted: "cpu µs/req" is
 the CPU of the server alone.
@@ -129,7 +128,8 @@ Who pins what:
 - The carriers of `stealing-local` and `hybrid` pin themselves. Each one takes one CPU of the
   JVM's list.
 - The client threads pin themselves too, to the client CPUs.
-- The script moves the Master-Poller to the backend CPUs once it starts.
+- The JDK's Master-Poller, the thread that wakes the virtual threads whose socket has data,
+  runs on the carrier CPUs, like the other threads of the JVM.
 - In `jdk-pinned`, the script pins each JDK carrier to one carrier CPU, during the warm-up.
 - In `jdk`, nothing pins the carriers. They can move between the carrier CPUs.
 
@@ -167,8 +167,8 @@ What the script does:
 1. It prepares the machine (`prepare-linux-bench.sh`), then starts the backend, once for all the
    runs, under `taskset` on the backend CPUs.
 2. It runs each run under `taskset` on the carrier CPUs, with a fixed heap (`-Xms2g -Xmx2g
-   -XX:+AlwaysPreTouch`) and a GC log. During the run, it moves the Master-Poller to the backend
-   CPUs. In `jdk-pinned`, it pins each JDK carrier to one carrier CPU, during the warm-up.
+   -XX:+AlwaysPreTouch`) and a GC log. In `jdk-pinned`, it pins each JDK carrier to one carrier
+   CPU, during the warm-up.
 3. It runs the cases one after the other: steps 3 to 6 for `default`, then for `big`.
    For each repetition (`--reps`, 3 by default), it runs every scheduler at `--depth`, then at
    depth 0. The repetitions follow each other: r1 runs every scheduler, then r2, then r3.
@@ -251,14 +251,14 @@ The line:
 
 | case | scheduler | instructions | cycles | requests | instructions/req | IPC | cycles per instruction | cycles/req | note |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| default | jdk | 275,882,088,488 | 381,132,028,203 | 2,100,000 | 131,372 | 0.72 | 1.38 | 181,491 | |
+| default | jdk | 275,266,910,425 | 320,310,885,643 | 2,100,000 | 131,079 | 0.86 | 1.16 | 152,529 | |
 
 It comes from `runs/default-stat-jdk.csv`, the output of `perf stat` during the stat
 run of `jdk`. The file has one line per thread and counter, for example:
 
 ```
-ForkJoi..rker-4-290498,30651556392,,cycles,7524436953,100.00,,
-ForkJoi..rker-4-290498,21849180953,,instructions,7524460243,100.00,,
+ForkJoi..rker-4-325065,25626616931,,cycles,6358832890,100.00,,
+ForkJoi..rker-4-325065,21946411701,,instructions,6358878240,100.00,,
 ```
 
 Split on the commas, field 1 is the thread, field 2 is a number, and field 4 is the word that
@@ -275,10 +275,10 @@ the word. The comment at the top of the file lists every field.
 4. The other columns divide these three numbers:
 
    ```
-   instructions/req       = instructions / requests  = 275,882,088,488 / 2,100,000       = 131,372
-   cycles/req             = cycles / requests        = 381,132,028,203 / 2,100,000       = 181,491
-   IPC                    = instructions / cycles    = 275,882,088,488 / 381,132,028,203 = 0.72
-   cycles per instruction = cycles / instructions    = 381,132,028,203 / 275,882,088,488 = 1.38
+   instructions/req       = instructions / requests  = 275,266,910,425 / 2,100,000       = 131,079
+   cycles/req             = cycles / requests        = 320,310,885,643 / 2,100,000       = 152,529
+   IPC                    = instructions / cycles    = 275,266,910,425 / 320,310,885,643 = 0.86
+   cycles per instruction = cycles / instructions    = 320,310,885,643 / 275,266,910,425 = 1.16
    ```
 
    IPC is the instructions run per cycle; cycles per instruction is its inverse. So
@@ -308,10 +308,9 @@ They are read from the console of each run, `runs/<case>-<run>-<scheduler>-<dept
 - migrations: the line `migrations`, the mean of r1 to r3.
 - live StackChunks: the line `stackchunks` of the c2c run.
 - note: "not a measurement" when the console says the run did not keep up with its rate, a
-  GET failed, or a pinning failed. The script adds two lines at the end of each console:
-  `poller`, where it moved the JDK's Master-Poller, and for `jdk-pinned`, `pinning`, how many
-  workers it pinned. A poller not moved, or fewer workers pinned than carriers, is a failed
-  pinning.
+  GET failed, or a pinning failed. For `jdk-pinned`, the script adds a line at the end of the
+  console: `pinning`, how many workers it pinned. Fewer workers pinned than carriers is a
+  failed pinning.
 
 GCs is the number of lines `Pause` of the GC log of the run, `runs/<...>.gc.log`, without the
 full GCs of the StackChunk counts (`Heap Inspection`).
@@ -330,10 +329,10 @@ walk   = cpu µs/req at depth 256 - cpu µs/req at depth 0
   `runs/<case>-epsilon-<scheduler>-256.out`.
 - heap used: at exit, Epsilon writes the heap in its GC log, `runs/<case>-epsilon-<scheduler>-256.gc.log`,
   as a line like this one, from `runs/default-epsilon-hybrid-256.gc.log`:
-  `space 12582912K,  73% used [0x0000000500000000, 0x00000007313d0870, 0x0000000800000000)`.
+  `space 12582912K,  70% used [0x0000000500000000, 0x000000071bd2cd90, 0x0000000800000000)`.
   The three addresses are the start of the heap, its top (where the next object would go) and
-  its end. heap used = top - start: here 0x7313d0870 - 0x500000000 = 9,416,018,032 bytes, so
-  8,979 MiB.
+  its end. heap used = top - start: here 0x71bd2cd90 - 0x500000000 = 9,056,734,608 bytes, so
+  8,637 MiB.
 
 ```
 difference = cpu µs/req Epsilon - cpu µs/req G1
@@ -404,7 +403,7 @@ The CPU lists, the script's defaults:
 ```
 carriers     CPUs 2-7,10-15     12 carriers: 6 per CCD, one per core
 clients      CPUs 0,1,16,17     the load generator: both CPUs of cores 0 and 1 (CCD0)
-backend      CPUs 8,9,24,25     the backend and the JDK's Master-Poller: cores 8 and 9 (CCD1)
+backend      CPUs 8,9,24,25     the backend: cores 8 and 9 (CCD1)
 ```
 
 - Each carrier has a core to itself: its SMT twin stays idle.
@@ -450,10 +449,6 @@ the cache each one is meant to keep to itself.
 **Why the JVM runs under `taskset`.** It gives the carrier-affine schedulers their CPU list. It
 also keeps the JVM's other threads, like the GC and the JIT, on the carrier CPUs, away from the
 clients and the backend.
-
-**Why move the Master-Poller.** It wakes the virtual thread of every GET, so it is busy at high
-rates. Left among the carriers, it would share one carrier's CPU for the whole run, and that
-carrier would serve its actors more slowly.
 
 **Why `jdk-pinned`.** It tells whether pinning alone makes the difference.
 

@@ -25,7 +25,7 @@ as taskset writes them:
 
   --cpus-carriers <list>   One carrier per CPU, one CPU per core. Default: 2-7,10-15.
   --cpus-client <list>     The load generator: one connection thread per CPU. Default: 0,1,16,17.
-  --cpus-backend <list>    The backend, and the JDK's Master-Poller thread. Default: 8,9,24,25.
+  --cpus-backend <list>    The backend. Default: 8,9,24,25.
   --rate <n>               Requests per second in all. Default: 150000.
   --depth <n>              Users read per request. Default: 256.
   --users-per-group <list> The cases: users per actor group, ~82 bytes each, comma-separated.
@@ -153,7 +153,7 @@ turbo() {
 	printf 'java         %s\n' "$("$JAVA" -version 2>&1 | sed -n 2p)"
 	printf 'carriers     CPUs %s\n' "$CARRIER_LIST"
 	printf 'clients      CPUs %s\n' "$CLIENT_LIST"
-	printf 'backend      CPUs %s, and the Master-Poller\n' "$BACKEND_LIST"
+	printf 'backend      CPUs %s\n' "$BACKEND_LIST"
 	printf 'heap         2g, G1; the epsilon runs 12g, Epsilon\n'
 	printf 'command      %s\n' "$COMMAND_LINE"
 	echo '```'
@@ -192,26 +192,6 @@ pin_jdk_workers() {
 		done < <("$JCMD" "$pid" Thread.print 2>/dev/null || true)
 	done
 	echo "pinning      ${#pinned[@]} of ${#CARRIER_CPUS[@]} workers pinned to a carrier CPU" >"$file"
-}
-
-# The JDK's Master-Poller: a thread that wakes the virtual threads whose sockets are ready. It is
-# moved to the backend's CPUs, so that it does not share a carrier's CPU. Writes the outcome to <file>.
-pin_poller() {
-	local pid=$1 file=$2 out=$3 t task
-	wait_line "$pid" "$out" window || return 0
-	for ((t = 0; t < WARMUP * 5; t++)); do
-		for task in /proc/"$pid"/task/*; do
-			[ "$(cat "$task/comm" 2>/dev/null)" = Master-Poller ] || continue
-			if taskset -p -c "$BACKEND_LIST" "${task##*/}" >/dev/null 2>&1; then
-				echo "poller       Master-Poller moved to CPUs $BACKEND_LIST" >"$file"
-			else
-				echo "poller       pinning failed: Master-Poller not moved" >"$file"
-			fi
-			return 0
-		done
-		sleep 0.2
-	done
-	echo "poller       pinning failed: no Master-Poller thread" >"$file"
 }
 
 # wait_line <pid> <out> <word>: waits for the line of the console <out> that starts with <word>.
@@ -440,7 +420,7 @@ summary_tables() {
 			print "the full GCs of the StackChunk counts (Heap Inspection); live StackChunks, the line"
 			print "stackchunks of the console of the c2c run, during the warm-up → after the measure; note,"
 			print "\"not a measurement\" when a console says the run could not keep up with its rate, a GET"
-			print "failed, or a pinning failed (the lines pinning and poller). req/s and GCs: " span ". Step by step: [Where the numbers come from](../../benchmark.md#where-the-numbers-come-from)."
+			print "failed, or a pinning failed (the line pinning). req/s and GCs: " span ". Step by step: [Where the numbers come from](../../benchmark.md#where-the-numbers-come-from)."
 			print ""
 			print "| case | scheduler | depth | req/s | GCs | live StackChunks | note |"
 			print "|---|---|---|---|---|---|---|"
@@ -524,11 +504,10 @@ run() {
 	[ "$mode" != c2c ] || args+=(-XX:+UnlockDiagnosticVMOptions -XX:+DumpPerfMapAtExit -Dbench.stackChunks=true)
 	"${PIN[@]}" "$JAVA" "${args[@]}" -cp "$CP" io.github.pderop.looma.examples.user.Main >"$RUNS/$name.out" 2>&1 &
 	pid=$!
-	rm -f "$RUNS/$name.poller" "$RUNS/$name.pinning"
-	if [ "${#PIN[@]}" -gt 0 ]; then
-		pin_poller "$pid" "$RUNS/$name.poller" "$RUNS/$name.out" &
+	rm -f "$RUNS/$name.pinning"
+	if [ "${#PIN[@]}" -gt 0 ] && [ "$s" = jdk-pinned ]; then
+		pin_jdk_workers "$pid" "$RUNS/$name.pinning" "$RUNS/$name.out" &
 		helpers+=($!)
-		[ "$s" != jdk-pinned ] || { pin_jdk_workers "$pid" "$RUNS/$name.pinning" "$RUNS/$name.out" & helpers+=($!); }
 	fi
 	[ "$mode" != c2c ] || { c2c "$s" "$pid" "$RUNS/$name.out" & helpers+=($!); }
 	[ "$mode" != stat ] || { stat "$s" "$pid" "$RUNS/$name.out" & helpers+=($!); }
@@ -540,8 +519,8 @@ run() {
 		read -r _ n _ <"$RUNS/$name.pinning"
 		[ "$n" = "${#CARRIER_CPUS[@]}" ] || sed -i 's/^pinning      /pinning      pinning failed: /' "$RUNS/$name.pinning"
 	fi
-	cat "$RUNS/$name.poller" "$RUNS/$name.pinning" >>"$RUNS/$name.out" 2>/dev/null || true
-	rm -f "$RUNS/$name.poller" "$RUNS/$name.pinning"
+	cat "$RUNS/$name.pinning" >>"$RUNS/$name.out" 2>/dev/null || true
+	rm -f "$RUNS/$name.pinning"
 	row "$CASE" "$label" "$s" "$depth" "$mode" >>"$OUT/rows.md"
 	echo "  $name done"
 }
@@ -603,7 +582,7 @@ done
 	echo "  request to its answer. cpu µs/req is the server's: the process minus the clients."
 	echo "- Each carrier has a core to itself: the script refuses two carrier CPUs on one core."
 	echo "- jdk-pinned is jdk with each of its workers pinned to one carrier CPU. The clients are pinned to"
-	echo "  their own CPUs. The JDK's Master-Poller thread is moved to the backend's CPUs."
+	echo "  their own CPUs."
 	echo "- Heap: -Xms2g -Xmx2g -XX:+AlwaysPreTouch, G1, and a GC log per run. The epsilon run:"
 	echo "  -XX:+UseEpsilonGC -Xms12g -Xmx12g -XX:+AlwaysPreTouch. Epsilon frees nothing, so no GC runs:"
 	echo "  each allocation takes new memory."
