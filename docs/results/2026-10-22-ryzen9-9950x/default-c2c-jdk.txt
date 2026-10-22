@@ -2,58 +2,58 @@ WARNING: failed to find node
 =================================================
             Trace Event Information              
 =================================================
-  Total records                     :     156698
-  Locked Load/Store Operations      :        213
-  Load Operations                   :      48065
+  Total records                     :     160792
+  Locked Load/Store Operations      :        278
+  Load Operations                   :      47062
   Loads - uncacheable               :          0
   Loads - IO                        :          0
   Loads - Miss                      :          0
-  Loads - no mapping                :      12787
+  Loads - no mapping                :      12734
   Load Fill Buffer Hit              :          0
-  Load L1D hit                      :      31087
-  Load L2D hit                      :       1034
-  Load LLC hit                      :       1539
-  Load Local HITM                   :        662
-  Load Remote HITM                  :        926
+  Load L1D hit                      :      30484
+  Load L2D hit                      :       1031
+  Load LLC hit                      :       1515
+  Load Local HITM                   :        559
+  Load Remote HITM                  :        837
   Load Remote HIT                   :          0
-  Load Local DRAM                   :        277
+  Load Local DRAM                   :         99
   Load Remote DRAM                  :          0
-  Load MESI State Exclusive         :        277
+  Load MESI State Exclusive         :         99
   Load MESI State Shared            :          0
-  Load LLC Misses                   :       1203
+  Load LLC Misses                   :        936
   Load access blocked by data       :          0
   Load access blocked by address    :          0
   Load HIT Local Peer               :          0
   Load HIT Remote Peer              :          0
-  LLC Misses to Local DRAM          :       23.0%
+  LLC Misses to Local DRAM          :       10.6%
   LLC Misses to Remote DRAM         :        0.0%
   LLC Misses to Remote cache (HIT)  :        0.0%
-  LLC Misses to Remote cache (HITM) :       77.0%
-  Store Operations                  :      13605
+  LLC Misses to Remote cache (HITM) :       89.4%
+  Store Operations                  :      13335
   Store - uncacheable               :          2
-  Store - no mapping                :       1106
-  Store L1D Hit                     :      11165
+  Store - no mapping                :       1088
+  Store L1D Hit                     :      11207
   Store L1D Miss                    :          0
-  Store No available memory level   :        680
-  No Page Map Rejects               :      11458
-  Unable to parse data source       :      95028
+  Store No available memory level   :        581
+  No Page Map Rejects               :      11762
+  Unable to parse data source       :     100395
 
 =================================================
     Global Shared Cache Line Event Information   
 =================================================
-  Total Shared Cache Lines          :       1488
-  Load HITs on shared lines         :       3594
+  Total Shared Cache Lines          :       1287
+  Load HITs on shared lines         :       3374
   Fill Buffer Hits on shared lines  :          0
-  L1D hits on shared lines          :       1834
+  L1D hits on shared lines          :       1788
   L2D hits on shared lines          :         64
-  LLC hits on shared lines          :        738
+  LLC hits on shared lines          :        647
   Load hits on peer cache or nodes  :          0
-  Locked Access on shared lines     :         79
+  Locked Access on shared lines     :        140
   Blocked Access on shared lines    :          0
-  Store HITs on shared lines        :        504
-  Store L1D hits on shared lines    :        453
-  Store No available memory level   :         40
-  Total Merged records              :       2092
+  Store HITs on shared lines        :        502
+  Store L1D hits on shared lines    :        452
+  Store No available memory level   :         27
+  Total Merged records              :       1898
 
 =================================================
                  c2c details                     
@@ -70,67 +70,66 @@ WARNING: failed to find node
 # Index             Address  Node  PA cnt     Hitm    Total  LclHitm  RmtHitm  records    Loads   Stores    L1Hit   L1Miss      N/A       FB       L1       L2    LclHit  LclHitm    RmtHit  RmtHitm       Lcl       Rmt
 # .....  ..................  ....  ......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  ........  .......  ........  .......  ........  ........
 #
-      0          0xf9918940     0      13    1.95%       31       17       14      352      352        0        0        0        0        0      296        0        23       17         0       14         2         0
-      1  0xffffcdc78d73fc00     0       1    0.25%        4        2        2        4        4        0        0        0        0        0        0        0         0        2         0        2         0         0
-      2          0xf9930580     0      22    0.25%        4        1        3       49       48        1        1        0        0        0       42        0         2        1         0        3         0         0
-      3      0x732d30480d80     0       9    0.25%        4        3        1        9        9        0        0        0        0        0        5        0         0        3         0        1         0         0
-      4  0xffffcdc786bebc00     0      17    0.19%        3        2        1       17       10        7        7        0        0        0        7        0         0        2         0        1         0         0
-      5          0xf98d2440     0       1    0.19%        3        1        2       15       15        0        0        0        0        0        9        1         2        1         0        2         0         0
-      6          0xffd81800     0       1    0.19%        3        1        2        3        3        0        0        0        0        0        0        0         0        1         0        2         0         0
-      7      0x732d30480100     0       8    0.19%        3        1        2        8        7        1        0        0        1        0        2        2         0        1         0        2         0         0
-      8  0xffff888c00fc8000     0       1    0.13%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-      9  0xffff888c0487ff40     0       4    0.13%        2        2        0        7        7        0        0        0        0        0        5        0         0        2         0        0         0         0
-     10  0xffff888c1265d6c0     0       2    0.13%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     11  0xffff888cefe99940     0       1    0.13%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     12  0xffff888d02bc8000     0      10    0.13%        2        1        1       13       11        2        2        0        0        0        9        0         0        1         0        1         0         0
-     13  0xffff88933dfb3500     0       2    0.13%        2        2        0        5        5        0        0        0        0        0        3        0         0        2         0        0         0         0
-     14  0xffffcdc78e0ffa80     0      18    0.13%        2        0        2       23       11       12       12        0        0        0        9        0         0        0         0        2         0         0
-     15  0xffffcdc78e0ffcc0     0      12    0.13%        2        0        2       14        7        7        7        0        0        0        5        0         0        0         0        2         0         0
-     16  0xffffcdc78ef57b00     0      23    0.13%        2        0        2       22       10       13       12        0        0        0        8        0         0        0         0        2         0         0
-     17  0xffffcdc7a18afc00     0       8    0.13%        2        2        0        9        6        3        2        0        1        0        4        0         0        2         0        0         0         0
-     18  0xffffcdc7a4083bc0     0      21    0.13%        2        0        2       24        7       17       17        0        0        0        5        0         0        0         0        2         0         0
-     19          0x8041a400     0       2    0.13%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     20          0x8041a480     0       2    0.13%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     21          0x805577c0     0       2    0.13%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     22          0x80569a80     0       2    0.13%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     23          0x805a80c0     0       2    0.13%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     24          0x805ef5c0     0       2    0.13%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     25          0xb2907f00     0       1    0.13%        2        0        2        3        3        0        0        0        0        0        1        0         0        0         0        2         0         0
-     26          0xf9111c00     0       1    0.13%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     27          0xf9126f80     0       1    0.13%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     28          0xf9130b00     0       7    0.13%        2        2        0        7        7        0        0        0        0        0        5        0         0        2         0        0         0         0
-     29          0xf9177240     0       2    0.13%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
-     30          0xf9177b40     0       2    0.13%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     31          0xf92dedc0     0       1    0.13%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     32          0xf9315840     0       2    0.13%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     33          0xf933df80     0       1    0.13%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     34          0xf940ba00     0       1    0.13%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     35          0xf948f000     0       2    0.13%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     36          0xf94a6500     0       2    0.13%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     37          0xf9583780     0       1    0.13%        2        1        1        3        3        0        0        0        0        0        1        0         0        1         0        1         0         0
-     38          0xf95db200     0       1    0.13%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     39          0xf961b400     0       5    0.13%        2        1        1        6        6        0        0        0        0        0        4        0         0        1         0        1         0         0
-     40          0xf969c900     0       3    0.13%        2        1        1        2        2        1        0        0        0        0        0        0         0        1         0        1         0         0
-     41          0xf97245c0     0       1    0.13%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     42          0xf9753b80     0       2    0.13%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     43          0xf98d39c0     0      11    0.13%        2        0        2       24       24        0        0        0        0        0       20        1         1        0         0        2         0         0
-     44          0xf9918a40     0      17    0.13%        2        1        1       55       52        3        2        0        1        0       50        0         0        1         0        1         0         0
-     45          0xf9928680     0       2    0.13%        2        2        0        4        3        1        1        0        0        0        1        0         0        2         0        0         0         0
-     46          0xf9928900     0      21    0.13%        2        0        2       45       45        0        0        0        0        0       36        5         2        0         0        2         0         0
-     47          0xf9930680     0       5    0.13%        2        1        1       22       22        0        0        0        0        0       17        0         3        1         0        1         0         0
-     48          0xffd01200     0       3    0.13%        2        2        0        6        5        1        1        0        0        0        3        0         0        2         0        0         0         0
-     49          0xffd82b00     0       5    0.13%        2        2        0        6        5        1        1        0        0        0        3        0         0        2         0        0         0         0
-     50          0xffe81280     0       1    0.13%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     51          0xfff02940     0       2    0.13%        2        1        1        3        3        0        0        0        0        0        1        0         0        1         0        1         0         0
-     52      0x732c7c001600     0       5    0.13%        2        0        2        9        8        1        1        0        0        0        6        0         0        0         0        2         0         0
-     53      0x732c80001600     0       6    0.13%        2        1        1        6        5        1        1        0        0        0        3        0         0        1         0        1         0         0
-     54      0x732c88001600     0       8    0.13%        2        2        0        8        7        1        1        0        0        0        4        0         1        2         0        0         0         0
-     55      0x732c88001640     0       3    0.13%        2        1        1        4        4        0        0        0        0        0        0        2         0        1         0        1         0         0
-     56      0x732c94001640     0       5    0.13%        2        1        1        6        6        0        0        0        0        0        3        1         0        1         0        1         0         0
-     57      0x732d30049a80     0       1    0.13%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
-     58      0x732d301ed900     0       7    0.13%        2        0        2       10        7        3        3        0        0        0        5        0         0        0         0        2         0         0
-     59      0x732d304800c0     0       7    0.13%        2        0        2        6        6        0        0        0        0        0        3        0         1        0         0        2         0         0
-     60      0x732d36de6080     0       3    0.13%        2        1        1        4        4        0        0        0        0        0        2        0         0        1         0        1         0         0
+      0          0xda500340     0       3    2.01%       28       14       14      350      350        0        0        0        0        0      298        0        23       14         0       14         1         0
+      1  0xffffcdc78edc7c40     0      16    0.43%        6        2        4       18       14        4        4        0        0        0        8        0         0        2         0        4         0         0
+      2          0xda439ec0     0      14    0.43%        6        4        2       27       27        0        0        0        0        0       20        0         1        4         0        2         0         0
+      3  0xffff888c04a71600     0       1    0.29%        4        2        2        4        4        0        0        0        0        0        0        0         0        2         0        2         0         0
+      4  0xffffcdc78edc7a80     0      29    0.29%        4        2        2       32       15       17       16        0        1        0       11        0         0        2         0        2         0         0
+      5      0x7c7d30001600     0      12    0.29%        4        2        2       14       12        2        2        0        0        0        8        0         0        2         0        2         0         0
+      6      0x7c7db877c700     0      14    0.29%        4        4        0       36       33        3        3        0        0        0       15       14         0        4         0        0         0         0
+      7  0xffffcdc78edc7d00     0      15    0.21%        3        0        3       16       10        6        6        0        0        0        7        0         0        0         0        3         0         0
+      8          0xda43c600     0      20    0.21%        3        0        3       38       38        0        0        0        0        0       27        4         4        0         0        3         0         0
+      9      0x7c7d2c001600     0      14    0.21%        3        1        2       21       15        6        5        0        1        0       12        0         0        1         0        2         0         0
+     10      0x7c7d34001700     0       5    0.21%        3        2        1        5        4        1        0        0        1        0        1        0         0        2         0        1         0         0
+     11      0x7c7d38001600     0       8    0.21%        3        2        1       12       10        2        2        0        0        0        7        0         0        2         0        1         0         0
+     12      0x7c7d3c001600     0      15    0.21%        3        1        2       19       14        5        5        0        0        0       11        0         0        1         0        2         0         0
+     13      0x7c7de9fe6080     0       3    0.21%        3        0        3        9        9        0        0        0        0        0        4        0         2        0         0        3         0         0
+     14  0xffff888c00fe0000     0       1    0.14%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     15  0xffff888c352581c0     0       1    0.14%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     16  0xffff888c35258a40     0       7    0.14%        2        1        1        9        6        3        3        0        0        0        4        0         0        1         0        1         0         0
+     17  0xffff888cedf23100     0      13    0.14%        2        2        0       14       12        2        2        0        0        0       10        0         0        2         0        0         0         0
+     18  0xffff88933e333500     0       3    0.14%        2        0        2        4        3        1        1        0        0        0        1        0         0        0         0        2         0         0
+     19  0xffff88933e39f580     0       2    0.14%        2        0        2        3        3        0        0        0        0        0        1        0         0        0         0        2         0         0
+     20  0xffff88933e3b3500     0       4    0.14%        2        0        2        5        5        0        0        0        0        0        3        0         0        0         0        2         0         0
+     21  0xffffcdc78b0cba00     0      29    0.14%        2        1        1       30       17       14       13        0        0        0       15        0         0        1         0        1         0         0
+     22  0xffffcdc78b0cbc40     0      13    0.14%        2        0        2       16        9        7        6        0        1        0        7        0         0        0         0        2         0         0
+     23  0xffffcdc78bf9bac0     0       2    0.14%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     24  0xffffcdc78c323ac0     0      19    0.14%        2        1        1       23       12       11       10        0        1        0       10        0         0        1         0        1         0         0
+     25  0xffffcdc78c323b80     0      23    0.14%        2        1        1       24       15        9        9        0        0        0       13        0         0        1         0        1         0         0
+     26  0xffffcdc78c323c00     0      16    0.14%        2        0        2       17       10        7        6        0        1        0        8        0         0        0         0        2         0         0
+     27  0xffffcdc78c323c80     0      14    0.14%        2        1        1       15        7        8        8        0        0        0        5        0         0        1         0        1         0         0
+     28  0xffffcdc78edc7980     0      15    0.14%        2        0        2       21       13        8        8        0        0        0       11        0         0        0         0        2         0         0
+     29  0xffffcdc78edc7b40     0      22    0.14%        2        0        2       23       12       11       11        0        0        0       10        0         0        0         0        2         0         0
+     30  0xffffcdc7a450f940     0      20    0.14%        2        0        2       21       13        8        8        0        0        0       11        0         0        0         0        2         0         0
+     31  0xffffcdc7a450fb40     0      21    0.14%        2        0        2       26       18        8        8        0        0        0       16        0         0        0         0        2         0         0
+     32  0xffffcdc7a450fbc0     0      21    0.14%        2        0        2       22        9       14       13        0        0        0        7        0         0        0         0        2         0         0
+     33          0x8044e480     0       1    0.14%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     34          0x8052f080     0       2    0.14%        2        0        2        3        3        0        0        0        0        0        1        0         0        0         0        2         0         0
+     35          0x805a1fc0     0       1    0.14%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     36          0xd9c1fdc0     0       2    0.14%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     37          0xd9ca1080     0       2    0.14%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     38          0xd9ddb340     0       2    0.14%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     39          0xd9de1600     0       2    0.14%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     40          0xd9e83d40     0       1    0.14%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     41          0xd9eda4c0     0       1    0.14%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     42          0xd9f6ae00     0       1    0.14%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     43          0xd9fd7c80     0       1    0.14%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     44          0xda109940     0       2    0.14%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     45          0xda198540     0       2    0.14%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     46          0xda2057c0     0       1    0.14%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     47          0xda2406c0     0       1    0.14%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     48          0xda3c6640     0       1    0.14%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     49          0xda40a000     0       1    0.14%        2        0        2       15       15        0        0        0        0        0        8        1         4        0         0        2         0         0
+     50          0xda40b4c0     0       1    0.14%        2        0        2       11       11        0        0        0        0        0        7        0         2        0         0        2         0         0
+     51          0xda43bcc0     0       9    0.14%        2        0        2       21       21        0        0        0        0        0       14        2         3        0         0        2         0         0
+     52          0xda45acc0     0       2    0.14%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     53          0xda49c3c0     0      14    0.14%        2        2        0       45       36        9        9        0        0        0       34        0         0        2         0        0         0         0
+     54          0xda4d0980     0      24    0.14%        2        1        1       39       39        0        0        0        0        0       30        2         5        1         0        1         0         0
+     55          0xda5001c0     0      88    0.14%        2        2        0      144      144        0        0        0        0        0      134        1         7        2         0        0         0         0
+     56      0x7c7d50001600     0      10    0.14%        2        0        2       12        8        4        4        0        0        0        5        0         0        0         0        2         1         0
+     57      0x7c7d54001600     0      13    0.14%        2        0        2       14       10        5        4        0        0        0        8        0         0        0         0        2         0         0
+     58      0x7c7d58001600     0      10    0.14%        2        1        1       10        9        1        0        0        1        0        7        0         0        1         0        1         0         0
+     59      0x7c7de448fb80     0      11    0.14%        2        0        2       11        9        2        1        0        1        0        6        0         0        0         0        2         1         0
 
 =================================================
       Shared Cache Line Distribution Pareto      
@@ -141,433 +140,512 @@ WARNING: failed to find node
 # .....  .......  .......  .......  .......  .......  ..................  ....  ......  ..................  ........  ........  ........  .......  ........  .....................................................................................................  ................  .....................................................................................................  ....
 #
   ----------------------------------------------------------------------
-      0       14       17        0        0        0          0xf9918940
+      0       14       14        0        0        0          0xda500340
   ----------------------------------------------------------------------
-           7.14%    0.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x732d1f98eae7       145         0        98        2         2  [.] int sun.nio.ch.EPollPoller.poll(int)                                                               [JIT] tid 262060  int sun.nio.ch.EPollPoller.poll(int)+2151                                                               0
-          35.71%   52.94%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d1f97fd4d       488       341        25      266        12  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 262060  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2637      0
-           7.14%   23.53%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d1f97fc55       398       278       183        9         6  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 262060  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2389      0
-           7.14%    5.88%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d1f97974e       566       240         0       21         8  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 262060  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2894      0
-           7.14%    5.88%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d1f98998c       349        22         0       22         9  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 262060  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2188      0
-           7.14%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d1f979634       381         0         0        1         1  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 262060  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2612      0
-           0.00%    5.88%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d1f97fcfc         0       341         0        1         1  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 262060  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2556      0
-           7.14%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d1f989834       364         0       107        2         2  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 262060  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+1844      0
-           7.14%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d1f9898a2       564         0         0        1         1  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 262060  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+1954      0
-           7.14%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d1f98e707       371         0         0        3         3  [.] int sun.nio.ch.EPollPoller.poll(int)                                                               [JIT] tid 262060  int sun.nio.ch.EPollPoller.poll(int)+1159                                                               0
-           7.14%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d1f98e7d4       495         0      1182        2         2  [.] int sun.nio.ch.EPollPoller.poll(int)                                                               [JIT] tid 262060  int sun.nio.ch.EPollPoller.poll(int)+1364                                                               0
-           0.00%    5.88%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d1f98ebb9         0       343         0        2         2  [.] int sun.nio.ch.EPollPoller.poll(int)                                                               [JIT] tid 262060  int sun.nio.ch.EPollPoller.poll(int)+2361                                                               0
+          42.86%   28.57%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dd35868ad       309       226        27      301        12  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+429       0
+           7.14%   50.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dd3587181       517       276       231       12         9  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2689      0
+          14.29%   14.29%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dd355abd7       446       163         0       11         9  [.] void java.util.concurrent.ForkJoinPool.signalWork()                                                [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.signalWork()+215                                                 0
+          14.29%    7.14%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dd3586ce4       367       100         0        4         4  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+1508      0
+          14.29%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dd355ab41       203         0        79        7         7  [.] void java.util.concurrent.ForkJoinPool.signalWork()                                                [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.signalWork()+65                                                  0
+           7.14%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dd3587067       507         0         0        2         1  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2407      0
 
   ----------------------------------------------------------------------
-      1        2        2        0        0        0  0xffffcdc78d73fc00
+      1        4        2        4        0        0  0xffffcdc78edc7c40
   ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e924       399       125         0        4         4  [k] futex_wake  [kernel.kallsyms]  futex_wake+292   0
+          25.00%   50.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91d9e924       340       113         0        2         2  [k] futex_wake           [kernel.kallsyms]  futex_wake+292            0
+           0.00%    0.00%   25.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91cc0415         0         0         0        1         1  [k] select_task_rq_fair  [kernel.kallsyms]  select_task_rq_fair+5     0
+           0.00%    0.00%   25.00%    0.00%    0.00%                 0x0     0       1  0xffffffff92bd496f         0         0         0        1         1  [k] sock_read_iter       [kernel.kallsyms]  sock_read_iter+159        0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e924         0       149         0        1         1  [k] futex_wake           [kernel.kallsyms]  futex_wake+292            0
+           0.00%    0.00%   25.00%    0.00%    0.00%                0x18     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark      [kernel.kallsyms]  futex_wake_mark+5         0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffff91d9e924       426         0         0        2         2  [k] futex_wake           [kernel.kallsyms]  futex_wake+292            0
+          25.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffff91d9e924       415         0         0        1         1  [k] futex_wake           [kernel.kallsyms]  futex_wake+292            0
+           0.00%    0.00%   25.00%    0.00%    0.00%                0x30     0       1  0xffffffff92bd50a1         0         0         0        1         1  [k] sock_write_iter      [kernel.kallsyms]  sock_write_iter+17        0
 
   ----------------------------------------------------------------------
-      2        3        1        1        0        0          0xf9930580
+      2        2        4        0        0        0          0xda439ec0
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x732d1f996afd       402         0         0        4         3  [.] int java.util.concurrent.ForkJoinPool.awaitWork(java.util.concurrent.ForkJoinPool$WorkQueue, int)                                                                    [JIT] tid 262060  int java.util.concurrent.ForkJoinPool.awaitWork(java.util.concurrent.ForkJoinPool$WorkQueue, int)+637                                                                      0
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x732d1f97fd2c         0       596         0       29        12  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)                                                                        [JIT] tid 262060  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2604                                                                         0
-           0.00%    0.00%  100.00%    0.00%    0.00%                0x1c     0       1      0x732d1f955f5e         0         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+2782   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x18     0       1      0x7c7dd3599ad0         0       100         6       17         8  [.] void io.github.pderop.looma.impl.ActorRuntime.workFinished()                                                                            [JIT] tid 289092  void io.github.pderop.looma.impl.ActorRuntime.workFinished()+80                                                                               0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x7c7dd355476a       332         0         0        6         4  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)                                            [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+490                                              0
+           0.00%   25.00%    0.00%    0.00%    0.00%                0x28     0       1      0x7c7dd3589ec9         0        51         0        2         2  [.] void io.github.pderop.looma.examples.user.FrontendServer.send(long, boolean, java.util.Random, java.util.concurrent.atomic.AtomicLong)  [JIT] tid 289092  void io.github.pderop.looma.examples.user.FrontendServer.send(long, boolean, java.util.Random, java.util.concurrent.atomic.AtomicLong)+2633   0
+           0.00%   25.00%    0.00%    0.00%    0.00%                0x28     0       1      0x7c7dd3599ac6         0        92         0        2         2  [.] void io.github.pderop.looma.impl.ActorRuntime.workFinished()                                                                            [JIT] tid 289092  void io.github.pderop.looma.impl.ActorRuntime.workFinished()+70                                                                               0
 
   ----------------------------------------------------------------------
-      3        1        3        0        0        0      0x732d30480d80
+      3        2        2        0        0        0  0xffff888c04a71600
   ----------------------------------------------------------------------
-           0.00%   33.33%    0.00%    0.00%    0.00%                 0x0     0       1      0x732d370a76a4         0       180         0        1         1  [.] pthread_mutex_lock   libc.so.6  pthread_mutex_lock+4      0
-           0.00%   33.33%    0.00%    0.00%    0.00%                 0x0     0       1      0x732d370a76c4         0       112         0        2         2  [.] pthread_mutex_lock   libc.so.6  pthread_mutex_lock+36     0
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x34     0       1      0x732d370a2a45        30         0         0        1         1  [.] pthread_cond_signal  libc.so.6  pthread_cond_signal+5     0
-           0.00%   33.33%    0.00%    0.00%    0.00%                0x3c     0       1      0x732d370a2fce         0        99         0        1         1  [.] pthread_cond_wait    libc.so.6  pthread_cond_wait+158     0
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff92f3441c         0       168         0        2         2  [k] mutex_lock           [kernel.kallsyms]  mutex_lock+28            0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91d00b73       459         0         0        1         1  [k] mutex_spin_on_owner  [kernel.kallsyms]  mutex_spin_on_owner+35   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff92f325ef       369         0         0        1         1  [k] mutex_unlock         [kernel.kallsyms]  mutex_unlock+15          0
 
   ----------------------------------------------------------------------
-      4        1        2        7        0        0  0xffffcdc786bebc00
+      4        2        2       16        0        1  0xffffcdc78edc7a80
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91d9e924       371         0         0        1         1  [k] futex_wake                             [kernel.kallsyms]  futex_wake+292                              0
-           0.00%   50.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffff91d9a054         0         9         0        1         1  [k] futex_unqueue                          [kernel.kallsyms]  futex_unqueue+20                            0
-           0.00%    0.00%   14.29%    0.00%    0.00%                 0x8     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark                        [kernel.kallsyms]  futex_wake_mark+5                           0
-           0.00%    0.00%   14.29%    0.00%    0.00%                 0x8     0       1  0xffffffff91d9f633         0         0         0        1         1  [k] __futex_wait                           [kernel.kallsyms]  __futex_wait+163                            0
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e924         0       152         0        1         1  [k] futex_wake                             [kernel.kallsyms]  futex_wake+292                              0
-           0.00%    0.00%   14.29%    0.00%    0.00%                0x10     0       1  0xffffffff91cba616         0         0         0        1         1  [k] enqueue_task_fair                      [kernel.kallsyms]  enqueue_task_fair+582                       0
-           0.00%    0.00%   14.29%    0.00%    0.00%                0x10     0       1  0xffffffff91d3ae2d         0         0         0        1         1  [k] __rcu_read_lock                        [kernel.kallsyms]  __rcu_read_lock+13                          0
-           0.00%    0.00%   14.29%    0.00%    0.00%                0x18     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark                        [kernel.kallsyms]  futex_wake_mark+5                           0
-           0.00%    0.00%   14.29%    0.00%    0.00%                0x28     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark                        [kernel.kallsyms]  futex_wake_mark+5                           0
-           0.00%    0.00%   14.29%    0.00%    0.00%                0x30     0       1  0xffffffff91d9e6ee         0         0         0        1         1  [k] futex_wake_mark                        [kernel.kallsyms]  futex_wake_mark+14                          0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91d9e924       454         0         0        1         1  [k] futex_wake               [kernel.kallsyms]  futex_wake+292                0
+           0.00%    0.00%    6.25%    0.00%    0.00%                 0x0     0       1  0xffffffff920bda5d         0         0         0        1         1  [k] try_charge_memcg         [kernel.kallsyms]  try_charge_memcg+77           0
+           0.00%    0.00%    6.25%    0.00%    0.00%                 0x0     0       1  0xffffffff92bd496f         0         0         0        1         1  [k] sock_read_iter           [kernel.kallsyms]  sock_read_iter+159            0
+           0.00%    0.00%    6.25%    0.00%    0.00%                 0x8     0       1  0xffffffff91f54b35         0         0         0        1         1  [k] perf_pmu_nop_int         [kernel.kallsyms]  perf_pmu_nop_int+5            0
+           0.00%    0.00%    6.25%    0.00%    0.00%                 0x8     0       1  0xffffffff91f56d15         0         0         0        1         1  [k] perf_pmu_nop_void        [kernel.kallsyms]  perf_pmu_nop_void+5           0
+           0.00%    0.00%    6.25%    0.00%    0.00%                 0x8     0       1  0xffffffff91f61072         0         0         0        1         1  [k] group_sched_out          [kernel.kallsyms]  group_sched_out+18            0
+           0.00%    0.00%    6.25%    0.00%    0.00%                 0x8     0       1  0xffffffff92d9ad45         0         0         0        1         1  [k] cubictcp_cwnd_event      [kernel.kallsyms]  cubictcp_cwnd_event+5         0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e924         0       152         0        2         2  [k] futex_wake               [kernel.kallsyms]  futex_wake+292                0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e6ee         0         0         0        1         1  [k] futex_wake_mark          [kernel.kallsyms]  futex_wake_mark+14            0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e815         0         0         0        1         1  [k] futex_wake               [kernel.kallsyms]  futex_wake+21                 0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x10     0       1  0xffffffff92bd48d5         0         0         0        1         1  [k] sock_read_iter           [kernel.kallsyms]  sock_read_iter+5              0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x18     0       1  0xffffffff91cc041b         0         0         0        1         1  [k] select_task_rq_fair      [kernel.kallsyms]  select_task_rq_fair+11        0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x18     0       1  0xffffffff91ce5c59         0         0         0        1         1  [k] set_next_task_idle       [kernel.kallsyms]  set_next_task_idle+9          0
+           0.00%    0.00%    0.00%    0.00%  100.00%                0x18     0       1  0xffffffff91d9f633         0         0         0        1         1  [k] __futex_wait             [kernel.kallsyms]  __futex_wait+163              0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x28     0       1  0xffffffff91d9a09f         0         0         0        1         1  [k] futex_unqueue            [kernel.kallsyms]  futex_unqueue+95              0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x28     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark          [kernel.kallsyms]  futex_wake_mark+5             0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffff91d9e924       455         0         0        1         1  [k] futex_wake               [kernel.kallsyms]  futex_wake+292                0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x30     0       1  0xffffffff9216e50f         0         0         0        1         1  [k] ep_poll                  [kernel.kallsyms]  ep_poll+639                   0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x30     0       1  0xffffffff92be05f8         0         0         0        1         1  [k] sock_rfree               [kernel.kallsyms]  sock_rfree+104                0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x30     0       1  0xffffffff92d10fd5         0         0         0        1         1  [k] tcp_poll                 [kernel.kallsyms]  tcp_poll+5                    0
 
   ----------------------------------------------------------------------
-      5        2        1        0        0        0          0xf98d2440
+      5        2        2        2        0        0      0x7c7d30001600
   ----------------------------------------------------------------------
-          50.00%  100.00%    0.00%    0.00%    0.00%                0x38     0       1      0x732d1f97f61b       414        86         0        4         4  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 262060  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+795    0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x38     0       1      0x732d1f98e991       346         0         0        1         1  [.] int sun.nio.ch.EPollPoller.poll(int)                                                           [JIT] tid 262060  int sun.nio.ch.EPollPoller.poll(int)+1809                                                            0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dea2a76c4         0       154         0        1         1  [.] pthread_mutex_lock    libc.so.6  pthread_mutex_lock+36     0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dea2a9074       146         0         0        2         2  [.] pthread_mutex_unlock  libc.so.6  pthread_mutex_unlock+4    0
+          50.00%   50.00%    0.00%    0.00%    0.00%                0x30     0       1      0x7c7dea2a2fd1       391        97         0        2         2  [.] pthread_cond_wait     libc.so.6  pthread_cond_wait+161     0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x30     0       1      0x7c7dea2a2b8f         0         0         0        2         2  [.] pthread_cond_signal   libc.so.6  pthread_cond_signal+335   0
 
   ----------------------------------------------------------------------
-      6        2        1        0        0        0          0xffd81800
+      6        0        4        3        0        0      0x7c7db877c700
   ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x732d358d4120       358        76         0        3         3  [.] AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<286822ul, G1BarrierSet>, (AccessInternal::BarrierType)3, 286822ul>::oop_access_barrier(oopDesc*, long)  libjvm.so  accessBackend.hpp:252   0
+           0.00%    0.00%   33.33%    0.00%    0.00%                 0x0     0       1      0x7c7de981634b         0         0         0        1         1  [.] FastThreadsListHandle::FastThreadsListHandle(oopDesc*, JavaThread*)  libjvm.so         threadSMR.cpp:862              0
+           0.00%    0.00%   33.33%    0.00%    0.00%                0x18     0       1      0x7c7de9816402         0         0         0        1         1  [.] FastThreadsListHandle::FastThreadsListHandle(oopDesc*, JavaThread*)  libjvm.so         threadSMR.cpp:478              0
+           0.00%    0.00%   33.33%    0.00%    0.00%                0x20     0       1      0x7c7de981634e         0         0         0        1         1  [.] FastThreadsListHandle::FastThreadsListHandle(oopDesc*, JavaThread*)  libjvm.so         threadSMR.hpp:255              0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x38     0       1      0x7c7dea2ac802         0        88         6       29         4  [.] 0x00000000000ac802                                                   libc.so.6         libc.so.6[ac802]               0
 
   ----------------------------------------------------------------------
-      7        2        1        0        0        1      0x732d30480100
+      7        3        0        6        0        0  0xffffcdc78edc7d00
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x732d370a2bc5       112         0         0        1         1  [.] pthread_cond_signal  libc.so.6  pthread_cond_signal+389   0
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x14     0       1      0x732d370a2ff9         0        82         0        1         1  [.] pthread_cond_wait    libc.so.6  pthread_cond_wait+201     0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x732d370a2fed       373         0         0        1         1  [.] pthread_cond_wait    libc.so.6  pthread_cond_wait+189     0
-           0.00%    0.00%    0.00%    0.00%  100.00%                0x1c     0       1      0x732d370a2baa         0         0         0        1         1  [.] pthread_cond_signal  libc.so.6  pthread_cond_signal+362   0
+          33.33%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91d9e924       460         0         0        1         1  [k] futex_wake                  [kernel.kallsyms]  futex_wake+292                  0
+           0.00%    0.00%   16.67%    0.00%    0.00%                 0x8     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark             [kernel.kallsyms]  futex_wake_mark+5               0
+           0.00%    0.00%   16.67%    0.00%    0.00%                0x18     0       1  0xffffffff920e73dc         0         0         0        1         1  [k] vfs_write                   [kernel.kallsyms]  vfs_write+348                   0
+           0.00%    0.00%   16.67%    0.00%    0.00%                0x20     0       1  0xffffffff9216d732         0         0         0        1         1  [k] __ep_eventpoll_poll.isra.0  [kernel.kallsyms]  __ep_eventpoll_poll.isra.0+34   0
+           0.00%    0.00%   16.67%    0.00%    0.00%                0x28     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark             [kernel.kallsyms]  futex_wake_mark+5               0
+          66.67%    0.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffff91d9e924       438         0         0        2         2  [k] futex_wake                  [kernel.kallsyms]  futex_wake+292                  0
+           0.00%    0.00%   16.67%    0.00%    0.00%                0x30     0       1  0xffffffff92bd48d5         0         0         0        1         1  [k] sock_read_iter              [kernel.kallsyms]  sock_read_iter+5                0
+           0.00%    0.00%   16.67%    0.00%    0.00%                0x38     0       1  0xffffffff91d9e6f3         0         0         0        1         1  [k] futex_wake_mark             [kernel.kallsyms]  futex_wake_mark+19              0
 
   ----------------------------------------------------------------------
-      8        2        0        0        0        0  0xffff888c00fc8000
+      8        3        0        0        0        0          0xda43c600
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91ca4014       406         0         0        2         1  [k] call_function_single_prep_ipi  [kernel.kallsyms]  call_function_single_prep_ipi+52   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x7c7dd3586ad6       429         0       155        7         7  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+982    0
 
   ----------------------------------------------------------------------
-      9        0        2        0        0        0  0xffff888c0487ff40
+      9        2        1        5        0        1      0x7c7d2c001600
   ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff9216c0c2         0        88         0        2         2  [k] ep_start_scan  [kernel.kallsyms]  ep_start_scan+50   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x7c7dea2a90ba       444         0         0        1         1  [.] pthread_mutex_unlock   libc.so.6         pthread_mutex_unlock+74    0
+           0.00%    0.00%    0.00%    0.00%  100.00%                 0x8     0       1      0x7c7dea2a694a         0         0         0        1         1  [.] 0x00000000000a694a     libc.so.6         libc.so.6[a694a]           0
+           0.00%    0.00%   20.00%    0.00%    0.00%                 0x8     0       1      0x7c7dea2a8597         0         0         0        1         1  [.] pthread_mutex_trylock  libc.so.6         pthread_mutex_trylock+87   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dea2a76c4         0       125         0        1         1  [.] pthread_mutex_lock     libc.so.6         pthread_mutex_lock+36      0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x7c7dea2a2fd1      1223         0         0        1         1  [.] pthread_cond_wait      libc.so.6         pthread_cond_wait+161      0
+           0.00%    0.00%   80.00%    0.00%    0.00%                0x30     0       1      0x7c7dea2a2b8f         0         0         0        4         4  [.] pthread_cond_signal    libc.so.6         pthread_cond_signal+335    0
 
   ----------------------------------------------------------------------
-     10        1        1        0        0        0  0xffff888c1265d6c0
+     10        1        2        0        0        1      0x7c7d34001700
   ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                 0x2     0       1  0xffffffff92beb9e4         0        27         0        1         1  [k] skb_release_data     [kernel.kallsyms]  skb_release_data+196      0
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x38     0       1  0xffffffff92bf6102       368         0         0        1         1  [k] __skb_datagram_iter  [kernel.kallsyms]  __skb_datagram_iter+338   0
+           0.00%    0.00%    0.00%    0.00%  100.00%                 0xc     0       1      0x7c7de947fab0         0         0         0        1         1  [.] Parker::park(bool, long)  libjvm.so         os_posix.cpp:1951         0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x7c7dea2a693f       379         0         0        1         1  [.] 0x00000000000a693f        libc.so.6         libc.so.6[a693f]          0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x18     0       1      0x7c7dea2a76dc         0        82         0        1         1  [.] pthread_mutex_lock        libc.so.6         pthread_mutex_lock+60     0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x20     0       1      0x7c7dea2a9074         0        75         0        1         1  [.] pthread_mutex_unlock      libc.so.6         pthread_mutex_unlock+4    0
 
   ----------------------------------------------------------------------
-     11        2        0        0        0        0  0xffff888cefe99940
+     11        1        2        2        0        0      0x7c7d38001600
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x14     0       1  0xffffffff92d9ad64       339         0         0        2         2  [k] cubictcp_cwnd_event  [kernel.kallsyms]  cubictcp_cwnd_event+36   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dea2a76a4         0       149         0        1         1  [.] pthread_mutex_lock   libc.so.6  pthread_mutex_lock+4      0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dea2a76c4         0        95         0        1         1  [.] pthread_mutex_lock   libc.so.6  pthread_mutex_lock+36     0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x7c7dea2a2b93         9         0         0        4         4  [.] pthread_cond_signal  libc.so.6  pthread_cond_signal+339   0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x30     0       1      0x7c7dea2a2b8f         0         0         0        2         1  [.] pthread_cond_signal  libc.so.6  pthread_cond_signal+335   0
 
   ----------------------------------------------------------------------
-     12        1        1        2        0        0  0xffff888d02bc8000
+     12        2        1        5        0        0      0x7c7d3c001600
   ----------------------------------------------------------------------
-           0.00%    0.00%   50.00%    0.00%    0.00%                0x18     0       1  0xffffffff91ca8b88         0         0         0        1         1  [k] try_to_wake_up                [kernel.kallsyms]  try_to_wake_up+280                0
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1  0xffffffff91ca93c5       353         0         0        1         1  [k] wake_up_q                     [kernel.kallsyms]  wake_up_q+69                      0
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x34     0       1  0xffffffff92f340c5         0        87         0        1         1  [k] __mutex_lock.constprop.0      [kernel.kallsyms]  __mutex_lock.constprop.0+2325     0
-           0.00%    0.00%   50.00%    0.00%    0.00%                0x38     0       1  0xffffffff91da12a6         0         0         0        1         1  [k] __smp_call_single_queue       [kernel.kallsyms]  __smp_call_single_queue+54        0
+           0.00%    0.00%   20.00%    0.00%    0.00%                 0x8     0       1      0x7c7dea2a8597         0         0         0        1         1  [.] pthread_mutex_trylock  libc.so.6  pthread_mutex_trylock+87   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x7c7dea2a9088       329         0         0        2         2  [.] pthread_mutex_unlock   libc.so.6  pthread_mutex_unlock+24    0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dea2a76c4         0        97         0        2         2  [.] pthread_mutex_lock     libc.so.6  pthread_mutex_lock+36      0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x7c7dea2a2fd1       375         0         0        1         1  [.] pthread_cond_wait      libc.so.6  pthread_cond_wait+161      0
+           0.00%    0.00%   80.00%    0.00%    0.00%                0x30     0       1      0x7c7dea2a2b8f         0         0         0        4         4  [.] pthread_cond_signal    libc.so.6  pthread_cond_signal+335    0
 
   ----------------------------------------------------------------------
-     13        0        2        0        0        0  0xffff88933dfb3500
+     13        3        0        0        0        0      0x7c7de9fe6080
   ----------------------------------------------------------------------
-           0.00%   50.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91cb5a04         0        73         0        1         1  [k] select_idle_sibling      [kernel.kallsyms]  select_idle_sibling+580       0
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x18     0       1  0xffffffff91cb5815         0        93         0        1         1  [k] select_idle_sibling      [kernel.kallsyms]  select_idle_sibling+85        0
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x7c7dd358a0be       372         0         0        1         1  [.] void io.github.pderop.looma.examples.user.FrontendServer.send(long, boolean, java.util.Random, java.util.concurrent.atomic.AtomicLong)  [JIT] tid 289092  void io.github.pderop.looma.examples.user.FrontendServer.send(long, boolean, java.util.Random, java.util.concurrent.atomic.AtomicLong)+3134   0
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x7c7de98163c0       368         0         0        1         1  [.] FastThreadsListHandle::FastThreadsListHandle(oopDesc*, JavaThread*)                                                                     libjvm.so         atomicAccess.hpp:552                                                                                                                          0
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x7c7de98163de        64         0        43        7         7  [.] FastThreadsListHandle::FastThreadsListHandle(oopDesc*, JavaThread*)                                                                     libjvm.so         atomicAccess.hpp:552                                                                                                                          0
 
   ----------------------------------------------------------------------
-     14        2        0       12        0        0  0xffffcdc78e0ffa80
+     14        2        0        0        0        0  0xffff888c00fe0000
   ----------------------------------------------------------------------
-           0.00%    0.00%    8.33%    0.00%    0.00%                 0x0     0       1  0xffffffff91cc0415         0         0         0        1         1  [k] select_task_rq_fair       [kernel.kallsyms]  select_task_rq_fair+5          0
-           0.00%    0.00%    8.33%    0.00%    0.00%                 0x0     0       1  0xffffffff91d9f59b         0         0         0        1         1  [k] __futex_wait              [kernel.kallsyms]  __futex_wait+11                0
-           0.00%    0.00%    8.33%    0.00%    0.00%                 0x0     0       1  0xffffffff92bd496f         0         0         0        1         1  [k] sock_read_iter            [kernel.kallsyms]  sock_read_iter+159             0
-           0.00%    0.00%    8.33%    0.00%    0.00%                 0x8     0       1  0xffffffff920e6b17         0         0         0        1         1  [k] vfs_read                  [kernel.kallsyms]  vfs_read+855                   0
-           0.00%    0.00%    8.33%    0.00%    0.00%                0x18     0       1  0xffffffff92d2bd25         0         0         0        1         1  [k] tcp_established_options   [kernel.kallsyms]  tcp_established_options+37     0
-           0.00%    0.00%    8.33%    0.00%    0.00%                0x1c     0       1  0xffffffff92d14864         0         0         0        1         1  [k] tcp_recvmsg_locked        [kernel.kallsyms]  tcp_recvmsg_locked+212         0
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffff91d9e924       426         0         0        2         2  [k] futex_wake                [kernel.kallsyms]  futex_wake+292                 0
-           0.00%    0.00%    8.33%    0.00%    0.00%                0x20     0       1  0xffffffff91cbaff6         0         0         0        1         1  [k] dequeue_entity            [kernel.kallsyms]  dequeue_entity+102             0
-           0.00%    0.00%    8.33%    0.00%    0.00%                0x20     0       1  0xffffffff91cbb07a         0         0         0        1         1  [k] dequeue_entity            [kernel.kallsyms]  dequeue_entity+234             0
-           0.00%    0.00%    8.33%    0.00%    0.00%                0x20     0       1  0xffffffff92bd50a1         0         0         0        1         1  [k] sock_write_iter           [kernel.kallsyms]  sock_write_iter+17             0
-           0.00%    0.00%    8.33%    0.00%    0.00%                0x28     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark           [kernel.kallsyms]  futex_wake_mark+5              0
-           0.00%    0.00%    8.33%    0.00%    0.00%                0x28     0       1  0xffffffff91d9e6f3         0         0         0        1         1  [k] futex_wake_mark           [kernel.kallsyms]  futex_wake_mark+19             0
-           0.00%    0.00%    8.33%    0.00%    0.00%                0x38     0       1  0xffffffff924de2b8         0         0         0        1         1  [k] _copy_from_iter           [kernel.kallsyms]  _copy_from_iter+152            0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91ca4014       363         0         0        1         1  [k] call_function_single_prep_ipi  [kernel.kallsyms]  call_function_single_prep_ipi+52   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91ca4026       371         0         0        1         1  [k] call_function_single_prep_ipi  [kernel.kallsyms]  call_function_single_prep_ipi+70   0
 
   ----------------------------------------------------------------------
-     15        2        0        7        0        0  0xffffcdc78e0ffcc0
+     15        0        2        0        0        0  0xffff888c352581c0
   ----------------------------------------------------------------------
-           0.00%    0.00%   14.29%    0.00%    0.00%                 0x0     0       1  0xffffffff91d9e6ee         0         0         0        1         1  [k] futex_wake_mark           [kernel.kallsyms]  futex_wake_mark+14            0
-           0.00%    0.00%   14.29%    0.00%    0.00%                 0x0     0       1  0xffffffff92f34436         0         0         0        1         1  [k] mutex_lock                [kernel.kallsyms]  mutex_lock+54                 0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e924       361         0         0        1         1  [k] futex_wake                [kernel.kallsyms]  futex_wake+292                0
-           0.00%    0.00%   14.29%    0.00%    0.00%                0x18     0       1  0xffffffff91d9e6f3         0         0         0        1         1  [k] futex_wake_mark           [kernel.kallsyms]  futex_wake_mark+19            0
-           0.00%    0.00%   14.29%    0.00%    0.00%                0x20     0       1  0xffffffff91cc0420         0         0         0        1         1  [k] select_task_rq_fair       [kernel.kallsyms]  select_task_rq_fair+16        0
-           0.00%    0.00%   14.29%    0.00%    0.00%                0x20     0       1  0xffffffff92329c76         0         0         0        1         1  [k] security_file_permission  [kernel.kallsyms]  security_file_permission+86   0
-           0.00%    0.00%   14.29%    0.00%    0.00%                0x28     0       1  0xffffffff91d9e6f3         0         0         0        1         1  [k] futex_wake_mark           [kernel.kallsyms]  futex_wake_mark+19            0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffff91d9e924       430         0         0        1         1  [k] futex_wake                [kernel.kallsyms]  futex_wake+292                0
-           0.00%    0.00%   14.29%    0.00%    0.00%                0x38     0       1  0xffffffff91d9b01a         0         0         0        1         1  [k] do_futex                  [kernel.kallsyms]  do_futex+10                   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x18     0       1  0xffffffff91d98e55         0        52         0        2         2  [k] futex_hash_put  [kernel.kallsyms]  futex_hash_put+5   0
 
   ----------------------------------------------------------------------
-     16        2        0       12        0        0  0xffffcdc78ef57b00
+     16        1        1        3        0        0  0xffff888c35258a40
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91d9e924       448         0         0        2         1  [k] futex_wake               [kernel.kallsyms]  futex_wake+292                0
-           0.00%    0.00%    8.33%    0.00%    0.00%                 0x0     0       1  0xffffffff92bdf14b         0         0         0        1         1  [k] lock_sock_nested         [kernel.kallsyms]  lock_sock_nested+27           0
-           0.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffff91d01ec6         0         0         0        0         1  [k] __raw_spin_lock_irqsave  [kernel.kallsyms]  __raw_spin_lock_irqsave+6     0
-           0.00%    0.00%    8.33%    0.00%    0.00%                 0x8     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark          [kernel.kallsyms]  futex_wake_mark+5             0
-           0.00%    0.00%    8.33%    0.00%    0.00%                 0x8     0       1  0xffffffff92d10fd9         0         0         0        1         1  [k] tcp_poll                 [kernel.kallsyms]  tcp_poll+9                    0
-           0.00%    0.00%    8.33%    0.00%    0.00%                0x10     0       1  0xffffffff91cc0420         0         0         0        1         1  [k] select_task_rq_fair      [kernel.kallsyms]  select_task_rq_fair+16        0
-           0.00%    0.00%    8.33%    0.00%    0.00%                0x18     0       1  0xffffffff91b487f0         0         0         0        1         1  [k] x64_sys_call             [kernel.kallsyms]  x64_sys_call+7152             0
-           0.00%    0.00%    8.33%    0.00%    0.00%                0x18     0       1  0xffffffff91d9ee23         0         0         0        1         1  [k] futex_do_wait            [kernel.kallsyms]  futex_do_wait+67              0
-           0.00%    0.00%    8.33%    0.00%    0.00%                0x18     0       1  0xffffffff91f56d15         0         0         0        1         1  [k] perf_pmu_nop_void        [kernel.kallsyms]  perf_pmu_nop_void+5           0
-           0.00%    0.00%    8.33%    0.00%    0.00%                0x28     0       1  0xffffffff92bd50a3         0         0         0        1         1  [k] sock_write_iter          [kernel.kallsyms]  sock_write_iter+19            0
-           0.00%    0.00%    8.33%    0.00%    0.00%                0x30     0       1  0xffffffff91d9e6ee         0         0         0        1         1  [k] futex_wake_mark          [kernel.kallsyms]  futex_wake_mark+14            0
-           0.00%    0.00%    8.33%    0.00%    0.00%                0x30     0       1  0xffffffff92bd48d5         0         0         0        1         1  [k] sock_read_iter           [kernel.kallsyms]  sock_read_iter+5              0
-           0.00%    0.00%    8.33%    0.00%    0.00%                0x34     0       1  0xffffffff920bda53         0         0         0        1         1  [k] try_charge_memcg         [kernel.kallsyms]  try_charge_memcg+67           0
-           0.00%    0.00%    8.33%    0.00%    0.00%                0x38     0       1  0xffffffff91d9e6f3         0         0         0        1         1  [k] futex_wake_mark          [kernel.kallsyms]  futex_wake_mark+19            0
+         100.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91d99f19       334        54         0        2         2  [k] __futex_unqueue  [kernel.kallsyms]  __futex_unqueue+41   0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x10     0       1  0xffffffff92f05977         0         0         0        3         3  [k] plist_add        [kernel.kallsyms]  plist_add+231        0
 
   ----------------------------------------------------------------------
-     17        0        2        2        0        1  0xffffcdc7a18afc00
+     17        0        2        2        0        0  0xffff888cedf23100
   ----------------------------------------------------------------------
-           0.00%    0.00%   50.00%    0.00%    0.00%                 0x0     0       1  0xffffffff92d13836         0         0         0        1         1  [k] tcp_sendmsg              [kernel.kallsyms]  tcp_sendmsg+54               0
-           0.00%    0.00%    0.00%    0.00%  100.00%                0x10     0       1  0xffffffff91cf4eaa         0         0         0        1         1  [k] sched_clock_cpu          [kernel.kallsyms]  sched_clock_cpu+10           0
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffff91d9e924         0       134         0        2         2  [k] futex_wake               [kernel.kallsyms]  futex_wake+292               0
-           0.00%    0.00%   50.00%    0.00%    0.00%                0x30     0       1  0xffffffff91d9e8a4         0         0         0        1         1  [k] futex_wake               [kernel.kallsyms]  futex_wake+164               0
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff92f30896         0        56         0        1         1  [k] __schedule                             [kernel.kallsyms]  __schedule+390                             0
+           0.00%    0.00%   50.00%    0.00%    0.00%                0x18     0       1  0xffffffff91ca8b88         0         0         0        1         1  [k] try_to_wake_up                         [kernel.kallsyms]  try_to_wake_up+280                         0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x28     0       1  0xffffffff91ca93c5         0        42         0        1         1  [k] wake_up_q                              [kernel.kallsyms]  wake_up_q+69                               0
+           0.00%    0.00%   50.00%    0.00%    0.00%                0x38     0       1  0xffffffff91da12a6         0         0         0        1         1  [k] __smp_call_single_queue                [kernel.kallsyms]  __smp_call_single_queue+54                 0
 
   ----------------------------------------------------------------------
-     18        2        0       17        0        0  0xffffcdc7a4083bc0
+     18        2        0        1        0        0  0xffff88933e333500
   ----------------------------------------------------------------------
-           0.00%    0.00%    5.88%    0.00%    0.00%                 0x0     0       1  0xffffffff91cc0420         0         0         0        1         1  [k] select_task_rq_fair                    [kernel.kallsyms]  select_task_rq_fair+16                    0
-           0.00%    0.00%    5.88%    0.00%    0.00%                 0x0     0       1  0xffffffff91d9e6ee         0         0         0        1         1  [k] futex_wake_mark                        [kernel.kallsyms]  futex_wake_mark+14                        0
-           0.00%    0.00%    5.88%    0.00%    0.00%                 0x8     0       1  0xffffffff924de22e         0         0         0        1         1  [k] _copy_from_iter                        [kernel.kallsyms]  _copy_from_iter+14                        0
-           0.00%    0.00%    5.88%    0.00%    0.00%                 0x8     0       1  0xffffffff92bd5095         0         0         0        1         1  [k] sock_write_iter                        [kernel.kallsyms]  sock_write_iter+5                         0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e924       377         0         0        1         1  [k] futex_wake                             [kernel.kallsyms]  futex_wake+292                            0
-           0.00%    0.00%    5.88%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e6ee         0         0         0        1         1  [k] futex_wake_mark                        [kernel.kallsyms]  futex_wake_mark+14                        0
-           0.00%    0.00%    5.88%    0.00%    0.00%                0x18     0       1  0xffffffff91cbc455         0         0         0        1         1  [k] dequeue_task_fair                      [kernel.kallsyms]  dequeue_task_fair+5                       0
-           0.00%    0.00%    5.88%    0.00%    0.00%                0x18     0       1  0xffffffff91d982f9         0         0         0        1         1  [k] __futex_hash                           [kernel.kallsyms]  __futex_hash+9                            0
-           0.00%    0.00%    5.88%    0.00%    0.00%                0x18     0       1  0xffffffff91d9e6f3         0         0         0        1         1  [k] futex_wake_mark                        [kernel.kallsyms]  futex_wake_mark+19                        0
-           0.00%    0.00%    5.88%    0.00%    0.00%                0x20     0       1  0xffffffff91bef6a5         0         0         0        1         1  [k] native_send_call_func_single_ipi       [kernel.kallsyms]  native_send_call_func_single_ipi+5        0
-           0.00%    0.00%    5.88%    0.00%    0.00%                0x28     0       1  0xffffffff91b46b14         0         0         0        1         1  [k] arch_exit_to_user_mode_prepare.isra.0  [kernel.kallsyms]  arch_exit_to_user_mode_prepare.isra.0+4   0
-           0.00%    0.00%    5.88%    0.00%    0.00%                0x28     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark                        [kernel.kallsyms]  futex_wake_mark+5                         0
-           0.00%    0.00%    5.88%    0.00%    0.00%                0x28     0       1  0xffffffff92bd4977         0         0         0        1         1  [k] sock_read_iter                         [kernel.kallsyms]  sock_read_iter+167                        0
-           0.00%    0.00%    5.88%    0.00%    0.00%                0x30     0       1  0xffffffff91cc0415         0         0         0        1         1  [k] select_task_rq_fair                    [kernel.kallsyms]  select_task_rq_fair+5                     0
-           0.00%    0.00%    5.88%    0.00%    0.00%                0x30     0       1  0xffffffff91cc0420         0         0         0        1         1  [k] select_task_rq_fair                    [kernel.kallsyms]  select_task_rq_fair+16                    0
-           0.00%    0.00%    5.88%    0.00%    0.00%                0x30     0       1  0xffffffff91d9e6ee         0         0         0        1         1  [k] futex_wake_mark                        [kernel.kallsyms]  futex_wake_mark+14                        0
-           0.00%    0.00%    5.88%    0.00%    0.00%                0x30     0       1  0xffffffff92bd50a1         0         0         0        1         1  [k] sock_write_iter                        [kernel.kallsyms]  sock_write_iter+17                        0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x38     0       1  0xffffffff92f058d8       392         0         0        1         1  [k] plist_add                              [kernel.kallsyms]  plist_add+72                              0
-           0.00%    0.00%    5.88%    0.00%    0.00%                0x38     0       1  0xffffffff91d9e6f3         0         0         0        1         1  [k] futex_wake_mark                        [kernel.kallsyms]  futex_wake_mark+19                        0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0xc     0       1  0xffffffff91cb357a       393         0         0        1         1  [k] wake_affine          [kernel.kallsyms]  wake_affine+538          0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1  0xffffffff91cb5815       452         0         0        1         1  [k] select_idle_sibling  [kernel.kallsyms]  select_idle_sibling+85   0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x18     0       1  0xffffffff92f308c5         0         0         0        1         1  [k] __schedule           [kernel.kallsyms]  __schedule+437           0
 
   ----------------------------------------------------------------------
-     19        1        1        0        0        0          0x8041a400
+     19        2        0        0        0        0  0xffff88933e39f580
   ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x18     0       1      0x732d1f956386         0        50         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3846   0
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x732d1f95644c       340         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+4044   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff92f3baa3       390         0         0        1         1  [k] _raw_spin_lock  [kernel.kallsyms]  _raw_spin_lock+19   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1  0xffffffff91d73189       486         0         0        1         1  [k] enqueue_timer   [kernel.kallsyms]  enqueue_timer+73    0
 
   ----------------------------------------------------------------------
-     20        1        1        0        0        0          0x8041a480
+     20        2        0        0        0        0  0xffff88933e3b3500
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d1f95630c        32         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3724   0
-           0.00%  100.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x732d1f956324         0         8         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3748   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffff91cb5811       475         0         0        2         2  [k] select_idle_sibling  [kernel.kallsyms]  select_idle_sibling+81   0
 
   ----------------------------------------------------------------------
-     21        1        1        0        0        0          0x805577c0
+     21        1        1       13        0        0  0xffffcdc78b0cba00
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x732d1f956320       437         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3744   0
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x14     0       1      0x732d1f956324         0         8         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3748   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91d9e924         0       161         0        1         1  [k] futex_wake                [kernel.kallsyms]  futex_wake+292                 0
+           0.00%    0.00%    7.69%    0.00%    0.00%                 0x8     0       1  0xffffffff91f54b35         0         0         0        1         1  [k] perf_pmu_nop_int          [kernel.kallsyms]  perf_pmu_nop_int+5             0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x10     0       1  0xffffffff91cc0420         0         0         0        1         1  [k] select_task_rq_fair       [kernel.kallsyms]  select_task_rq_fair+16         0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x18     0       1  0xffffffff923bfdf1         0         0         0        1         1  [k] aa_inet_msg_perm          [kernel.kallsyms]  aa_inet_msg_perm+81            0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x18     0       1  0xffffffff924de2b8         0         0         0        1         1  [k] _copy_from_iter           [kernel.kallsyms]  _copy_from_iter+152            0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x18     0       1  0xffffffff92bdf449         0         0         0        1         1  [k] release_sock              [kernel.kallsyms]  release_sock+9                 0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x20     0       1  0xffffffff91cb89a9         0         0         0        1         1  [k] put_prev_entity           [kernel.kallsyms]  put_prev_entity+9              0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x20     0       1  0xffffffff91cc0415         0         0         0        1         1  [k] select_task_rq_fair       [kernel.kallsyms]  select_task_rq_fair+5          0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1  0xffffffff92f058d8       380         0         0        1         1  [k] plist_add                 [kernel.kallsyms]  plist_add+72                   0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x28     0       1  0xffffffff91cc041b         0         0         0        1         1  [k] select_task_rq_fair       [kernel.kallsyms]  select_task_rq_fair+11         0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x28     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark           [kernel.kallsyms]  futex_wake_mark+5              0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x28     0       1  0xffffffff92f3071a         0         0         0        1         1  [k] __schedule                [kernel.kallsyms]  __schedule+10                  0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x30     0       1  0xffffffff92bd496f         0         0         0        1         1  [k] sock_read_iter            [kernel.kallsyms]  sock_read_iter+159             0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x38     0       1  0xffffffff91d9a04f         0         0         0        1         1  [k] futex_unqueue             [kernel.kallsyms]  futex_unqueue+15               0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x38     0       1  0xffffffff91d9e6f3         0         0         0        1         1  [k] futex_wake_mark           [kernel.kallsyms]  futex_wake_mark+19             0
+           0.00%    0.00%    0.00%    0.00%    0.00%                0x38     0       1  0xffffffff91d9f710         0         0         0        0         1  [k] futex_wait                [kernel.kallsyms]  futex_wait+96                  0
 
   ----------------------------------------------------------------------
-     22        2        0        0        0        0          0x80569a80
+     22        2        0        6        0        1  0xffffcdc78b0cbc40
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x732d1f95630c       348         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3724   0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x14     0       1      0x732d1f956324       326         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3748   0
+           0.00%    0.00%    0.00%    0.00%  100.00%                 0x8     0       1  0xffffffff91d9a049         0         0         0        1         1  [k] futex_unqueue                  [kernel.kallsyms]  futex_unqueue+9                     0
+           0.00%    0.00%   16.67%    0.00%    0.00%                 0x8     0       1  0xffffffff92f30d79         0         0         0        1         1  [k] schedule                       [kernel.kallsyms]  schedule+9                          0
+           0.00%    0.00%   16.67%    0.00%    0.00%                0x10     0       1  0xffffffff92bd50a1         0         0         0        1         1  [k] sock_write_iter                [kernel.kallsyms]  sock_write_iter+17                  0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1  0xffffffff91d451c4       572         0         0        1         1  [k] __rcu_read_unlock              [kernel.kallsyms]  __rcu_read_unlock+36                0
+           0.00%    0.00%   16.67%    0.00%    0.00%                0x18     0       1  0xffffffff91cac74f         0         0         0        1         1  [k] migrate_task_rq_fair           [kernel.kallsyms]  migrate_task_rq_fair+15             0
+           0.00%    0.00%   16.67%    0.00%    0.00%                0x28     0       1  0xffffffff92bd50a3         0         0         0        1         1  [k] sock_write_iter                [kernel.kallsyms]  sock_write_iter+19                  0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffff91d9e96c       434         0         0        1         1  [k] futex_wake                     [kernel.kallsyms]  futex_wake+364                      0
+           0.00%    0.00%   33.33%    0.00%    0.00%                0x38     0       1  0xffffffff91d9e6e5         0         0         0        2         2  [k] futex_wake_mark                [kernel.kallsyms]  futex_wake_mark+5                   0
 
   ----------------------------------------------------------------------
-     23        2        0        0        0        0          0x805a80c0
+     23        2        0        0        0        0  0xffffcdc78bf9bac0
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x732d1f95630c         8         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3724   0
-          50.00%    0.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x732d1f956324       425         0         8        1         2  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3748   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffff92f058d8       364         0         0        1         1  [k] plist_add  [kernel.kallsyms]  plist_add+72    0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff92f0595c       353         0         0        1         1  [k] plist_add  [kernel.kallsyms]  plist_add+204   0
 
   ----------------------------------------------------------------------
-     24        1        1        0        0        0          0x805ef5c0
+     24        1        1       10        0        1  0xffffcdc78c323ac0
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d1f956320       265         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3744   0
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x3c     0       1      0x732d1f956331         0        41         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3761   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91d9e924         0        96         0        1         1  [k] futex_wake                               [kernel.kallsyms]  futex_wake+292                                 0
+           0.00%    0.00%   10.00%    0.00%    0.00%                 0x8     0       1  0xffffffff91cc041b         0         0         0        1         1  [k] select_task_rq_fair                      [kernel.kallsyms]  select_task_rq_fair+11                         0
+           0.00%    0.00%   10.00%    0.00%    0.00%                0x10     0       1  0xffffffff92d10fd5         0         0         0        1         1  [k] tcp_poll                                 [kernel.kallsyms]  tcp_poll+5                                     0
+           0.00%    0.00%   10.00%    0.00%    0.00%                0x18     0       1  0xffffffff91cbb5ce         0         0         0        1         1  [k] dequeue_entities                         [kernel.kallsyms]  dequeue_entities+14                            0
+           0.00%    0.00%   10.00%    0.00%    0.00%                0x18     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark                          [kernel.kallsyms]  futex_wake_mark+5                              0
+           0.00%    0.00%    0.00%    0.00%  100.00%                0x18     0       1  0xffffffff91d9f633         0         0         0        1         1  [k] __futex_wait                             [kernel.kallsyms]  __futex_wait+163                               0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffff91d9e924       430         0         0        1         1  [k] futex_wake                               [kernel.kallsyms]  futex_wake+292                                 0
+           0.00%    0.00%   10.00%    0.00%    0.00%                0x20     0       1  0xffffffff91cc0420         0         0         0        1         1  [k] select_task_rq_fair                      [kernel.kallsyms]  select_task_rq_fair+16                         0
+           0.00%    0.00%   10.00%    0.00%    0.00%                0x20     0       1  0xffffffff92d10fd5         0         0         0        1         1  [k] tcp_poll                                 [kernel.kallsyms]  tcp_poll+5                                     0
+           0.00%    0.00%   10.00%    0.00%    0.00%                0x28     0       1  0xffffffff91cbc455         0         0         0        1         1  [k] dequeue_task_fair                        [kernel.kallsyms]  dequeue_task_fair+5                            0
+           0.00%    0.00%   10.00%    0.00%    0.00%                0x28     0       1  0xffffffff91cc041b         0         0         0        1         1  [k] select_task_rq_fair                      [kernel.kallsyms]  select_task_rq_fair+11                         0
+           0.00%    0.00%   10.00%    0.00%    0.00%                0x28     0       1  0xffffffff92bd4977         0         0         0        1         1  [k] sock_read_iter                           [kernel.kallsyms]  sock_read_iter+167                             0
+           0.00%    0.00%   10.00%    0.00%    0.00%                0x38     0       1  0xffffffff91d9e6f3         0         0         0        1         1  [k] futex_wake_mark                          [kernel.kallsyms]  futex_wake_mark+19                             0
 
   ----------------------------------------------------------------------
-     25        2        0        0        0        0          0xb2907f00
+     25        1        1        9        0        0  0xffffcdc78c323b80
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x732d1f92b6c5       378         0         0        3         3  [.] java.lang.Object java.util.concurrent.ConcurrentHashMap.putVal(java.lang.Object, java.lang.Object, boolean)  [JIT] tid 262060  java.lang.Object java.util.concurrent.ConcurrentHashMap.putVal(java.lang.Object, java.lang.Object, boolean)+1733   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91d9e924         0       163         0        1         1  [k] futex_wake                        [kernel.kallsyms]  futex_wake+292                        0
+           0.00%    0.00%   11.11%    0.00%    0.00%                 0x0     0       1  0xffffffff91ce5c55         0         0         0        1         1  [k] set_next_task_idle                [kernel.kallsyms]  set_next_task_idle+5                  0
+           0.00%    0.00%   11.11%    0.00%    0.00%                 0x8     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark                   [kernel.kallsyms]  futex_wake_mark+5                     0
+           0.00%    0.00%   11.11%    0.00%    0.00%                 0x8     0       1  0xffffffff92bd5095         0         0         0        1         1  [k] sock_write_iter                   [kernel.kallsyms]  sock_write_iter+5                     0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e924       442         0         0        1         1  [k] futex_wake                        [kernel.kallsyms]  futex_wake+292                        0
+           0.00%    0.00%   11.11%    0.00%    0.00%                0x10     0       1  0xffffffff920e697d         0         0         0        1         1  [k] vfs_read                          [kernel.kallsyms]  vfs_read+445                          0
+           0.00%    0.00%   11.11%    0.00%    0.00%                0x20     0       1  0xffffffff91d01eca         0         0         0        1         1  [k] __raw_spin_lock_irqsave           [kernel.kallsyms]  __raw_spin_lock_irqsave+10            0
+           0.00%    0.00%   11.11%    0.00%    0.00%                0x20     0       1  0xffffffff91d9e6ee         0         0         0        1         1  [k] futex_wake_mark                   [kernel.kallsyms]  futex_wake_mark+14                    0
+           0.00%    0.00%   11.11%    0.00%    0.00%                0x28     0       1  0xffffffff91d9e6f3         0         0         0        1         1  [k] futex_wake_mark                   [kernel.kallsyms]  futex_wake_mark+19                    0
+           0.00%    0.00%   22.22%    0.00%    0.00%                0x30     0       1  0xffffffff92bd50a1         0         0         0        2         1  [k] sock_write_iter                   [kernel.kallsyms]  sock_write_iter+17                    0
 
   ----------------------------------------------------------------------
-     26        2        0        0        0        0          0xf9111c00
+     26        2        0        6        0        1  0xffffcdc78c323c00
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x24     0       1      0x732d1f956331       330         0         0        2         2  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3761   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff91d9e924       434         0         0        1         1  [k] futex_wake                 [kernel.kallsyms]  futex_wake+292                  0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e924       434         0         0        1         1  [k] futex_wake                 [kernel.kallsyms]  futex_wake+292                  0
+           0.00%    0.00%   16.67%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e8eb         0         0         0        1         1  [k] futex_wake                 [kernel.kallsyms]  futex_wake+235                  0
+           0.00%    0.00%    0.00%    0.00%  100.00%                0x18     0       1  0xffffffff91d9f633         0         0         0        1         1  [k] __futex_wait               [kernel.kallsyms]  __futex_wait+163                0
+           0.00%    0.00%   16.67%    0.00%    0.00%                0x20     0       1  0xffffffff91d9b193         0         0         0        1         1  [k] do_futex                   [kernel.kallsyms]  do_futex+387                    0
+           0.00%    0.00%   16.67%    0.00%    0.00%                0x20     0       1  0xffffffff92bd496f         0         0         0        1         1  [k] sock_read_iter             [kernel.kallsyms]  sock_read_iter+159              0
+           0.00%    0.00%   16.67%    0.00%    0.00%                0x28     0       1  0xffffffff91cc041b         0         0         0        1         1  [k] select_task_rq_fair        [kernel.kallsyms]  select_task_rq_fair+11          0
+           0.00%    0.00%   16.67%    0.00%    0.00%                0x30     0       1  0xffffffff9216e343         0         0         0        1         1  [k] ep_poll                    [kernel.kallsyms]  ep_poll+179                     0
+           0.00%    0.00%   16.67%    0.00%    0.00%                0x30     0       1  0xffffffff9216e83c         0         0         0        1         1  [k] do_epoll_wait              [kernel.kallsyms]  do_epoll_wait+60                0
 
   ----------------------------------------------------------------------
-     27        2        0        0        0        0          0xf9126f80
+     27        1        1        8        0        0  0xffffcdc78c323c80
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x732d1f95630c       288         0         0        2         2  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3724   0
+           0.00%    0.00%   12.50%    0.00%    0.00%                 0x8     0       1  0xffffffff91d99639         0         0         0        1         1  [k] get_futex_key        [kernel.kallsyms]  get_futex_key+729        0
+           0.00%    0.00%   12.50%    0.00%    0.00%                 0x8     0       1  0xffffffff92bdf449         0         0         0        1         1  [k] release_sock         [kernel.kallsyms]  release_sock+9           0
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e924       433       165         0        2         2  [k] futex_wake           [kernel.kallsyms]  futex_wake+292           0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x18     0       1  0xffffffff92f20b9b         0         0         0        1         1  [k] do_syscall_64        [kernel.kallsyms]  do_syscall_64+315        0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x20     0       1  0xffffffff91cc0420         0         0         0        1         1  [k] select_task_rq_fair  [kernel.kallsyms]  select_task_rq_fair+16   0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x20     0       1  0xffffffff92d13836         0         0         0        1         1  [k] tcp_sendmsg          [kernel.kallsyms]  tcp_sendmsg+54           0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x28     0       1  0xffffffff91d9f633         0         0         0        1         1  [k] __futex_wait         [kernel.kallsyms]  __futex_wait+163         0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x30     0       1  0xffffffff91d9e6ee         0         0         0        1         1  [k] futex_wake_mark      [kernel.kallsyms]  futex_wake_mark+14       0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x38     0       1  0xffffffff92bd5095         0         0         0        1         1  [k] sock_write_iter      [kernel.kallsyms]  sock_write_iter+5        0
 
   ----------------------------------------------------------------------
-     28        0        2        0        0        0          0xf9130b00
+     28        2        0        8        0        0  0xffffcdc78edc7980
   ----------------------------------------------------------------------
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x18     0       1      0x732d1f9ac250         0        91         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.enqueue(io.github.pderop.looma.impl.Envelope)  [JIT] tid 262060  void io.github.pderop.looma.impl.ActorCell.enqueue(io.github.pderop.looma.impl.Envelope)+80    0
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x24     0       1      0x732d1f9ac2a4         0         8         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.enqueue(io.github.pderop.looma.impl.Envelope)  [JIT] tid 262060  void io.github.pderop.looma.impl.ActorCell.enqueue(io.github.pderop.looma.impl.Envelope)+164   0
+           0.00%    0.00%   12.50%    0.00%    0.00%                 0x0     0       1  0xffffffff91d00b55         0         0         0        1         1  [k] mutex_spin_on_owner       [kernel.kallsyms]  mutex_spin_on_owner+5          0
+           0.00%    0.00%   12.50%    0.00%    0.00%                 0x8     0       1  0xffffffff92d00726         0         0         0        1         1  [k] __ip_queue_xmit           [kernel.kallsyms]  __ip_queue_xmit+630            0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e924       420         0         0        1         1  [k] futex_wake                [kernel.kallsyms]  futex_wake+292                 0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x10     0       1  0xffffffff91cc0415         0         0         0        1         1  [k] select_task_rq_fair       [kernel.kallsyms]  select_task_rq_fair+5          0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x10     0       1  0xffffffff91cc0420         0         0         0        1         1  [k] select_task_rq_fair       [kernel.kallsyms]  select_task_rq_fair+16         0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x10     0       1  0xffffffff91cf4eaa         0         0         0        1         1  [k] sched_clock_cpu           [kernel.kallsyms]  sched_clock_cpu+10             0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x10     0       1  0xffffffff920d7d79         0         0         0        1         1  [k] check_heap_object         [kernel.kallsyms]  check_heap_object+9            0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffff91d9e924       482         0         0        1         1  [k] futex_wake                [kernel.kallsyms]  futex_wake+292                 0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x38     0       1  0xffffffff91d9a09f         0         0         0        1         1  [k] futex_unqueue             [kernel.kallsyms]  futex_unqueue+95               0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x3e     0       1  0xffffffff92d31614         0         0         0        1         1  [k] tcp_write_xmit            [kernel.kallsyms]  tcp_write_xmit+52              0
 
   ----------------------------------------------------------------------
-     29        0        2        0        0        0          0xf9177240
+     29        2        0       11        0        0  0xffffcdc78edc7b40
   ----------------------------------------------------------------------
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x732d1f956324         0         9         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3748   0
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x732d1f95644c         0        48         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+4044   0
+           0.00%    0.00%    9.09%    0.00%    0.00%                 0x8     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark               [kernel.kallsyms]  futex_wake_mark+5                 0
+           0.00%    0.00%    9.09%    0.00%    0.00%                 0x8     0       1  0xffffffff91d9e6f3         0         0         0        1         1  [k] futex_wake_mark               [kernel.kallsyms]  futex_wake_mark+19                0
+           0.00%    0.00%    9.09%    0.00%    0.00%                0x10     0       1  0xffffffff91cc24a1         0         0         0        1         1  [k] pick_next_task_fair           [kernel.kallsyms]  pick_next_task_fair+17            0
+           0.00%    0.00%    9.09%    0.00%    0.00%                0x18     0       1  0xffffffff91d99008         0         0         0        1         1  [k] futex_hash                    [kernel.kallsyms]  futex_hash+104                    0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffff91d9e924       414         0         0        1         1  [k] futex_wake                    [kernel.kallsyms]  futex_wake+292                    0
+           0.00%    0.00%    9.09%    0.00%    0.00%                0x20     0       1  0xffffffff9205062d         0         0         0        1         1  [k] kmem_cache_alloc_node_noprof  [kernel.kallsyms]  kmem_cache_alloc_node_noprof+13   0
+           0.00%    0.00%    9.09%    0.00%    0.00%                0x28     0       1  0xffffffff91d9e6f3         0         0         0        1         1  [k] futex_wake_mark               [kernel.kallsyms]  futex_wake_mark+19                0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffff91d9e924       385         0         0        1         1  [k] futex_wake                    [kernel.kallsyms]  futex_wake+292                    0
+           0.00%    0.00%    9.09%    0.00%    0.00%                0x30     0       1  0xffffffff91d9e6ee         0         0         0        1         1  [k] futex_wake_mark               [kernel.kallsyms]  futex_wake_mark+14                0
+           0.00%    0.00%    9.09%    0.00%    0.00%                0x30     0       1  0xffffffff9216e299         0         0         0        1         1  [k] ep_poll                       [kernel.kallsyms]  ep_poll+9                         0
+           0.00%    0.00%    9.09%    0.00%    0.00%                0x30     0       1  0xffffffff9216fb9f         0         0         0        1         1  [k] do_epoll_ctl                  [kernel.kallsyms]  do_epoll_ctl+1711                 0
+           0.00%    0.00%    9.09%    0.00%    0.00%                0x30     0       1  0xffffffff92bd496f         0         0         0        1         1  [k] sock_read_iter                [kernel.kallsyms]  sock_read_iter+159                0
+           0.00%    0.00%    9.09%    0.00%    0.00%                0x38     0       1  0xffffffff920d7f60         0         0         0        1         1  [k] __check_object_size           [kernel.kallsyms]  __check_object_size+32            0
 
   ----------------------------------------------------------------------
-     30        1        1        0        0        0          0xf9177b40
+     30        2        0        8        0        0  0xffffcdc7a450f940
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x732d1f956320       259         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3744   0
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1      0x732d1f95630c         0        20         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3724   0
+           0.00%    0.00%   12.50%    0.00%    0.00%                 0x0     0       1  0xffffffff91cbaf95         0         0         0        1         1  [k] dequeue_entity                           [kernel.kallsyms]  dequeue_entity+5                               0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x10     0       1  0xffffffff91cc0420         0         0         0        1         1  [k] select_task_rq_fair                      [kernel.kallsyms]  select_task_rq_fair+16                         0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x10     0       1  0xffffffff91f66eb5         0         0         0        1         1  [k] __perf_event_task_sched_out              [kernel.kallsyms]  __perf_event_task_sched_out+5                  0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x10     0       1  0xffffffff92be05f8         0         0         0        1         1  [k] sock_rfree                               [kernel.kallsyms]  sock_rfree+104                                 0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x18     0       1  0xffffffff91cc041b         0         0         0        1         1  [k] select_task_rq_fair                      [kernel.kallsyms]  select_task_rq_fair+11                         0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x1c     0       1  0xffffffff92d2e793         0         0         0        1         1  [k] __tcp_select_window                      [kernel.kallsyms]  __tcp_select_window+99                         0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffff91d9e924       419         0         0        1         1  [k] futex_wake                               [kernel.kallsyms]  futex_wake+292                                 0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffff91d9e924       455         0         0        1         1  [k] futex_wake                               [kernel.kallsyms]  futex_wake+292                                 0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x30     0       1  0xffffffff92d163d8         0         0         0        1         1  [k] tcp_recvmsg                              [kernel.kallsyms]  tcp_recvmsg+24                                 0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x38     0       1  0xffffffff92d2ee8a         0         0         0        1         1  [k] __tcp_transmit_skb                       [kernel.kallsyms]  __tcp_transmit_skb+762                         0
 
   ----------------------------------------------------------------------
-     31        2        0        0        0        0          0xf92dedc0
+     31        2        0        8        0        0  0xffffcdc7a450fb40
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x24     0       1      0x732d1f956331       392         0         0        2         2  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3761   0
+           0.00%    0.00%   12.50%    0.00%    0.00%                 0x0     0       1  0xffffffff91cc0420         0         0         0        1         1  [k] select_task_rq_fair                    [kernel.kallsyms]  select_task_rq_fair+16                    0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e924       434         0         0        2         2  [k] futex_wake                             [kernel.kallsyms]  futex_wake+292                            0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x10     0       1  0xffffffff91d9e6ee         0         0         0        1         1  [k] futex_wake_mark                        [kernel.kallsyms]  futex_wake_mark+14                        0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x20     0       1  0xffffffff91d9e6ee         0         0         0        1         1  [k] futex_wake_mark                        [kernel.kallsyms]  futex_wake_mark+14                        0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x28     0       1  0xffffffff91b46b14         0         0         0        1         1  [k] arch_exit_to_user_mode_prepare.isra.0  [kernel.kallsyms]  arch_exit_to_user_mode_prepare.isra.0+4   0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x28     0       1  0xffffffff9216fdf9         0         0         0        1         1  [k] __x64_sys_epoll_ctl                    [kernel.kallsyms]  __x64_sys_epoll_ctl+9                     0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x30     0       1  0xffffffff92d13836         0         0         0        1         1  [k] tcp_sendmsg                            [kernel.kallsyms]  tcp_sendmsg+54                            0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x30     0       1  0xffffffff92f26174         0         0         0        1         1  [k] sched_clock_noinstr                    [kernel.kallsyms]  sched_clock_noinstr+4                     0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x38     0       1  0xffffffff91cbc455         0         0         0        1         1  [k] dequeue_task_fair                      [kernel.kallsyms]  dequeue_task_fair+5                       0
 
   ----------------------------------------------------------------------
-     32        1        1        0        0        0          0xf9315840
+     32        2        0       13        0        0  0xffffcdc7a450fbc0
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x732d1f9562d4       283         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3668   0
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x732d1f956324         0        44         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3748   0
+           0.00%    0.00%    7.69%    0.00%    0.00%                 0x0     0       1  0xffffffff91d9a045         0         0         0        1         1  [k] futex_unqueue           [kernel.kallsyms]  futex_unqueue+5            0
+           0.00%    0.00%    7.69%    0.00%    0.00%                 0x0     0       1  0xffffffff91f56ce5         0         0         0        1         1  [k] perf_event_idx_default  [kernel.kallsyms]  perf_event_idx_default+5   0
+           0.00%    0.00%   15.38%    0.00%    0.00%                 0x8     0       1  0xffffffff91d9e6e5         0         0         0        2         2  [k] futex_wake_mark         [kernel.kallsyms]  futex_wake_mark+5          0
+           0.00%    0.00%    7.69%    0.00%    0.00%                 0x8     0       1  0xffffffff91d9f5d5         0         0         0        1         1  [k] __futex_wait            [kernel.kallsyms]  __futex_wait+69            0
+           0.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffff9211b876         0         0         0        0         1  [k] fdget_pos               [kernel.kallsyms]  fdget_pos+278              0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x18     0       1  0xffffffff91d9e6f3         0         0         0        1         1  [k] futex_wake_mark         [kernel.kallsyms]  futex_wake_mark+19         0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x20     0       1  0xffffffff91d9e6ee         0         0         0        1         1  [k] futex_wake_mark         [kernel.kallsyms]  futex_wake_mark+14         0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x28     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark         [kernel.kallsyms]  futex_wake_mark+5          0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x28     0       1  0xffffffff92be060d         0         0         0        1         1  [k] sock_rfree              [kernel.kallsyms]  sock_rfree+125             0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffff91d9e924       428         0         0        2         2  [k] futex_wake              [kernel.kallsyms]  futex_wake+292             0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x30     0       1  0xffffffff91d9e6ee         0         0         0        1         1  [k] futex_wake_mark         [kernel.kallsyms]  futex_wake_mark+14         0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x30     0       1  0xffffffff92d13836         0         0         0        1         1  [k] tcp_sendmsg             [kernel.kallsyms]  tcp_sendmsg+54             0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x38     0       1  0xffffffff91d9e6e5         0         0         0        1         1  [k] futex_wake_mark         [kernel.kallsyms]  futex_wake_mark+5          0
+           0.00%    0.00%    7.69%    0.00%    0.00%                0x38     0       1  0xffffffff92bdf445         0         0         0        1         1  [k] release_sock            [kernel.kallsyms]  release_sock+5             0
 
   ----------------------------------------------------------------------
-     33        1        1        0        0        0          0xf933df80
+     33        1        1        0        0        0          0x8044e480
   ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d1f95630c         8         8         0        2         2  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3724   0
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x18     0       1      0x7c7dd35552bc       437        81         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3388   0
 
   ----------------------------------------------------------------------
-     34        2        0        0        0        0          0xf940ba00
+     34        2        0        0        0        0          0x8052f080
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x732d1f956324         9         0         0        2         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3748   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x7c7dd355533a       354         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3514   0
 
   ----------------------------------------------------------------------
-     35        1        1        0        0        0          0xf948f000
+     35        1        1        0        0        0          0x805a1fc0
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d1f95630c        48         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3724   0
-           0.00%  100.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x732d1f956324         0        19         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3748   0
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x7c7dd3555431       351        88         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3761   0
 
   ----------------------------------------------------------------------
-     36        1        1        0        0        0          0xf94a6500
+     36        1        1        0        0        0          0xd9c1fdc0
   ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x732d1f95630c         0        12         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3724   0
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x732d1f956324        15         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3748   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x24     0       1      0x7c7dd3555325       372         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3493   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x28     0       1      0x7c7dd355533a         0        48         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3514   0
 
   ----------------------------------------------------------------------
-     37        1        1        0        0        0          0xf9583780
+     37        1        1        0        0        0          0xd9ca1080
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x732d1f92b6c5       391         0         0        1         1  [.] java.lang.Object java.util.concurrent.ConcurrentHashMap.putVal(java.lang.Object, java.lang.Object, boolean)                [JIT] tid 262060  java.lang.Object java.util.concurrent.ConcurrentHashMap.putVal(java.lang.Object, java.lang.Object, boolean)+1733                 0
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1      0x732d1f959975         0       139         0        1         1  [.] java.lang.Object java.util.concurrent.ConcurrentHashMap.replaceNode(java.lang.Object, java.lang.Object, java.lang.Object)  [JIT] tid 262060  java.lang.Object java.util.concurrent.ConcurrentHashMap.replaceNode(java.lang.Object, java.lang.Object, java.lang.Object)+1013   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x7c7dd35552fa         0         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3450   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x7c7dd355530b       409         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3467   0
 
   ----------------------------------------------------------------------
-     38        1        1        0        0        0          0xf95db200
+     38        2        0        0        0        0          0xd9ddb340
   ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d1f95630c        10        15         0        2         2  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3724   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x7c7dd35552bc       437         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3388   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dd35552fa         0         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3450   0
 
   ----------------------------------------------------------------------
-     39        1        1        0        0        0          0xf961b400
+     39        0        2        0        0        0          0xd9de1600
   ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1      0x732d1f955697       331        57         0        4         3  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+535   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x14     0       1      0x7c7dd3555325         0       145         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3493   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x18     0       1      0x7c7dd355533a         0       101         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3514   0
 
   ----------------------------------------------------------------------
-     40        1        1        0        0        0          0xf969c900
+     40        0        2        0        0        0          0xd9e83d40
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x732d1f956331         8         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3761   0
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x732d1f95644c         0        48         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+4044   0
-           0.00%    0.00%    0.00%    0.00%    0.00%                0x38     0       1      0x732d1f956308         0         0         0        0         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3720   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x38     0       1      0x7c7dd355533a         0        42         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3514   0
 
   ----------------------------------------------------------------------
-     41        1        1        0        0        0          0xf97245c0
+     41        1        1        0        0        0          0xd9eda4c0
   ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1      0x732d1f956347       391        48         0        2         2  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3783   0
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x34     0       1      0x7c7dd3567da4       321       106         0        2         2  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 289092  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+1828   0
 
   ----------------------------------------------------------------------
-     42        2        0        0        0        0          0xf9753b80
+     42        1        1        0        0        0          0xd9f6ae00
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x732d1f956331       375         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3761   0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x732d1f956347       436         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+3783   0
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x38     0       1      0x7c7dd355533a       400        50         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3514   0
 
   ----------------------------------------------------------------------
-     43        2        0        0        0        0          0xf98d39c0
+     43        1        1        0        0        0          0xd9fd7c80
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x732d1f97f61b       408         0         0        5         5  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 262060  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+795    0
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x20     0       1      0x7c7dd355538e       438       134         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3598   0
 
   ----------------------------------------------------------------------
-     44        1        1        2        0        1          0xf9918a40
+     44        2        0        0        0        0          0xda109940
   ----------------------------------------------------------------------
-           0.00%    0.00%   50.00%    0.00%    0.00%                0x28     0       1      0x732d1f95d96c         0         0         0        1         1  [.] void java.lang.VirtualThread.afterYield()                                                                                                                            [JIT] tid 262060  void java.lang.VirtualThread.afterYield()+1388                                                                                                                             0
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x732d1f97fd2c       350         0         0       32        10  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)                                                                        [JIT] tid 262060  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2604                                                                         0
-           0.00%    0.00%   50.00%    0.00%    0.00%                0x2c     0       1      0x732d1f97f47b         0         0         0        1         1  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)                                                                        [JIT] tid 262060  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+379                                                                          0
-           0.00%    0.00%    0.00%    0.00%  100.00%                0x2c     0       1      0x732d1f9ac7e8         0         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.enqueue(io.github.pderop.looma.impl.Envelope)                                                                             [JIT] tid 262060  void io.github.pderop.looma.impl.ActorCell.enqueue(io.github.pderop.looma.impl.Envelope)+1512                                                                              0
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x3c     0       1      0x732d1f98e7f8         0        98         0        4         4  [.] int sun.nio.ch.EPollPoller.poll(int)                                                                                                                                 [JIT] tid 262060  int sun.nio.ch.EPollPoller.poll(int)+1400                                                                                                                                  0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x14     0       1      0x7c7dd3555325       341         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3493   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x7c7dd355533a       369         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3514   0
 
   ----------------------------------------------------------------------
-     45        0        2        1        0        0          0xf9928680
+     45        2        0        0        0        0          0xda198540
   ----------------------------------------------------------------------
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x732d1f9ac4c0         0        13         0        2         1  [.] void io.github.pderop.looma.impl.ActorCell.enqueue(io.github.pderop.looma.impl.Envelope)  [JIT] tid 262060  void io.github.pderop.looma.impl.ActorCell.enqueue(io.github.pderop.looma.impl.Envelope)+704   0
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x34     0       1      0x732d1f9770dd         0        91         0        1         1  [.] void java.lang.VirtualThread.runContinuation()                                            [JIT] tid 262060  void java.lang.VirtualThread.runContinuation()+93                                              0
-           0.00%    0.00%  100.00%    0.00%    0.00%                0x34     0       1      0x732d1f997a6c         0         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runLoop()                                      [JIT] tid 262060  void io.github.pderop.looma.impl.ActorCell.runLoop()+1004                                      0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x7c7dd355538e       421         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3598   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dd35552bc       391         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3388   0
 
   ----------------------------------------------------------------------
-     46        2        0        0        0        0          0xf9928900
+     46        2        0        0        0        0          0xda2057c0
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x732d1f978f5b       376         0         0        2         2  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 262060  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+859      0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x732d1f97f61b       453         0         2        5         5  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 262060  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+795      0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x7c7dd355530b        44         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3467   0
 
   ----------------------------------------------------------------------
-     47        1        1        0        0        0          0xf9930680
+     47        2        0        0        0        0          0xda2406c0
   ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                0x38     0       1      0x732d1f97f61b       381       472       124        4         4  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)                                                                        [JIT] tid 262060  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+795                                                                          0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x14     0       1      0x7c7dd3555325       386         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3493   0
 
   ----------------------------------------------------------------------
-     48        0        2        1        0        0          0xffd01200
+     48        1        1        0        0        0          0xda3c6640
   ----------------------------------------------------------------------
-           0.00%   50.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d35bce229         0        89         0        2         2  [.] Continuation::prepare_thaw(JavaThread*, bool)                                         libjvm.so  continuationFreezeThaw.cpp:2036   0
-           0.00%   50.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x732d35bce265         0        83         0        1         1  [.] Continuation::prepare_thaw(JavaThread*, bool)                                         libjvm.so  continuationFreezeThaw.cpp:2014   0
-           0.00%    0.00%  100.00%    0.00%    0.00%                 0xc     0       1      0x732d35bdd90e         0         0         0        1         1  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)  libjvm.so  oop.inline.hpp:282                0
+         100.00%  100.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x7c7dd3555325       427       150         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3493   0
 
   ----------------------------------------------------------------------
-     49        0        2        1        0        0          0xffd82b00
+     49        2        0        0        0        0          0xda40a000
   ----------------------------------------------------------------------
-           0.00%    0.00%  100.00%    0.00%    0.00%                0x20     0       1      0x732d36256a73         0         0         0        1         1  [.] oopDesc::address_field_put(int, unsigned char*)                                       libjvm.so  oop.cpp:203                      0
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x28     0       1      0x732d35bdd8a1         0        78         0        1         1  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)  libjvm.so  oop.inline.hpp:281               0
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x732d35bdd8b5         0        69         0        1         1  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)  libjvm.so  atomicAccess.hpp:552             0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x38     0       1      0x7c7dd3586a8c       367         0        46        5         4  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+908   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x38     0       1      0x7c7dd3586ad6        10         0        15        8         5  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+982   0
 
   ----------------------------------------------------------------------
-     50        2        0        0        0        0          0xffe81280
+     50        2        0        0        0        0          0xda40b4c0
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x732d35bdd8e2      3538         0         0        2         2  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)  libjvm.so  prefetch_linux_x86.inline.hpp:31   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x38     0       1      0x7c7dd3586a8c       262         0         0        5         4  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+908   0
 
   ----------------------------------------------------------------------
-     51        1        1        0        0        0          0xfff02940
+     51        2        0        0        0        0          0xda43bcc0
   ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1      0x732d35bdd8fc       355       151         0        2         2  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)  libjvm.so  oop.inline.hpp:281   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x7c7dd3586ad6       361         0         0        4         4  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+982   0
 
   ----------------------------------------------------------------------
-     52        2        0        1        0        0      0x732c7c001600
+     52        2        0        0        0        0          0xda45acc0
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x732d370a76d6       244         0         0        1         1  [.] pthread_mutex_lock     libc.so.6  pthread_mutex_lock+54      0
-           0.00%    0.00%  100.00%    0.00%    0.00%                 0x8     0       1      0x732d370a8597         0         0         0        1         1  [.] pthread_mutex_trylock  libc.so.6  pthread_mutex_trylock+87   0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x732d370a76a4       443         0         0        1         1  [.] pthread_mutex_lock     libc.so.6  pthread_mutex_lock+4       0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x24     0       1      0x7c7dd3555325       342         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3493   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x7c7dd355533a       352         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 289092  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3514   0
 
   ----------------------------------------------------------------------
-     53        1        1        1        0        0      0x732c80001600
+     53        0        2        9        0        0          0xda49c3c0
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x732d370a90ba       109         0         0        1         1  [.] pthread_mutex_unlock  libc.so.6  pthread_mutex_unlock+74   0
-           0.00%  100.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x732d370a9088         0        33         0        1         1  [.] pthread_mutex_unlock  libc.so.6  pthread_mutex_unlock+24   0
-           0.00%    0.00%  100.00%    0.00%    0.00%                0x30     0       1      0x732d370a2b8f         0         0         0        1         1  [.] pthread_cond_signal   libc.so.6  pthread_cond_signal+335   0
+           0.00%    0.00%   11.11%    0.00%    0.00%                0x10     0       1      0x7c7dd357abf8         0         0         0        1         1  [.] int sun.nio.ch.EPollPoller.poll(int)                                                               [JIT] tid 289092  int sun.nio.ch.EPollPoller.poll(int)+760                                                                0
+           0.00%    0.00%   11.11%    0.00%    0.00%                0x14     0       1      0x7c7dd3587141         0         0         0        1         1  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2625      0
+           0.00%    0.00%   66.67%    0.00%    0.00%                0x14     0       1      0x7c7dd3587276         0         0         0        6         6  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2934      0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x18     0       1      0x7c7dd355abc1         0       126         0        2         2  [.] void java.util.concurrent.ForkJoinPool.signalWork()                                                [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.signalWork()+193                                                 0
+           0.00%    0.00%   11.11%    0.00%    0.00%                0x1c     0       1      0x7c7dd3586be9         0         0         0        1         1  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+1257      0
 
   ----------------------------------------------------------------------
-     54        0        2        1        0        0      0x732c88001600
+     54        1        1        0        0        0          0xda4d0980
   ----------------------------------------------------------------------
-           0.00%   50.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x732d370a90ba         0       157         0        1         1  [.] pthread_mutex_unlock   libc.so.6  pthread_mutex_unlock+74    0
-           0.00%    0.00%  100.00%    0.00%    0.00%                 0x8     0       1      0x732d370a8597         0         0         0        1         1  [.] pthread_mutex_trylock  libc.so.6  pthread_mutex_trylock+87   0
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1      0x732d370a76c4         0       153         0        1         1  [.] pthread_mutex_lock     libc.so.6  pthread_mutex_lock+36      0
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x7c7dd357abd5         0        99         0        1         1  [.] int sun.nio.ch.EPollPoller.poll(int)                                                           [JIT] tid 289092  int sun.nio.ch.EPollPoller.poll(int)+725                                                            0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x7c7dd3586a8c       389         0        22       11         8  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+908   0
 
   ----------------------------------------------------------------------
-     55        1        1        0        0        0      0x732c88001640
+     55        0        2        0        0        0          0xda5001c0
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x732d370a2bc5       211         0         0        1         1  [.] pthread_cond_signal  libc.so.6  pthread_cond_signal+389   0
-           0.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x732d370a2fce         0        96         0        1         1  [.] pthread_cond_wait    libc.so.6  pthread_cond_wait+158     0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x30     0       1      0x7c7dd358698a         0        88        20        5         3  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+650    0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x38     0       1      0x7c7dd35868ba         0       652         0       18         9  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 289092  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+442    0
 
   ----------------------------------------------------------------------
-     56        1        1        0        0        0      0x732c94001640
+     56        2        0        4        0        0      0x7c7d50001600
   ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x732d370a2a6b         0        73         0        1         1  [.] pthread_cond_signal  libc.so.6  pthread_cond_signal+43    0
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x732d370a2fce       382         0         0        1         1  [.] pthread_cond_wait    libc.so.6  pthread_cond_wait+158     0
+           0.00%    0.00%   25.00%    0.00%    0.00%                 0x8     0       1      0x7c7dea2a8597         0         0         0        1         1  [.] pthread_mutex_trylock  libc.so.6  pthread_mutex_trylock+87   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x7c7dea2a9088         0         0         0        1         1  [.] pthread_mutex_unlock   libc.so.6  pthread_mutex_unlock+24    0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x7c7dea2a2ba0        25         0         0        3         3  [.] pthread_cond_signal    libc.so.6  pthread_cond_signal+352    0
+           0.00%    0.00%   75.00%    0.00%    0.00%                0x30     0       1      0x7c7dea2a2b8f         0         0         0        3         3  [.] pthread_cond_signal    libc.so.6  pthread_cond_signal+335    0
 
   ----------------------------------------------------------------------
-     57        0        2        0        0        0      0x732d30049a80
+     57        2        0        4        0        0      0x7c7d54001600
   ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x38     0       1      0x732d3623d6a0         0        44         0        2         2  [.] AbsSeq::davg() const  libjvm.so  numberSeq.cpp:86   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x7c7dea2a6939       442         0         0        1         1  [.] 0x00000000000a6939     libc.so.6         libc.so.6[a6939]           0
+           0.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x7c7dea2a76e9         0         0         0        0         1  [.] pthread_mutex_lock     libc.so.6         pthread_mutex_lock+73      0
+           0.00%    0.00%   25.00%    0.00%    0.00%                 0x8     0       1      0x7c7dea2a8597         0         0         0        1         1  [.] pthread_mutex_trylock  libc.so.6         pthread_mutex_trylock+87   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dea2a76c4       512         0         0        1         1  [.] pthread_mutex_lock     libc.so.6         pthread_mutex_lock+36      0
+           0.00%    0.00%   75.00%    0.00%    0.00%                0x30     0       1      0x7c7dea2a2b8f         0         0         0        3         3  [.] pthread_cond_signal    libc.so.6         pthread_cond_signal+335    0
 
   ----------------------------------------------------------------------
-     58        2        0        3        0        0      0x732d301ed900
+     58        1        1        0        0        1      0x7c7d58001600
   ----------------------------------------------------------------------
-           0.00%    0.00%   66.67%    0.00%    0.00%                0x10     0       1      0x732d1f9772d5         0         0         0        2         2  [.] void java.lang.VirtualThread.runContinuation()                                                                                                                       [JIT] tid 262060  void java.lang.VirtualThread.runContinuation()+597                                                                                                                        0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x732d35747970       388         0         0        1         1  [.] AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<548964ul, G1BarrierSet>, (AccessInternal::BarrierType)2, 548964ul>::oop_access_barrier(void*)        libjvm.so         access.inline.hpp:88                                                                                                                                                      0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x732d1f9968e3       359         0         0        1         1  [.] int java.util.concurrent.ForkJoinPool.awaitWork(java.util.concurrent.ForkJoinPool$WorkQueue, int)                                                                    [JIT] tid 262060  int java.util.concurrent.ForkJoinPool.awaitWork(java.util.concurrent.ForkJoinPool$WorkQueue, int)+99                                                                      0
-           0.00%    0.00%   33.33%    0.00%    0.00%                0x30     0       1      0x732d1f9772d5         0         0         0        1         1  [.] void java.lang.VirtualThread.runContinuation()                                                                                                                       [JIT] tid 262060  void java.lang.VirtualThread.runContinuation()+597                                                                                                                        0
+           0.00%    0.00%    0.00%    0.00%  100.00%                 0x8     0       1      0x7c7dea2a908c         0         0         0        1         1  [.] pthread_mutex_unlock   libc.so.6  pthread_mutex_unlock+28    0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dea2a76a4       433         0         0        1         1  [.] pthread_mutex_lock     libc.so.6  pthread_mutex_lock+4       0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dea2a9093         0       115         0        1         1  [.] pthread_mutex_unlock   libc.so.6  pthread_mutex_unlock+35    0
 
   ----------------------------------------------------------------------
-     59        2        0        0        0        0      0x732d304800c0
+     59        2        0        1        0        1      0x7c7de448fb80
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x732d370a90ba       455         0         0        1         1  [.] pthread_mutex_unlock  libc.so.6  pthread_mutex_unlock+74   0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x732d370a76c4       356         0         0        1         1  [.] pthread_mutex_lock    libc.so.6  pthread_mutex_lock+36     0
-
-  ----------------------------------------------------------------------
-     60        1        1        0        0        0      0x732d36de6080
-  ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                0x18     0       1      0x732d1f95586b       476       199         0        2         2  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 262060  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+1003   0
+           0.00%    0.00%    0.00%    0.00%  100.00%                 0xc     0       1      0x7c7de947fa0d         0         0         0        1         1  [.] Parker::park(bool, long)  libjvm.so         os_posix.cpp:1962          0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7c7dea2a6939       436         0         0        1         1  [.] 0x00000000000a6939        libc.so.6         libc.so.6[a6939]           0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x18     0       1      0x7c7dea2a8fa8         0         0         0        1         1  [.] 0x00000000000a8fa8        libc.so.6         libc.so.6[a8fa8]           0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x7c7dea2a6914       399         0         0        1         1  [.] 0x00000000000a6914        libc.so.6         libc.so.6[a6914]           0

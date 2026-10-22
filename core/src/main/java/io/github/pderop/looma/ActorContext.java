@@ -30,8 +30,9 @@ import java.util.function.Supplier;
  * default without changing anything else about the child: its place in the
  * cascading stop, its path, and its place among its parent's children are
  * exactly the same whichever carrier it lands on. {@link Actor#onReceive} — and
- * every lifecycle hook — always runs on this actor's own loop virtual thread,
- * started from that home carrier's factory.
+ * every lifecycle hook — always runs on one of this actor's own loop virtual
+ * threads: one per burst of messages, each started from that home carrier's
+ * factory, never two at once.
  *
  * <p>
  * How that scheduling is actually implemented — and in particular whether a

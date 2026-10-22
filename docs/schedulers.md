@@ -1,9 +1,9 @@
 # The schedulers, and the engine
 
 There is one actor engine and one `ActorSystem` implementation, `DefaultActorSystem`, which no
-caller names: `ActorSystem.builder()` hands it out. Every actor is one virtual thread for life.
-What varies is which `ActorScheduler` supplies the factory that starts that thread, and two ship
-with Looma:
+caller names: `ActorSystem.builder()` hands it out. An actor runs on a virtual thread only while
+it has messages: one per burst. What varies is which `ActorScheduler` supplies the factory that
+starts those threads, and two ship with Looma:
 
 | | Where | Carriers | Home carrier per actor |
 | --- | --- | --- | --- |
@@ -115,7 +115,7 @@ The engine is in `io.github.pderop.looma.impl`, once, for both schedulers:
 
 - **`ActorRuntime`** — what one system shares: the path registry, the roots, in-flight accounting,
   shutdown and termination, the mailbox-queue factory.
-- **`ActorCell`** — one actor: mailbox, loop virtual thread, hierarchy, lifecycle hooks,
+- **`ActorCell`** — one actor: mailbox, bursts, hierarchy, lifecycle hooks,
   supervision. It implements `ActorContext`.
 - **`ActorRefImpl`** — the reference to a live cell; **`PromiseRef`** — the single-use reply
   channel an `ask` passes as `sender`; **`PoolRef`** — a round-robin fan-out over a pool's actors,
@@ -123,28 +123,31 @@ The engine is in `io.github.pderop.looma.impl`, once, for both schedulers:
 - **`Envelope`** — one mailbox entry, a message or a lifecycle step.
 - **`ActorSchedulers`** — discovery, and `carriers(...)`'s installation.
 
-`tell` is two steps: `mailbox.offer(envelope)`, then `LockSupport.unpark(loopThread)`. The loop is
-started once, at spawn, from the actor's carrier's loop factory:
+`tell` is two steps: `mailbox.offer(envelope)`, then `pending.getAndIncrement()`. When the count
+goes from 0 to 1, the `tell` starts a virtual thread from the actor's carrier's loop factory: a
+**burst**. The burst runs one envelope per count, then ends:
 
 ```
-while (state != STOPPED) {
-  envelope = mailbox.poll();
-  if (envelope != null) { runEnvelope; interrupted(); continue; }
-  if (STOPPED) break;
-  if (TERMINATING && !cascadeStarted) { tryFinishDraining(); continue; }
-  LockSupport.park();
-  Thread.interrupted();
-}
+do {
+  if (state != STOPPED) {
+    envelope = mailbox.poll();
+    if (envelope != null) { runEnvelope; interrupted(); }
+  }
+} while (pending.decrementAndGet() > 0);
+if (TERMINATING && !cascadeStarted) tryFinishDraining();
 ```
 
-- The virtual thread *is* the serialization: an actor's fields need no synchronization.
-- The loop never yields: virtual threads are not time-sliced, so an actor whose mailbox never
+- The count *is* the serialization: only the `tell` that takes it from 0 starts a burst, so two
+  bursts never run at once, and an actor's fields need no synchronization.
+- An idle actor has no virtual thread, so no stack: nothing is retained between bursts.
+- A burst never yields: virtual threads are not time-sliced, so an actor whose mailbox never
   empties keeps its carrier for as long as it keeps receiving, and the actors sharing that carrier
   wait. Fairness under a saturated mailbox is a non-goal here.
-- Offer then unpark, and park only after a failed poll: the unpark permit covers a `tell` that
-  races the park. A `tell` before the thread starts is seen on the first drain.
-- `preStart` is the first envelope, enqueued before `Thread.start()`; `runFinalStop` the last. A
-  restart keeps the loop thread and the queue and installs a new actor instance.
+- Offer, then count: a burst that counts an envelope always finds it. A `tell` while a burst runs
+  only adds to the count, and that burst runs it.
+- The count starts at 1, held by `start()`: a `tell` before `start()` only offers, and the first
+  burst, started by `start()`, runs it. `preStart` is the first envelope, `runFinalStop` the last.
+  A restart keeps the burst and the queue and installs a new actor instance.
 
 ### Shutdown
 
@@ -197,9 +200,8 @@ that carrier, and `Placement.carrier(i)` for any `i > 0` throws at spawn.
 
 ## The carrier-affine scheduler
 
-Every actor has one **home carrier** for life, chosen at spawn. Its loop virtual thread, and every
-thread it creates through `ActorContext.vThreadFactory()`, are started from that carrier's
-factories. With `.pinned()`, each carrier is pinned to one CPU, so a home carrier is a home core.
+Every actor has one **home carrier** for life, chosen at spawn. Its bursts, and every thread it
+creates through `ActorContext.vThreadFactory()`, are started from that carrier's factories. With `.pinned()`, each carrier is pinned to one CPU, so a home carrier is a home core.
 
 ### Placement
 
@@ -275,9 +277,9 @@ carrier home. `synchronized` no longer pins ([JEP 491](https://openjdk.org/jeps/
 
 A virtual thread is a continuation plus a scheduler. When it parks, its carrier goes back to the
 pool; when it is unparked, the continuation is submitted again, and the scheduler may run it
-**anywhere**. For a stateless handler that costs nothing. An actor *is* its state, and it parks on
-an empty mailbox and is unparked by the next `tell` all the time: every one of those is a chance to
-move.
+**anywhere**. For a stateless handler that costs nothing. An actor *is* its state, and its virtual
+thread ends on an empty mailbox and a new one starts at the next `tell` all the time: every one of
+those is a chance to move.
 
 ```
     ┌── FJP worker 0 ─── CPU 0 ────────────────────────┐
@@ -286,8 +288,8 @@ move.
     │  and dirty there                                 │
     └──────────────────────────────────────────────────┘
 
-         mailbox empty → A parks. Every actor, all the time.
-         a `tell` unparks it → the continuation goes back to the pool
+         mailbox empty → A's virtual thread ends. Every actor, all the time.
+         a `tell` starts a new one → it goes to the pool
                                 │
                                 ▼   any idle worker may take it
 
@@ -330,12 +332,19 @@ the next back home.
 A supervision or draining bug fixed on one side only would silently invalidate every comparison
 between the schedulers. Only the factory differs, so only placement differs.
 
-### Why the loop never yields
+### Why a virtual thread per burst
+
+A parked virtual thread keeps its stack on the heap, in `StackChunk`s. An actor that kept one
+virtual thread for life kept it parked, with its stack, for as long as it waited for a message:
+idle actors cost memory, and the more actors, the more memory. A virtual thread per burst ends
+when the mailbox is empty, so an idle actor holds no stack.
+
+### Why a burst never yields
 
 A yield is a second way for a scheduler to move a virtual thread. Under the builtin, the yielded
 continuation is submitted externally when the worker's local queue is empty, and pushed on that
 queue otherwise; either way another worker can run it. Under the carrier-affine scheduler it goes
-back to its home carrier. A yielding loop would therefore give `jdk` runs a migration path the
+back to its home carrier. A yielding burst would therefore give `jdk` runs a migration path the
 affine runs do not have. The price is the one stated above: a busy actor holds its carrier.
 
 ### Why a separate module, reached through an SPI

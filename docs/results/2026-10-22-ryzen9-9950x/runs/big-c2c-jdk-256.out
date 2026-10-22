@@ -5,12 +5,11 @@ backend      127.0.0.1:8081
 window       5s warm-up, 20s measured
 
 measure      started, 20s
-throughput   149,935 req/s
-cpu          66.59 us/req (9.98 cores busy) -- server: process minus clients
-client cpu   26.66 us/req (4.00 cores busy)
-migrations   5.5% of 93,768 sampled messages ran on another carrier than the one before
-latency      p50 889.9  p90 10952.7  p99 49872.9  p99.9 149553.2  max 244842.5 us (from the scheduled send)
+throughput   150,079 req/s
+cpu          68.87 us/req (10.34 cores busy) -- server: process minus clients
+client cpu   26.64 us/req (4.00 cores busy)
+migrations   4.1% of 93,876 sampled messages ran on another carrier than the one before
+latency      p50 995.3  p90 8618.0  p99 36929.5  p99.9 68288.5  max 103743.5 us (from the scheduled send)
 send lag     p50 0.1  p99 0.2 us (how late the clients sent)
-*** did not keep up with 150,000 req/s: sent 149,822 req/s, 3,517 dropped, 0 unanswered, 0 failed -- not a measurement ***
-stackchunks  75 live during the warm-up, 42 after the measure
+stackchunks  31 live during the warm-up, 66 after the measure
 poller       Master-Poller moved to CPUs 8,9,24,25

@@ -22,8 +22,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
 
 import io.github.pderop.looma.Actor;
@@ -37,19 +37,21 @@ import io.github.pderop.looma.SupervisionStrategy;
 import io.github.pderop.looma.spi.MailboxQueue;
 
 /**
- * One actor's whole state: its POJO instance, its mailbox, its loop virtual
- * thread, its place in the hierarchy, and the {@link ActorContext} it sees
- * itself through — this class implements {@link ActorContext} directly, since
- * every piece of state that interface exposes ({@link #self()}, its children,
- * its dispatcher) is already state this class owns.
+ * One actor's whole state: its POJO instance, its mailbox, its place in the
+ * hierarchy, and the {@link ActorContext} it sees itself through — this class
+ * implements {@link ActorContext} directly, since every piece of state that
+ * interface exposes ({@link #self()}, its children, its dispatcher) is already
+ * state this class owns.
  *
  * <p>
- * Each actor is one virtual thread for life, started from its dispatcher's
- * factory at {@link #start()}. {@code tell} offers an envelope and
- * {@link LockSupport#unpark unpark}s that thread. The loop drains until the
- * mailbox is empty, then parks. Serialization is the virtual thread itself:
- * there is no 0/1 scheduling gate and no per-message task. Virtual threads are
- * not time-sliced, and this loop never yields: an actor whose mailbox never
+ * An actor has a virtual thread only while it has envelopes to run.
+ * {@code tell} offers an envelope and counts it in {@link #pending}. When the
+ * count goes from 0 to 1, it starts a virtual thread from its dispatcher's loop
+ * factory: a <em>burst</em>. The burst runs the envelopes until the count is
+ * back to 0, then ends. An idle actor therefore holds no virtual thread, and no
+ * stack. Serialization is the count itself: only the {@code tell} that takes it
+ * from 0 starts a burst, so two bursts never run at once. Virtual threads are
+ * not time-sliced, and a burst never yields: an actor whose mailbox never
  * empties holds its carrier for as long as it keeps receiving.
  *
  * <p>
@@ -72,7 +74,7 @@ final class ActorCell implements ActorContext {
 		/**
 		 * Created and registered, but {@code preStart} has not yet run. Messages sent
 		 * during this window queue normally; they are simply guaranteed to be delivered
-		 * after {@code preStart} completes, since both share the same mailbox and loop.
+		 * after {@code preStart} completes, since both share the same mailbox.
 		 */
 		STARTING,
 
@@ -88,7 +90,8 @@ final class ActorCell implements ActorContext {
 		TERMINATING,
 
 		/**
-		 * Fully stopped and unregistered. The loop exits once it observes this.
+		 * Fully stopped and unregistered. A burst no longer runs envelopes once it
+		 * observes this.
 		 */
 		STOPPED
 	}
@@ -106,7 +109,7 @@ final class ActorCell implements ActorContext {
 	/**
 	 * Mutable on purpose: a restart replaces this with a fresh instance obtained
 	 * from {@link #factory}, while every other field on this cell (its path, its
-	 * mailbox, its loop thread) stays exactly as it was.
+	 * mailbox) stays exactly as it was.
 	 */
 	private volatile Actor actor;
 
@@ -126,7 +129,7 @@ final class ActorCell implements ActorContext {
 	 * Guards the one-time transition from "draining finished" to actually running
 	 * the stop cascade (stopping every child, then scheduling {@code postStop}).
 	 * More than one caller can observe "{@link State#TERMINATING}, mailbox empty"
-	 * for the same cell — the loop that just finished the last message, and a
+	 * for the same cell — the burst that just finished the last message, and a
 	 * completion callback chained from a sibling event, for instance — and only the
 	 * first one through this compare-and-set may proceed; a second run would stop
 	 * every child a second time and run {@code postStop} twice.
@@ -146,12 +149,13 @@ final class ActorCell implements ActorContext {
 	private final ActorRefImpl self;
 
 	/**
-	 * This actor's loop virtual thread. Published before {@link Thread#start()},
-	 * and read by {@link #enqueue} to unpark. {@code null} only in the window
-	 * between construction and {@link #start()} — a {@code tell} in that window
-	 * still offers, and the loop sees the envelope when it first drains.
+	 * The envelopes offered and not yet counted down by a burst. A {@code tell}
+	 * that takes it from 0 to 1 starts a burst; the burst ends when it counts it
+	 * back to 0. It starts at 1, a count that {@link #start()} holds: a
+	 * {@code tell} before {@link #start()} only offers, and the first burst,
+	 * started by {@link #start()}, runs it.
 	 */
-	private volatile Thread loopThread;
+	private final AtomicInteger pending = new AtomicInteger(1);
 
 	private static final Logger LOG = System.getLogger(ActorCell.class.getName());
 
@@ -293,7 +297,7 @@ final class ActorCell implements ActorContext {
 	 * Creates and registers a new cell — a root actor when {@code parent} is
 	 * {@code null}, a child otherwise — and leaves it not yet running: the caller
 	 * finishes registering it and then calls {@link #start()}, which enqueues
-	 * {@code preStart} and starts the loop virtual thread, so {@code preStart} is
+	 * {@code preStart} and starts the first burst, so {@code preStart} is
 	 * guaranteed to run before this cell's first message even if no message is ever
 	 * sent.
 	 *
@@ -356,7 +360,7 @@ final class ActorCell implements ActorContext {
 	}
 
 	/**
-	 * Enqueues this cell's {@code preStart} and starts its loop virtual thread.
+	 * Enqueues this cell's {@code preStart} and starts its first burst.
 	 *
 	 * <p>
 	 * Separate from {@link #createCell} on purpose. {@code preStart} may fail, and
@@ -369,16 +373,22 @@ final class ActorCell implements ActorContext {
 	 * therefore register the cell fully, then call this.
 	 *
 	 * <p>
-	 * The loop thread is assigned to {@link #loopThread} <b>before</b>
-	 * {@link Thread#start()}, so a {@code tell} that races this method can unpark
-	 * it. The loop itself is counted as in-flight work through
-	 * {@link ActorRuntime#countedThreadFactory(ThreadFactory)}.
+	 * The first burst starts here, with the count that {@link #pending} holds from
+	 * construction: it runs every envelope offered so far, {@code preStart} among
+	 * them.
 	 */
 	void start() {
 		enqueue(Envelope.lifecycle(this::runPreStart));
-		Thread thread = runtime.countedThreadFactory(dispatcher.loopThreadFactory()).newThread(this::runLoop);
-		loopThread = thread;
-		thread.start();
+		startBurst();
+	}
+
+	/**
+	 * Starts a burst, from this actor's loop factory, so on its home carrier. Each
+	 * burst is counted as in-flight work through
+	 * {@link ActorRuntime#countedThreadFactory(ThreadFactory)}.
+	 */
+	private void startBurst() {
+		runtime.countedThreadFactory(dispatcher.loopThreadFactory()).newThread(this::runBurst).start();
 	}
 
 	/**
@@ -460,11 +470,11 @@ final class ActorCell implements ActorContext {
 	}
 
 	// ================================================================
-	// Mailbox and loop
+	// Mailbox and bursts
 	// ================================================================
 
 	/**
-	 * Enqueues {@code envelope} and unparks this cell's loop, unless
+	 * Enqueues {@code envelope}, and starts a burst if none is running, unless
 	 * {@code envelope} carries a message and this cell is no longer accepting them.
 	 *
 	 * <p>
@@ -473,9 +483,9 @@ final class ActorCell implements ActorContext {
 	 * regardless of {@link #state}.
 	 *
 	 * <p>
-	 * {@link LockSupport#unpark} of a not-yet-started or not-yet-parked thread is a
-	 * sticky permit, so a {@code tell} that races {@link #start()} or lands during
-	 * {@code onReceive} cannot lose the wakeup.
+	 * The envelope is offered before it is counted, so a burst that counts it
+	 * always finds it. A {@code tell} that lands while a burst runs only adds to
+	 * the count, and that burst runs it before it ends.
 	 */
 	void enqueue(Envelope envelope) {
 		if (!envelope.isLifecycle()) {
@@ -485,39 +495,38 @@ final class ActorCell implements ActorContext {
 			}
 		}
 		mailbox.offer(envelope);
-		Thread thread = loopThread;
-		if (thread != null) {
-			LockSupport.unpark(thread);
+		if (pending.getAndIncrement() == 0) {
+			startBurst();
 		}
 	}
 
 	/**
-	 * Drains the mailbox until empty, parks, repeats, until {@link State#STOPPED}.
-	 * A throwing envelope does not kill this loop — {@link #runEnvelope} already
-	 * contains every failure; anything that still escapes is logged and the loop
-	 * continues, the same way a {@code ForkJoinPool} worker survives a throwing
-	 * task. {@link Thread#interrupted()} is cleared after every envelope and after
-	 * every park so a task that re-arms the interrupt status cannot turn the next
-	 * park into a spin.
+	 * One burst: runs one envelope per count of {@link #pending}, until the count
+	 * is back to 0, then ends. The count that {@link #start()} holds finds no
+	 * envelope of its own. Once this cell is {@link State#STOPPED}, the envelopes
+	 * are only counted down, not run. A throwing envelope does not end the burst —
+	 * {@link #runEnvelope} already contains every failure.
+	 * {@link Thread#interrupted()} is cleared after every envelope.
+	 *
+	 * <p>
+	 * When the count is back to 0 and this cell is {@link State#TERMINATING}, its
+	 * mailbox holds no more message: the burst then starts the cascade. If a
+	 * {@code tell} has already started the next burst, that burst starts the
+	 * cascade when it ends, after its envelopes, as a single thread would.
 	 */
-	private void runLoop() {
+	private void runBurst() {
 		Thread.currentThread().setName("looma-" + path);
-		while (state.get() != State.STOPPED) {
-			Envelope envelope = mailbox.poll();
-			if (envelope != null) {
-				runEnvelope(envelope);
-				Thread.interrupted();
-				continue;
+		do {
+			if (state.get() != State.STOPPED) {
+				Envelope envelope = mailbox.poll();
+				if (envelope != null) {
+					runEnvelope(envelope);
+					Thread.interrupted();
+				}
 			}
-			if (state.get() == State.STOPPED) {
-				break;
-			}
-			if (state.get() == State.TERMINATING && !cascadeStarted.get()) {
-				tryFinishDraining();
-				continue;
-			}
-			LockSupport.park();
-			Thread.interrupted();
+		} while (pending.decrementAndGet() > 0);
+		if (state.get() == State.TERMINATING && !cascadeStarted.get() && pending.get() == 0) {
+			tryFinishDraining();
 		}
 	}
 
@@ -579,16 +588,16 @@ final class ActorCell implements ActorContext {
 	/**
 	 * Begins the graceful cascading stop protocol on this cell: idempotent (a
 	 * second call, or a call on an already-terminating or already-stopped cell, is
-	 * a silent no-op) and — critically — unparks this cell's loop unconditionally,
-	 * even when its mailbox is already empty and the loop is parked.
+	 * a silent no-op) and — critically — starts a burst unconditionally, even when
+	 * its mailbox is already empty and no burst runs.
 	 *
 	 * <p>
 	 * That unconditional kick is not an edge case: stopping an <em>idle</em> actor
 	 * is the common case, and without it nothing would ever notice the state
-	 * change, since the loop only runs envelopes that are actually queued.
-	 * Enqueuing a (no-op) lifecycle envelope here is what makes the mailbox
-	 * non-empty again, so the loop observes {@link State#TERMINATING} and proceeds
-	 * to {@link #tryFinishDraining()}.
+	 * change, since a burst only starts for an envelope that is actually queued.
+	 * Enqueuing a (no-op) lifecycle envelope here is what starts one, so its end
+	 * observes {@link State#TERMINATING} and proceeds to
+	 * {@link #tryFinishDraining()}.
 	 */
 	void beginStop() {
 		State previous = state.getAndUpdate(
@@ -641,8 +650,8 @@ final class ActorCell implements ActorContext {
 	 * thread — that is how a parent's
 	 * {@code CompletableFuture.allOf(childrenTerminated)} cascade in
 	 * {@link #tryFinishDraining()} advances when this cell is the last child to
-	 * finish. The loop then observes {@link State#STOPPED} and exits; there is no
-	 * dispatcher to release.
+	 * finish. Later bursts observe {@link State#STOPPED} and run nothing; there is
+	 * no dispatcher to release.
 	 */
 	private void runFinalStop() {
 		try {
@@ -678,7 +687,7 @@ final class ActorCell implements ActorContext {
 	 * already caught it), not merely {@code RuntimeException}:
 	 * {@link Actor#onReceive} declares {@code throws Exception}, and an
 	 * {@link Error} deserves the same supervision treatment as any other failure
-	 * rather than a silent kill of the loop.
+	 * rather than a silent end of the burst.
 	 */
 	private void handleFailure(Throwable error, Message message) {
 		if (isTerminatingOrStopped()) {
@@ -703,14 +712,13 @@ final class ActorCell implements ActorContext {
 	/**
 	 * Restarts this cell in place: runs {@code preRestart} on the failing instance,
 	 * obtains a fresh one from {@link #factory}, and runs {@code postRestart} on it
-	 * — all synchronously, inside the loop that caught the failure.
+	 * — all synchronously, inside the burst that caught the failure.
 	 *
 	 * <p>
-	 * Deliberately does not start a second loop virtual thread: the same thread
-	 * keeps draining. The failed message is discarded, not retried; the pending
-	 * mailbox resumes on the new instance through the normal path. Children are
-	 * left running, untouched — unlike Akka, which stops them, and chosen here for
-	 * simplicity.
+	 * Deliberately does not start a second burst: the same burst keeps draining.
+	 * The failed message is discarded, not retried; the pending mailbox resumes on
+	 * the new instance through the normal path. Children are left running,
+	 * untouched — unlike Akka, which stops them, and chosen here for simplicity.
 	 *
 	 * <p>
 	 * <b>The consequence, for callers:</b> an actor that spawns its children in

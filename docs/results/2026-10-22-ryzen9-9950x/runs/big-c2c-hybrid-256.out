@@ -7,10 +7,10 @@ window       5s warm-up, 20s measured
 
 measure      started, 20s
 throughput   150,000 req/s
-cpu          69.86 us/req (10.48 cores busy) -- server: process minus clients
+cpu          69.85 us/req (10.48 cores busy) -- server: process minus clients
 client cpu   26.66 us/req (4.00 cores busy)
-migrations   0.0% of 93,783 sampled messages ran on another carrier than the one before
-latency      p50 140.8  p90 306.9  p99 549.4  p99.9 945.7  max 46006.3 us (from the scheduled send)
+migrations   0.0% of 93,782 sampled messages ran on another carrier than the one before
+latency      p50 140.5  p90 297.5  p99 529.9  p99.9 1369.1  max 8060.9 us (from the scheduled send)
 send lag     p50 0.1  p99 0.2 us (how late the clients sent)
-stackchunks  127 live during the warm-up, 61 after the measure
+stackchunks  26 live during the warm-up, 32 after the measure
 poller       Master-Poller moved to CPUs 8,9,24,25

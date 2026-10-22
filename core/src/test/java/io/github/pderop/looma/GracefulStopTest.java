@@ -126,8 +126,8 @@ public abstract class GracefulStopTest {
 
 	/**
 	 * The single most common stop case, and the one that silently hangs if
-	 * {@code stop} never unparks a parked loop: an actor with an empty mailbox is
-	 * sitting in {@code LockSupport.park}, so the stop envelope must unpark it.
+	 * {@code stop} never starts a virtual thread: an actor with an empty mailbox
+	 * has none, so the stop envelope must start one.
 	 */
 	@Test
 	void stoppingAnIdleActorStillTerminatesIt() throws Exception {

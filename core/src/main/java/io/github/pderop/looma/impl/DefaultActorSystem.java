@@ -73,12 +73,13 @@ import io.github.pderop.looma.spi.MailboxQueueFactory;
  * {@code 1}, so every placement collapses to that one factory.
  *
  * <p>
- * A {@code tell} offers into the actor's mailbox and unparks its loop. The loop
- * drains until empty, then parks. How (or whether) a parked continuation
- * resumes on the same carrier is entirely up to the {@link ActorScheduler} in
- * use. Being run elsewhere moves where a continuation <em>executes</em>; it
- * never moves an actor's home carrier, which is fixed for its lifetime the
- * moment its placement is resolved, at spawn time.
+ * A {@code tell} offers into the actor's mailbox, and starts a virtual thread
+ * for it if none runs: it drains the mailbox until empty, then ends. How (or
+ * whether) that virtual thread runs on the actor's home carrier is entirely up
+ * to the {@link ActorScheduler} in use. Being run elsewhere moves where a
+ * continuation <em>executes</em>; it never moves an actor's home carrier, which
+ * is fixed for its lifetime the moment its placement is resolved, at spawn
+ * time.
  */
 public final class DefaultActorSystem implements ActorSystem {
 

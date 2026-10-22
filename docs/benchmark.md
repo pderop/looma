@@ -10,7 +10,7 @@ scheduler spends per request, the latency, and how often actors moved to another
 **The answer**, on an AMD Ryzen 9 9950X: when an actor's data fits in its core's L2 cache, the
 schedulers that keep actors on their core spend about half the CPU of the JDK's scheduler per
 request. When the data fits in no cache, the JDK's scheduler cannot keep up with the rate. With
-its workers pinned, it keeps up, but spends about 15% more CPU per request. The numbers:
+its workers pinned, it keeps up, but spends 12% to 16% more CPU per request. The numbers:
 [`results/2026-10-22-ryzen9-9950x/summary.md`](results/2026-10-22-ryzen9-9950x/summary.md).
 
 - Code: [`examples/…/examples/user`](../examples/src/main/java/io/github/pderop/looma/examples/user)
@@ -22,7 +22,7 @@ its workers pinned, it keeps up, but spends about 15% more CPU per request. The 
 - **Virtual thread**: a Java thread that the JVM runs on top of a few OS threads.
 - **Carrier**: one of those OS threads. A virtual thread runs on a carrier.
 - **Scheduler**: what picks the carrier on which a virtual thread runs.
-- **Park**: a virtual thread that waits (for a message, for a socket) gives its carrier back.
+- **Park**: a virtual thread that waits (for a socket, for a lock) gives its carrier back.
   When it is woken up, the scheduler picks a carrier for it again, maybe another one.
 - **Carrier-affine scheduler**: each virtual thread has a home carrier, and resumes on it. In
   this benchmark, `stealing-local` and `hybrid` are carrier-affine.
@@ -79,8 +79,8 @@ for a random user.
    client.
 5. The client records the latency, from the planned send time to the answer.
 
-Between steps 2 and 4, when its mailbox is empty, the actor parks. `UpstreamAnswered` wakes it
-up, and the scheduler picks the carrier it resumes on. If it is the same carrier as before, the
+Between steps 2 and 4, the actor's mailbox is empty, so its virtual thread ends.
+`UpstreamAnswered` starts a new one, and the scheduler picks the carrier it runs on. If it is the same carrier as before, the
 users are still in that core's cache, and the walk is fast. If not, the users must be read
 again, and the walk is slow.
 
@@ -251,14 +251,14 @@ The line:
 
 | case | scheduler | instructions | cycles | requests | instructions/req | IPC | cycles per instruction | cycles/req | note |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| default | jdk | 266,210,890,074 | 371,851,075,125 | 2,100,000 | 126,767 | 0.72 | 1.40 | 177,072 | |
+| default | jdk | 275,882,088,488 | 381,132,028,203 | 2,100,000 | 131,372 | 0.72 | 1.38 | 181,491 | |
 
 It comes from `runs/default-stat-jdk.csv`, the output of `perf stat` during the stat
 run of `jdk`. The file has one line per thread and counter, for example:
 
 ```
-ForkJoi..rker-4-263559,29734244636,,cycles,7277770675,100.00,,
-ForkJoi..rker-4-263559,21202311054,,instructions,7277753455,100.00,,
+ForkJoi..rker-4-290498,30651556392,,cycles,7524436953,100.00,,
+ForkJoi..rker-4-290498,21849180953,,instructions,7524460243,100.00,,
 ```
 
 Split on the commas, field 1 is the thread, field 2 is a number, and field 4 is the word that
@@ -275,10 +275,10 @@ the word. The comment at the top of the file lists every field.
 4. The other columns divide these three numbers:
 
    ```
-   instructions/req       = instructions / requests  = 266,210,890,074 / 2,100,000       = 126,767
-   cycles/req             = cycles / requests        = 371,851,075,125 / 2,100,000       = 177,072
-   IPC                    = instructions / cycles    = 266,210,890,074 / 371,851,075,125 = 0.72
-   cycles per instruction = cycles / instructions    = 371,851,075,125 / 266,210,890,074 = 1.40
+   instructions/req       = instructions / requests  = 275,882,088,488 / 2,100,000       = 131,372
+   cycles/req             = cycles / requests        = 381,132,028,203 / 2,100,000       = 181,491
+   IPC                    = instructions / cycles    = 275,882,088,488 / 381,132,028,203 = 0.72
+   cycles per instruction = cycles / instructions    = 381,132,028,203 / 275,882,088,488 = 1.38
    ```
 
    IPC is the instructions run per cycle; cycles per instruction is its inverse. So
@@ -330,10 +330,10 @@ walk   = cpu µs/req at depth 256 - cpu µs/req at depth 0
   `runs/<case>-epsilon-<scheduler>-256.out`.
 - heap used: at exit, Epsilon writes the heap in its GC log, `runs/<case>-epsilon-<scheduler>-256.gc.log`,
   as a line like this one, from `runs/default-epsilon-hybrid-256.gc.log`:
-  `space 12582912K,  43% used [0x0000000500000000, 0x000000064ff503e0, 0x0000000800000000)`.
+  `space 12582912K,  73% used [0x0000000500000000, 0x00000007313d0870, 0x0000000800000000)`.
   The three addresses are the start of the heap, its top (where the next object would go) and
-  its end. heap used = top - start: here 0x64ff503e0 - 0x500000000 = 5,636,424,672 bytes, so
-  5,375 MiB.
+  its end. heap used = top - start: here 0x7313d0870 - 0x500000000 = 9,416,018,032 bytes, so
+  8,979 MiB.
 
 ```
 difference = cpu µs/req Epsilon - cpu µs/req G1

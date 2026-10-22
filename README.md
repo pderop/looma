@@ -180,14 +180,21 @@ simulate a blocking call:
 
 ```
 [/hello] handling 'Pierre' on VirtualThread[#32,looma-/hello]/runnable@carrier-0
-[/hello/audit] audited Hello[name=Pierre] from /hello on VirtualThread[#33,looma-/hello/audit]/runnable@carrier-0
+[/hello] handling 'John' on VirtualThread[#32,looma-/hello]/runnable@carrier-0
+[/hello] handling 'Bob' on VirtualThread[#32,looma-/hello]/runnable@carrier-0
+[/hello/audit] audited Hello[name=Pierre] from /hello on VirtualThread[#34,looma-/hello/audit]/runnable@carrier-0
+...
 [/hello] blocking (simulated I/O) for 'Pierre' on VirtualThread[#35]/runnable@carrier-0
+[/hello] blocking (simulated I/O) for 'John' on VirtualThread[#36]/runnable@carrier-0
+[/hello] blocking (simulated I/O) for 'Bob' on VirtualThread[#37]/runnable@carrier-0
 [/hello] greeting 'Pierre' on VirtualThread[#35]/runnable@carrier-0
 Greeting[text=Greeting Pierre]
+...
 ```
 
-The actor's loop is one virtual thread for life (`#32`); each offloaded call gets a fresh one
-(`#35`), on the same carrier.
+An actor runs on a virtual thread only while it has messages: the three messages arrive
+together, so one virtual thread of `/hello` (`#32`) handles them all, then ends. Each offloaded
+call gets a fresh one (`#35` to `#37`), on the same carrier.
 
 ## Not to be confused with
 
