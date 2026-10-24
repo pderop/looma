@@ -1,7 +1,7 @@
 # `netty-loom-scheduler`
 
 This module is a copy of the upstream carrier-affine virtual thread scheduler, **byte-for-byte
-except for three documented patches, one per file** (below), plus the `ActorSchedulerProvider` / `ActorScheduler`
+except for two documented patches, one per file** (below), plus the `ActorSchedulerProvider` / `ActorScheduler`
 adapter that lets `looma` reach it through the SPI declared in `core`
 (`io.github.pderop.looma.spi`).
 
@@ -17,8 +17,8 @@ adapter that lets `looma` reach it through the SPI declared in `core`
 
 ## The Looma patch: a home queue that stealing never reads
 
-Three copied files are modified: `io/netty/loom/scheduler/EventLoopScheduler.java`,
-`io/netty/loom/scheduler/IdleCarrierTracker.java` and `io/netty/loom/scheduler/NettyScheduler.java`.
+Two copied files are modified: `io/netty/loom/scheduler/EventLoopScheduler.java` and
+`io/netty/loom/scheduler/NettyScheduler.java`.
 The complete diff against the originals is
 [`looma-home-queue.patch`](looma-home-queue.patch); each file says so at its top, and every
 change in it is marked `Looma:`.
@@ -35,13 +35,6 @@ change in it is marked `Looma:`.
 Looma uses it for `Carriers.affine(n)...actorsStayHome()`: actor loops come from the home
 factory, the virtual threads an actor offloads from the ordinary one. The test is
 `HomeVirtualThreadTest` (Looma's own file, run by the `workstealing-test` execution).
-
-In `IdleCarrierTracker`, `wakeFirstIdle()` picks the idle carrier to wake as a searcher by
-scanning from a random member instead of the first. Scanning from the first wakes the
-lowest-numbered idle carrier every time, so the first carriers do more of the work than the
-last ones. From a random member, the work is spread over all of them. The test is
-`WakeFromRandomMemberTest` (Looma's own file):
-it checks the order of the scan, from every start, with one word and with several.
 
 In `NettyScheduler`, the constructor starts the JDK's pollers before it creates the carriers.
 The JDK starts its `Master-Poller` and `Write-Poller` threads the first time a virtual thread
@@ -63,9 +56,11 @@ is kept **diffable against upstream**:
   reformat these files by hand either.
 - Everything else Looma-specific — the adapter, and the tests that need package-private
   visibility into `io.netty.loom.scheduler` (`EventLoopSchedulerWorkStealingTest`,
-  `HomeVirtualThreadTest`, `WakeFromRandomMemberTest`) — lives in its own file,
+  `HomeVirtualThreadTest`) — lives in its own file,
   carrying the plain Apache-2.0 header rather than the upstream project's copyright line,
   never mixed into a copied file.
+- The JMH benchmarks are Looma's own too, under `src/test/java/io/github/pderop/looma/scheduler/netty/jmh/`.
+  `scripts/run-wake-jmh.sh` runs them.
 
 ## Refreshing from upstream
 
@@ -98,7 +93,6 @@ files:
 ```sh
 S=netty-loom-scheduler/src/main/java/io/netty/loom/scheduler
 { diff -u a/$S/EventLoopScheduler.java b/$S/EventLoopScheduler.java
-  diff -u a/$S/IdleCarrierTracker.java b/$S/IdleCarrierTracker.java
   diff -u a/$S/NettyScheduler.java b/$S/NettyScheduler.java
 } > netty-loom-scheduler/looma-home-queue.patch
 ```

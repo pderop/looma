@@ -8,10 +8,10 @@ request makes an actor read a few hundred of its objects. The benchmark compares
 scheduler spends per request, the latency, and how often actors moved to another core.
 
 **The answer**, on an AMD Ryzen 9 9950X: when an actor's data fits in its core's L2 cache, the
-schedulers that keep actors on their core spend 32.9% to 41.9% less CPU per request than the
+schedulers that keep actors on their core spend 33.4% to 42.8% less CPU per request than the
 JDK's scheduler. When the data fits in no cache, the JDK's scheduler cannot keep up with the rate.
-With its workers pinned, it keeps up, but spends 16% to 18% more CPU per request. The numbers:
-[`results/2026-10-22-ryzen9-9950x/summary.md`](results/2026-10-22-ryzen9-9950x/summary.md).
+With its workers pinned, it keeps up, but spends 15% to 18% more CPU per request. The numbers:
+[`results/2026-10-24-ryzen9-9950x/summary.md`](results/2026-10-24-ryzen9-9950x/summary.md).
 
 - Code: [`examples/…/examples/user`](../examples/src/main/java/io/github/pderop/looma/examples/user)
 - Scripts: [`scripts/bench.sh`](../scripts/bench.sh) runs it, and
@@ -236,7 +236,7 @@ empties that folder first, so a second campaign of the same day replaces the fir
 `perf c2c` data files are not copied.
 
 ```sh
-scripts/publish.sh bench/<date>-<time>       # e.g. docs/results/2026-10-22-ryzen9-9950x/summary.md
+scripts/publish.sh bench/<date>-<time>       # e.g. docs/results/2026-10-24-ryzen9-9950x/summary.md
 scripts/publish.sh -n bench/<date>-<time>    # -n: show what it would copy, copy nothing
 ```
 
@@ -329,10 +329,10 @@ walk   = cpu µs/req at depth 256 - cpu µs/req at depth 0
   `runs/<case>-epsilon-<scheduler>-256.out`.
 - heap used: at exit, Epsilon writes the heap in its GC log, `runs/<case>-epsilon-<scheduler>-256.gc.log`,
   as a line like this one, from `runs/default-epsilon-stealing-local-home-256.gc.log`:
-  `space 12582912K,  74% used [0x0000000500000000, 0x0000000738b5e230, 0x0000000800000000)`.
+  `space 12582912K,  75% used [0x0000000500000000, 0x000000074619cdd8, 0x0000000800000000)`.
   The three addresses are the start of the heap, its top (where the next object would go) and
-  its end. heap used = top - start: here 0x738b5e230 - 0x500000000 = 9,541,378,608 bytes, so
-  9,099 MiB.
+  its end. heap used = top - start: here 0x74619cdd8 - 0x500000000 = 9,766,030,808 bytes, so
+  9,313 MiB.
 
 ```
 difference = cpu µs/req Epsilon - cpu µs/req G1
@@ -345,7 +345,14 @@ One section per machine. Each campaign has its own folder in `docs/results/`, wi
 
 ### AMD Ryzen 9 9950X
 
-The results: [`results/2026-10-22-ryzen9-9950x/summary.md`](results/2026-10-22-ryzen9-9950x/summary.md).
+The results:
+
+- [`results/2026-10-24-ryzen9-9950x/summary.md`](results/2026-10-24-ryzen9-9950x/summary.md):
+  the latest, after [#9](https://github.com/pderop/looma/pull/9).
+- [`results/2026-10-22-ryzen9-9950x/summary.md`](results/2026-10-22-ryzen9-9950x/summary.md):
+  before #9. The scheduler then started its scan for an idle carrier at a random one, instead of
+  the first one.
+  #9 removed that change.
 
 A campaign is two commands, on this machine. The first runs both cases, in about 37 minutes,
 with the CPUs of the layout below as its defaults. The second copies the result to the docs.
