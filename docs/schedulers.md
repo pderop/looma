@@ -238,7 +238,7 @@ home carrier again.
 **`actorsStayHome()`** keeps the actor loops out of that. Each carrier then has a second queue, the
 home queue, which only that carrier drains and no stealer reads. Actor loops are created on it
 (`ActorScheduler.actorLoopFactory`), while the threads an actor offloads come from the ordinary
-factory and stay stealable. The carrier alternates between its two queues. This is one of the three
+factory and stay stealable. The carrier alternates between its two queues. This is one of the two
 changes Looma makes to its copy of the scheduler — see
 [`netty-loom-scheduler/README.md`](../netty-loom-scheduler/README.md).
 
@@ -257,7 +257,7 @@ scheduler is configured once per JVM:
 
 | Execution | Flags | Runs |
 | --- | --- | --- |
-| `default-test` | 2 carriers | upstream's own tests, and `WakeFromRandomMemberTest` |
+| `default-test` | 2 carriers | upstream's own tests |
 | `carrier-test` | 2 carriers, no stealing | the adapter's tests, `CarriersCommandLineTest` |
 | `workstealing-test` | 4 carriers, stealing, `FakeClusterTopology` | the adapter's tests again, `EventLoopSchedulerWorkStealingTest`, `HomeVirtualThreadTest` |
 | `install-test` | no scheduler flag, one JVM per class | `carriers(...)` installing the scheduler, and refusing to once a virtual thread has run |

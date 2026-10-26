@@ -1,0 +1,15 @@
+[NettyScheduler] topology=LinuxCarrierTopology carriers=12 clusters=2 stealScope=CLUSTER_LOCAL workStealing=true replaceBuiltinScheduler=false
+scheduler    io.github.pderop.looma.scheduler.netty.NettyActorScheduler, 12 carriers
+groups       12, 8000 users each (~640 KiB), depth 256
+load         150,000 req/s, 4 connection(s) on CPUs [0, 1, 16, 17]
+backend      127.0.0.1:8081
+window       5s warm-up, 20s measured
+
+measure      started, 20s
+throughput   149,999 req/s
+cpu          25.48 us/req (3.82 cores busy) -- server: process minus clients
+client cpu   26.66 us/req (4.00 cores busy)
+migrations   42.2% of 93,761 sampled messages ran on another carrier than the one before
+latency      p50 28.9  p90 35.0  p99 43.5  p99.9 62.3  max 3065.9 us (from the scheduled send)
+send lag     p50 0.1  p99 0.2 us (how late the clients sent)
+stackchunks  30 live during the warm-up, 25 after the measure

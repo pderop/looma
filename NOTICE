@@ -23,14 +23,11 @@ procedure), from:
 Copyright 2025-2026 The Netty VirtualThread Scheduler Project
 
 In accordance with Apache License, Version 2.0, Section 4(b): these files are a copy
-of the originals at the commit above, unmodified except for three files:
+of the originals at the commit above, unmodified except for two files:
 
   io/netty/loom/scheduler/EventLoopScheduler.java -- modified by the Looma project to
   add a per-carrier "home queue" that work stealing never reads, and a factory for
   virtual threads queued on it.
-  io/netty/loom/scheduler/IdleCarrierTracker.java -- modified by the Looma project so
-  that the idle carrier woken to steal is found by a scan from a random member, not
-  always from the first.
   io/netty/loom/scheduler/NettyScheduler.java -- modified by the Looma project so
   that the JDK's pollers start before the carriers, and are not kept on the one CPU
   of the carrier that would have started them.
