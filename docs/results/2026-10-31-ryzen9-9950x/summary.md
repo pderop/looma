@@ -81,7 +81,7 @@ walk   = cpu µs/req at depth 256 - cpu µs/req at depth 0
 From the console of each run, runs/<case>-<run>-<scheduler>-<depth>.out: cpu µs/req, the line
 cpu; latencies, the line latency; migrations, the line migrations. cpu µs/req and migrations:
 the mean of r1 to r3. cpu range and latencies: the lowest and the highest of r1 to r3. vs jdk is empty when jdk is not a measurement.
-Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from).
+Step by step: [Where the numbers come from](../campaigns.md#where-the-numbers-come-from).
 
 ## Controls
 
@@ -109,7 +109,7 @@ lines of its GC log, less the full GCs of the StackChunk counts. live StackChunk
 stackchunks of the console of the c2c run, during the warm-up → after the measure. req/s and
 GCs: the lowest and the highest of r1 to r3. A run is not a measurement when its console says it could not keep up
 with its rate, a GET failed, or a pinning failed.
-Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from).
+Step by step: [Where the numbers come from](../campaigns.md#where-the-numbers-come-from).
 
 ## perf stat
 
@@ -134,7 +134,7 @@ cycles per instruction = cycles / instructions = 1 / IPC
 The stat run of each scheduler, at depth 256. instructions and cycles: the counts of perf
 stat, summed over the server's threads (every thread but client-*), in
 runs/<case>-stat-<scheduler>.csv. requests: 150,000 req/s × 14 s, the window of perf stat.
-Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from).
+Step by step: [Where the numbers come from](../campaigns.md#where-the-numbers-come-from).
 
 ## perf c2c
 
@@ -163,7 +163,7 @@ are copied from its report, <case>-c2c-<scheduler>.txt, block Trace Event Inform
 - Load DRAM: among them, the loads served by the memory (Load Local DRAM + Load Remote DRAM).
 
 migrations: the line migrations of the console of the c2c run, runs/<case>-c2c-<scheduler>-256.out.
-Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from).
+Step by step: [Where the numbers come from](../campaigns.md#where-the-numbers-come-from).
 
 ## Epsilon
 
@@ -186,4 +186,4 @@ The epsilon run of each scheduler, at depth 256: the same run with the Epsilon G
 frees nothing, so no GC runs. cpu µs/req G1: the mean of r1 to r3, as in In short. cpu µs/req Epsilon:
 the line cpu of its console, runs/<case>-epsilon-<scheduler>-256.out. heap used: from its GC log
 (.gc.log), the line of the heap at exit "space ... used [start, top, end)", top - start.
-Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from).
+Step by step: [Where the numbers come from](../campaigns.md#where-the-numbers-come-from).

@@ -378,7 +378,7 @@ summary_tables() {
 			span = reps == 1 ? "the value of r1" : "the lowest and the highest of r1 to r" reps
 			avg = reps == 1 ? "the value of r1" : "the mean of r1 to r" reps
 
-			step = "Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from)."
+			step = "Step by step: [Where the numbers come from](../campaigns.md#where-the-numbers-come-from)."
 
 			print "## At a glance"
 			print ""

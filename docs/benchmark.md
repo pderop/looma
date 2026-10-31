@@ -207,7 +207,7 @@ What the script does:
 With the 4 default schedulers, that is 72 runs, about 37 minutes; 36 runs for one case.
 
 Everything goes to `bench/<date>-<time>/` (`--out` changes it): `summary.md`, and the files each
-of its numbers comes from. [`results/README.md`](results/README.md) explains them, and where each
+of its numbers comes from. [`results/campaigns.md`](results/campaigns.md) explains them, and where each
 number comes from.
 
 To keep a result in the docs, [`scripts/publish.sh`](../scripts/publish.sh) copies `summary.md`,
@@ -225,7 +225,7 @@ scripts/publish.sh -n bench/<date>-<time>    # -n: show what it would copy, copy
 
 The latest campaign:
 [`results/2026-10-31-ryzen9-9950x/summary.md`](results/2026-10-31-ryzen9-9950x/summary.md). All
-the campaigns, and how to read them: [`results/README.md`](results/README.md).
+the campaigns, and how to read them: [`results/campaigns.md`](results/campaigns.md).
 
 ### AMD Ryzen 9 9950X
 
@@ -338,7 +338,7 @@ clients and the backend.
 
 **Why only these three.** Earlier campaigns also ran other setups of the same schedulers, and,
 until 2026-10-31, `affine`, Looma's copy of the Netty-VirtualThread-Scheduler: see
-[Older campaigns](results/README.md#older-campaigns). Letting an idle carrier steal an actor cost
+[Older campaigns](results/campaigns.md#older-campaigns). Letting an idle carrier steal an actor cost
 CPU, in the published campaigns. Short runs, not published, also found stealing within an L3
 faster than from any carrier, and the MPSC scheduler faster with poller mode 4 than with mode 3.
 So each scheduler keeps one setup.

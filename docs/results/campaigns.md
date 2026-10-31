@@ -37,6 +37,10 @@ names of their own:
 
 `stealing-global-home` and `mpsc-home-poller3` ran only in short campaigns, not published.
 
+In the campaigns up to 2026-10-31, `affine` is that copied scheduler. Since then, the copy is no
+longer built, `Carriers.affine(n)` runs the MPSC scheduler, and the runs of the MPSC scheduler are
+still named `mpsc`.
+
 ## What a campaign contains
 
 `scripts/bench.sh` writes a campaign to `bench/<date>-<time>/`, and

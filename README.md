@@ -115,7 +115,7 @@ Everything else is in [`docs/api.md`](docs/api.md) and [`docs/schedulers.md`](do
 | [`docs/api.md`](docs/api.md) | The API: actors, messages, `tell`/`ask`, hierarchy, supervision, placement, pools, offloading, shutdown. |
 | [`docs/schedulers.md`](docs/schedulers.md) | The two schedulers (`affine`, `builtin`): what each one does, choosing one in code or by flags, placement, the engine and the SPI, and why carrier affinity. |
 | [`docs/benchmark.md`](docs/benchmark.md) | The benchmark: the question and the answer, the program, the schedulers it compares, running it, the machine, and why it is built this way. |
-| [`docs/results/README.md`](docs/results/README.md) | The published campaigns, what a campaign folder contains, and where each number of a `summary.md` comes from. |
+| [`docs/results/campaigns.md`](docs/results/campaigns.md) | The published campaigns, what a campaign folder contains, and where each number of a `summary.md` comes from. |
 | [`netty-loom-scheduler/README.md`](netty-loom-scheduler/README.md) | The copy of the Netty scheduler, no longer built: upstream commit, Looma's two patches, refresh procedure. |
 | [`mpsc-scheduler/README.md`](mpsc-scheduler/README.md) | The adapter of the JDK's MPSC scheduler: its classes, its JDK, its tests. |
 

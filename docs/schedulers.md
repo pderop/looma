@@ -308,7 +308,7 @@ cost CPU: the published campaigns show it, `stealing-local` against `stealing-lo
 runs, not published, also found stealing within an L3 faster than from any carrier, and the MPSC
 scheduler faster with poller mode 4 than with mode 3. So each scheduler keeps one setup. Options
 would make every user answer questions the benchmark already answered. The old setups, and their
-results, are in [the older campaigns](results/README.md#older-campaigns).
+results, are in [the older campaigns](results/campaigns.md#older-campaigns).
 
 That answer comes from one workload, this benchmark. Another workload could prefer another setup.
 Looma is a lab, not a framework: it keeps the one setup it measured.
