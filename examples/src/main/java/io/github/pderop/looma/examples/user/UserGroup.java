@@ -42,11 +42,11 @@ import io.github.pderop.looma.Message;
  * UpstreamAnswered   walk the friend graph, then answer the client
  * </pre>
  *
- * While the GET runs, the mailbox is empty, so the actor parks. When the answer
- * arrives, the scheduler resumes the actor on some carrier. If it is the same
- * carrier as before, the users are still in that core's cache. If not, they
- * must be read again from memory or from another core's cache. This is what the
- * benchmark measures.
+ * While the GET runs, the mailbox is empty, so the actor's virtual thread ends.
+ * When the answer arrives, {@code UpstreamAnswered} starts a new one, and the
+ * scheduler runs it on some carrier. If it is the same carrier as before, the
+ * users are still in that core's cache. If not, they must be read again from
+ * memory or from another core's cache. This is what the benchmark measures.
  */
 final class UserGroup implements Actor {
 

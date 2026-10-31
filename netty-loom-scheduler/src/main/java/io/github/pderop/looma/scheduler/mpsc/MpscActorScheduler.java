@@ -23,10 +23,9 @@ import io.netty.loom.topology.LinuxCarrierTopology;
  * The {@link ActorScheduler} view over the JDK's MPSC scheduler.
  *
  * <p>
- * An actor's loop is created with the affinity of its carrier: it runs there
- * for life, and is never stolen. The threads an actor offloads have no
- * affinity: they start on the actor's carrier, and an idle carrier may steal
- * them.
+ * An actor's bursts are created with the affinity of its carrier: they run
+ * there, and are never stolen. The threads an actor offloads have no affinity:
+ * they start on the actor's carrier, and an idle carrier may steal them.
  *
  * <p>
  * This class owns nothing: the carriers belong to the JDK. {@link #close()}
@@ -67,7 +66,7 @@ final class MpscActorScheduler implements ActorScheduler {
 	 * {@inheritDoc}
 	 *
 	 * <p>
-	 * The carrier the calling thread runs on. For an actor's loop, it is its home:
+	 * The carrier the calling thread runs on. For an actor's burst, it is its home:
 	 * it never moves.
 	 */
 	@Override

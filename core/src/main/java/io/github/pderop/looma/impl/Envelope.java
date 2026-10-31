@@ -32,7 +32,7 @@ import io.github.pderop.looma.Message;
  * <p>
  * The lifecycle case is what lets every actor life-cycle transition (its first
  * start, a restart's before/after hooks, its final stop) share the exact same
- * mailbox and loop as an ordinary message: a lifecycle step is simply queued
+ * mailbox and bursts as an ordinary message: a lifecycle step is simply queued
  * like any envelope and runs with the same exclusivity guarantee. This is also
  * why the two kinds must stay distinguishable at the point a cell decides
  * whether to accept an incoming envelope at all: an actor that is winding down

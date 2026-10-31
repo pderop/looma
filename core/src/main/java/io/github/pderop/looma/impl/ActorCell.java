@@ -46,12 +46,12 @@ import io.github.pderop.looma.spi.MailboxQueue;
  * <p>
  * An actor has a virtual thread only while it has envelopes to run.
  * {@code tell} offers an envelope and counts it in {@link #pending}. When the
- * count goes from 0 to 1, it starts a virtual thread from its dispatcher's loop
- * factory: a <em>burst</em>. The burst runs the envelopes until the count is
- * back to 0, then ends. An idle actor therefore holds no virtual thread, and no
- * stack. Serialization is the count itself: only the {@code tell} that takes it
- * from 0 starts a burst, so two bursts never run at once. Virtual threads are
- * not time-sliced, and a burst never yields: an actor whose mailbox never
+ * count goes from 0 to 1, it starts a virtual thread from its dispatcher's
+ * burst factory: a <em>burst</em>. The burst runs the envelopes until the count
+ * is back to 0, then ends. An idle actor therefore holds no virtual thread, and
+ * no stack. Serialization is the count itself: only the {@code tell} that takes
+ * it from 0 starts a burst, so two bursts never run at once. Virtual threads
+ * are not time-sliced, and a burst never yields: an actor whose mailbox never
  * empties holds its carrier for as long as it keeps receiving.
  *
  * <p>
@@ -173,7 +173,7 @@ final class ActorCell implements ActorContext {
 	 *            the strategy supplied at spawn time, or {@code null} to use the
 	 *            instance's own
 	 * @param dispatcher
-	 *            where this cell's loop and extra virtual threads are placed
+	 *            where this cell's bursts and extra virtual threads are placed
 	 * @param runtime
 	 *            the shared engine state this cell's actor system was built with
 	 */
@@ -208,13 +208,13 @@ final class ActorCell implements ActorContext {
 	}
 
 	/**
-	 * Returns this cell's dispatcher — where its loop and the threads from
+	 * Returns this cell's dispatcher — where its bursts and the threads from
 	 * {@link #vThreadFactory()} come from. {@link ActorRuntime}'s
 	 * {@code homeCarrierIdOf} reaches it through {@link ActorRefImpl#cell()} to
 	 * resolve an actor's home carrier. A child spawned with
 	 * {@link Placement#inherit()} inherits this cell's
 	 * {@link ActorDispatcher#carrierId() carrier id}, not this dispatcher instance
-	 * — every actor has its own loop; inherit is home-carrier only.
+	 * — every actor has its own bursts; inherit is home-carrier only.
 	 */
 	public ActorDispatcher dispatcher() {
 		return dispatcher;
@@ -313,7 +313,7 @@ final class ActorCell implements ActorContext {
 	 * @param parent
 	 *            the parent cell, or {@code null} for a root actor
 	 * @param dispatcher
-	 *            where the new cell's loop and extra virtual threads are placed —
+	 *            where the new cell's bursts and extra virtual threads are placed —
 	 *            already resolved from the caller's {@link Placement} through
 	 *            {@link ActorRuntime#dispatcherFor(Placement, ActorCell)} before
 	 *            this method is called
@@ -383,7 +383,7 @@ final class ActorCell implements ActorContext {
 	}
 
 	/**
-	 * Starts a burst, from this actor's loop factory, so on its home carrier. Each
+	 * Starts a burst, from this actor's burst factory, so on its home carrier. Each
 	 * burst is counted as in-flight work through
 	 * {@link ActorRuntime#countedThreadFactory(ThreadFactory)}.
 	 */

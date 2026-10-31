@@ -46,21 +46,19 @@ import java.util.concurrent.ThreadFactory;
 interface ActorDispatcher {
 
 	/**
-	 * Returns the raw factory for this carrier: the actor loop virtual thread, and
-	 * every extra virtual thread the actor creates through
-	 * {@code ActorContext.vThreadFactory()}, come from here.
+	 * Returns the raw factory for this carrier: every extra virtual thread the
+	 * actor creates through {@code ActorContext.vThreadFactory()} comes from here.
 	 *
 	 * <p>
 	 * Callers never see this factory directly — {@link ActorRuntime} wraps it into
 	 * the one an {@code ActorContext} hands out, so that every thread it creates is
-	 * counted as in-flight work. The actor loop itself is started through the same
-	 * wrapping.
+	 * counted as in-flight work. The bursts are started through the same wrapping.
 	 */
 	ThreadFactory vThreadFactory();
 
 	/**
-	 * Returns the raw factory for this carrier's actor loops: the same as
-	 * {@link #vThreadFactory()} unless the scheduler keeps actor loops apart (see
+	 * Returns the raw factory for this carrier's bursts: the same as
+	 * {@link #vThreadFactory()} unless the scheduler keeps bursts apart (see
 	 * {@code ActorScheduler.actorLoopFactory}). Wrapped by {@link ActorRuntime}
 	 * like the other one.
 	 */

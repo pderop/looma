@@ -176,7 +176,7 @@ The engine is in `io.github.pderop.looma.impl`, once, for all three schedulers:
 - **`ActorSchedulers`** — discovery, and `carriers(...)`'s installation.
 
 `tell` is two steps: `mailbox.offer(envelope)`, then `pending.getAndIncrement()`. When the count
-goes from 0 to 1, the `tell` starts a virtual thread from the actor's carrier's loop factory: a
+goes from 0 to 1, the `tell` starts a virtual thread from the actor's carrier's burst factory: a
 **burst**. The burst runs one envelope per count, then ends:
 
 ```
@@ -206,7 +206,7 @@ if (TERMINATING && !cascadeStarted) tryFinishDraining();
 `shutdown()` starts a graceful cascading stop, the same under every scheduler: every root stopped,
 each mailbox drained, the cascade descending to children, `postStop` unwinding back up.
 `awaitTermination` returns once every actor is unregistered **and** every unit of in-flight work
-has finished: the loops, and every thread created through `ActorContext.vThreadFactory()`.
+has finished: the bursts, and every thread created through `ActorContext.vThreadFactory()`.
 
 No scheduler's `close()` stops anything. The builtin owns no pool; the carriers are JVM-wide
 daemon threads, created on first use and never torn down.
@@ -257,8 +257,8 @@ upstream under the same command line.
 
 ## Blocking and pinning
 
-A blocking `onReceive` unmounts this actor only: every actor has its own loop. Offloading still
-belongs on `ActorContext.vThreadFactory()`, because a blocked loop stalls this actor's own mailbox.
+A blocking `onReceive` unmounts this actor only: every actor has its own bursts. Offloading still
+belongs on `ActorContext.vThreadFactory()`, because a blocked burst stalls this actor's own mailbox.
 
 A *pin* — a native frame on the stack, a JNI or foreign-function call — cannot unmount at all and
 holds its carrier. Under the builtin that costs one `ForkJoinPool` worker, which the pool can

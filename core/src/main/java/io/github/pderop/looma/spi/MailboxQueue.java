@@ -15,13 +15,13 @@ package io.github.pderop.looma.spi;
 
 /**
  * One actor's envelope queue: many producers ({@code tell} from any thread),
- * one consumer (that actor's virtual-thread loop).
+ * one consumer (that actor's burst: one at a time).
  *
  * <p>
  * Implementations must be at least MPSC and must never block in {@link #offer}
- * or {@link #poll}. The actor loop parks itself on an empty queue via
- * {@code LockSupport}; a blocking {@code take()} here would pin a carrier or
- * duplicate that park. Size, iterators and draining helpers are deliberately
+ * or {@link #poll}. On an empty queue the burst ends, and the next {@code tell}
+ * starts a new one; a blocking {@code take()} here would hold a virtual thread
+ * that should have ended. Size, iterators and draining helpers are deliberately
  * absent — the engine does not need them.
  *
  * @param <E>

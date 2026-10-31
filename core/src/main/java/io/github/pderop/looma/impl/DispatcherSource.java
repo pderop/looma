@@ -24,8 +24,8 @@ package io.github.pderop.looma.impl;
  * carrier <b>id</b> first ({@link ActorRuntime#dispatcherFor}), and only then
  * is that id handed to {@link #dispatcherFor(int)} here — this is the one place
  * that turns a carrier id into the cached factory+id binding every actor on
- * that carrier shares (the loop virtual thread is still per-actor; only the
- * factory is shared).
+ * that carrier shares (the bursts are still per-actor; only the factories are
+ * shared).
  *
  * <p>
  * Package-private, and not an SPI: it exists only so that {@link ActorRuntime}
@@ -50,9 +50,9 @@ interface DispatcherSource {
 
 	/**
 	 * Returns the cached dispatcher for a specific carrier id: that carrier's
-	 * virtual-thread factory and the id itself. Every actor placed on this carrier
-	 * gets the same instance; each still starts its own loop virtual thread from
-	 * that factory.
+	 * virtual-thread factories and the id itself. Every actor placed on this
+	 * carrier gets the same instance; each still starts its own bursts from those
+	 * factories.
 	 *
 	 * @param carrierId
 	 *            an id already known to be within {@code [0, carrierCount())} — the

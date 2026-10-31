@@ -51,8 +51,8 @@ import io.github.pderop.looma.spi.MailboxQueueFactory;
  * {@link ActorRuntime} and {@link ActorCell} and never differs between the two
  * schedulers. This class contributes only placement: which carrier an actor
  * lands on, according to whichever {@link ActorScheduler} it was built with.
- * Every actor then starts its own loop from that carrier's
- * {@link ActorScheduler#vThreadFactory(int)}. It exposes its dispatcher array
+ * Every actor then starts its bursts from that carrier's
+ * {@link ActorScheduler#actorLoopFactory(int)}. It exposes its dispatcher array
  * to {@link ActorRuntime} through the {@link Dispatchers} seam, which is what
  * lets {@link ActorRuntime#dispatcherFor(Placement, ActorCell)} resolve a
  * {@link Placement} without this class implementing the engine's own
@@ -325,12 +325,13 @@ public final class DefaultActorSystem implements ActorSystem {
 	// ================================================================
 
 	/**
-	 * Places an actor's loop on one carrier: the virtual thread started at spawn,
-	 * and the threads the actor creates through
-	 * {@link ActorContext#vThreadFactory()}, come from that carrier's own factory.
+	 * Places an actor on one carrier: its bursts, and the threads it creates
+	 * through {@link ActorContext#vThreadFactory()}, come from that carrier's own
+	 * factories.
 	 *
 	 * <p>
-	 * The factory is cached at construction, from
+	 * The factories are cached at construction, from
+	 * {@link ActorScheduler#actorLoopFactory(int)} and
 	 * {@link ActorScheduler#vThreadFactory(int)} — nothing is looked up on the
 	 * spawn path beyond the array index.
 	 */

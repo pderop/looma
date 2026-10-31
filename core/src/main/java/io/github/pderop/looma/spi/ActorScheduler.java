@@ -19,16 +19,16 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * How an {@code ActorSystem} places actors on carriers: how many there are,
- * which virtual-thread factory creates an actor's loop (and its offloaded
- * threads) for a given carrier, and what the calling thread's own placement is.
+ * which virtual-thread factories create an actor's bursts and its offloaded
+ * threads for a given carrier, and what the calling thread's own placement is.
  *
  * <p>
  * This interface is deliberately small. The engine no longer dispatches
- * per-message tasks onto an {@code Executor}: each actor is one virtual thread
- * for life, started from {@link #vThreadFactory(int)} at spawn. Resist growing
- * this interface. A concern that is not placement or topology (topology probing
- * aside, which is diagnostics-only, see below) belongs somewhere else, never
- * here.
+ * per-message tasks onto an {@code Executor}: an actor runs on a virtual
+ * thread, a burst, only while it has messages, started from
+ * {@link #actorLoopFactory(int)}. Resist growing this interface. A concern that
+ * is not placement or topology (topology probing aside, which is
+ * diagnostics-only, see below) belongs somewhere else, never here.
  *
  * <p>
  * <b>{@link #pinnedCpu()} is current-thread; {@link #clusterOf(int)} is
@@ -75,17 +75,17 @@ public interface ActorScheduler extends AutoCloseable {
 
 	/**
 	 * Returns the factory that creates every extra virtual thread an actor hands
-	 * out through {@code ActorContext.vThreadFactory()} — and its loop too, unless
-	 * {@link #actorLoopFactory(int)} says otherwise — placed on carrier
+	 * out through {@code ActorContext.vThreadFactory()} — and its bursts too,
+	 * unless {@link #actorLoopFactory(int)} says otherwise — placed on carrier
 	 * {@code index}, {@code 0 <= index < carrierCount()}.
 	 */
 	ThreadFactory vThreadFactory(int index);
 
 	/**
-	 * Returns the factory that creates an actor's loop virtual thread on carrier
-	 * {@code index}. By default the same as {@link #vThreadFactory(int)}; a
-	 * scheduler that keeps actor loops on their home carrier while letting the
-	 * other virtual threads be stolen returns a different one.
+	 * Returns the factory that creates an actor's bursts on carrier {@code index}.
+	 * By default the same as {@link #vThreadFactory(int)}; a scheduler that keeps
+	 * the bursts on their home carrier while letting the other virtual threads be
+	 * stolen returns a different one.
 	 */
 	default ThreadFactory actorLoopFactory(int index) {
 		return vThreadFactory(index);
@@ -120,11 +120,11 @@ public interface ActorScheduler extends AutoCloseable {
 	 * <p>
 	 * The non-blocking contract is load-bearing, not stylistic:
 	 * {@code ActorRuntime.maybeFireAfterTermination()} — the caller that reaches
-	 * this method — runs from inside the actor loop whose completion just made the
+	 * this method — runs from inside the burst whose completion just made the
 	 * in-flight counter hit zero, i.e. <b>on that actor's virtual thread</b>.
 	 * Blocking here would risk that thread waiting on its own exit. Waiting for the
 	 * release to complete is {@link #awaitClosed}'s job, called separately from
-	 * {@code ActorSystem.awaitTermination}, off the loop.
+	 * {@code ActorSystem.awaitTermination}, off the burst.
 	 */
 	@Override
 	void close();
