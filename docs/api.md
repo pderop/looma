@@ -159,12 +159,13 @@ ActorSystem system = ActorSystem.builder()
 ActorSystem.builder().scheduler(someScheduler);    // bypasses everything — tests only
 ```
 
-`carriers(...)` is the code form of the scheduler's JVM flags: `Carriers.affine(n)` for Looma's
-copy of the Netty-VirtualThread-Scheduler, `Carriers.mpsc(n)` for the JDK's MPSC scheduler,
-`Carriers.builtin(n)` for the JDK's default one with its parallelism fixed. They have no options. Without it, the system takes
-whatever the flags installed. Because the JDK resolves its scheduler once per process, `build()`
-must run **before the JVM's first virtual thread**, and throws rather than run on the wrong
-scheduler — see [`schedulers.md`](schedulers.md#in-code) for every case it refuses.
+`carriers(...)` is the code form of the scheduler's JVM flags: `Carriers.affine(n)` for Looma's copy
+of the Netty-VirtualThread-Scheduler, `Carriers.mpsc(n)` for the JDK's MPSC scheduler,
+`Carriers.builtin(n)` for the JDK's default one with its parallelism fixed. They have no options.
+Without it, the system takes whatever the flags installed. Because the JDK resolves its scheduler
+once per process, `build()` must run **before the JVM's first virtual thread**, and throws rather
+than run on the wrong scheduler — see [`schedulers.md`](schedulers.md#in-code) for every case it
+refuses.
 
 With `affine` and `mpsc`, an actor never leaves its home carrier, so its state stays in that
 core's cache. An idle carrier may steal only the threads actors create through
@@ -576,9 +577,10 @@ sound basis for an affinity assertion:
 assertEquals(system.homeCarrierIdOf(parent), system.homeCarrierIdOf(child));
 ```
 
-The home carrier is the only *deterministic* thing about placement. Which carrier a continuation
-happens to *run* on may, under work stealing, legitimately be a sibling — asserting against the
-running carrier is a flaky test, not a bug in the scheduler. It throws `IllegalArgumentException`
+The home carrier is the only *deterministic* thing about placement. Under `affine` and `mpsc` an
+actor always runs there, but a thread it offloads may be stolen, and under the builtin anything may
+run anywhere — asserting against the running carrier is a flaky test, not a bug in the
+scheduler. It throws `IllegalArgumentException`
 for any reference that is not one spawned actor: the single-use `sender` an `ask` produces, and a
 [pool](#pools-n-actors-of-one-type-behind-one-reference), which stands for `n` of them — assert on
 its actors, at `/db-0` and so on.
@@ -614,9 +616,9 @@ back up to the roots. Once it has begun, `tell` is silently dropped, and `ask` a
 work has finished — the actors' bursts *and* every thread created through `vThreadFactory()`. That is what
 keeps a caller from observing termination while user-spawned blocking work is still running.
 
-Both schedulers drain identically. Neither owns a pool to stop: the JDK builtin owns nothing, and the
-affine scheduler's carriers are a permanent JVM-wide pool created during `VirtualThread.<clinit>`
-that outlives any single `ActorSystem`.
+Every scheduler drains identically. None owns a pool to stop: the JDK builtin owns nothing, and the
+carriers of `affine` and `mpsc` are a permanent JVM-wide pool created during
+`VirtualThread.<clinit>` that outlives any single `ActorSystem`.
 
 ## 10. What Looma does not do
 
@@ -635,6 +637,6 @@ Stated plainly, so nothing is inferred from silence:
 
 ## See also
 
-- [`schedulers.md`](schedulers.md) — the two schedulers, choosing one, work stealing, and the
+- [`schedulers.md`](schedulers.md) — the three schedulers, choosing one, work stealing, and the
   engine internals, documented once.
 - The javadoc on every type above; it is the normative reference for the exact exception contracts.

@@ -9,9 +9,9 @@ scheduler spends per request, the latency, and how often actors moved to another
 
 **The answer**, on an AMD Ryzen 9 9950X: when an actor's data fits in its core's L2 cache, the
 schedulers that keep actors on their core spend less CPU per request than the JDK's scheduler:
-41.6% less for `affine`, 55.5% less for `mpsc`. When the data fits in no cache,
-the JDK's scheduler cannot keep up with the rate. With its workers pinned, it keeps up, but spends
-18% to 20% more CPU per request than those two. The numbers:
+42.1% less for `affine`, 57.3% less for `mpsc`. When the data fits in no cache, the JDK's
+scheduler cannot keep up with the rate. With its workers pinned, it keeps up, but spends 16% to
+19% more CPU per request than those two. The numbers:
 [`results/2026-10-31-ryzen9-9950x/summary.md`](results/2026-10-31-ryzen9-9950x/summary.md).
 
 - Code: [`examples/…/examples/user`](../examples/src/main/java/io/github/pderop/looma/examples/user)
@@ -25,8 +25,9 @@ the JDK's scheduler cannot keep up with the rate. With its workers pinned, it ke
 - **Scheduler**: what picks the carrier on which a virtual thread runs.
 - **Park**: a virtual thread that waits (for a socket, for a lock) gives its carrier back.
   When it is woken up, the scheduler picks a carrier for it again, maybe another one.
-- **Carrier-affine scheduler**: each virtual thread has a home carrier, and resumes on it. In
-  this benchmark, `affine` and `mpsc` are carrier-affine.
+- **Carrier-affine scheduler**: each actor has a home carrier, and always runs on it. The threads
+  it offloads start there, but an idle carrier may steal them. In this benchmark, `affine` and
+  `mpsc` are carrier-affine.
 - **Work stealing**: an idle carrier takes work queued on another carrier.
 - **Pinned**: an OS thread that may run on one CPU only.
 - **CPU, core**: Linux shows two CPUs per core when the core runs two threads at once (SMT). The
@@ -73,16 +74,17 @@ for a random user.
 2. The actor gets `Recommend`. It starts a virtual thread for the GET, and goes on with its next
    message: it does not wait. A group can have many GETs in flight.
 3. The virtual thread takes a free connection, sends `GET /user`, and parks on the response.
-   When the response arrives, the JDK's poller wakes it up (see [the poller modes](#the-schedulers)),
-   and the scheduler runs it on a carrier. It gives the connection back, and sends `UpstreamAnswered` to the actor.
+   When the response arrives, the JDK's poller wakes it up (see
+   [the poller modes](#the-schedulers)), and the scheduler runs it on a carrier. It gives the
+   connection back, and sends `UpstreamAnswered` to the actor.
 4. The actor gets `UpstreamAnswered`. It walks `--depth` users: it starts at the user asked for,
    then follows the friends. It writes in each one (visits, score, time). Then it answers the
    client.
 5. The client records the latency, from the planned send time to the answer.
 
 Between steps 2 and 4, the actor's mailbox is empty, so its virtual thread ends.
-`UpstreamAnswered` starts a new one, and the scheduler picks the carrier it runs on. If it is the same carrier as before, the
-users are still in that core's cache, and the walk is fast. If not, the users must be read
+`UpstreamAnswered` starts a new one, and the scheduler picks the carrier it runs on. If it is the
+same carrier as before, the users are still in that core's cache, and the walk is fast. If not, the users must be read
 again, and the walk is slow.
 
 **The backend**, [`BackendServer`](../examples/src/main/java/io/github/pderop/looma/examples/user/BackendServer.java),
@@ -118,8 +120,8 @@ The poller modes:
 
 ### Where things run
 
-Three lists of CPUs, with commas and ranges (`2-7,10-15`), and no CPU in two lists. The defaults are those of the AMD
-machine ([The layout](#the-layout)); on another machine, give the three lists. `lscpu -e` shows
+Three lists of CPUs, with commas and ranges (`2-7,10-15`), and no CPU in two lists. The defaults
+are those of the AMD machine ([The layout](#the-layout)); on another machine, give the three lists. `lscpu -e` shows
 the core and the caches of each CPU.
 
 - **`--cpus-carriers`**: one carrier and one group per CPU. Give one CPU per core: the script
@@ -158,8 +160,8 @@ group fits in no cache.
 
 ## Running it
 
-You need Linux, the Loom JDK of openjdk/loom pull request 227 and the project built (the [README](../README.md#quickstart)
-shows both), and `perf` for the `perf c2c` and `perf stat` runs.
+You need Linux, the Loom JDK of openjdk/loom pull request 227 and the project built (the
+[README](../README.md#quickstart) shows both), and `perf` for the `perf c2c` and `perf stat` runs.
 
 The script first runs [`scripts/prepare-linux-bench.sh`](../scripts/prepare-linux-bench.sh),
 with sudo: turbo off, the `performance` governor, and perf allowed. It saves what it changed;
@@ -199,7 +201,7 @@ What the script does:
    allocates about 5 GiB.
 7. It writes `summary.md`, with both cases.
 
-With the 4 default schedulers, that is 72 runs, about 37 minutes; 36 runs for one case. `--help` lists the options.
+With the 4 default schedulers, that is 72 runs, about 37 minutes; 36 runs for one case.
 
 Everything goes to `bench/<date>-<time>/` (`--out` changes it): `summary.md`, and the files each
 of its numbers comes from. [`results/README.md`](results/README.md) explains them, and where each
@@ -224,8 +226,8 @@ the campaigns, and how to read them: [`results/README.md`](results/README.md).
 
 ### AMD Ryzen 9 9950X
 
-A campaign is two commands, on this machine. The first runs both cases, in about 37 minutes,
-with the CPUs of the layout below as its defaults. The second copies the result to the docs.
+A campaign is two commands, on this machine. The first runs both cases, with the CPUs of the
+layout below as its defaults. The second copies the result to the docs.
 
 ```sh
 scripts/bench.sh                          # writes bench/<date>-<time>/summary.md
@@ -236,7 +238,8 @@ scripts/publish.sh bench/<date>-<time>    # copies it to docs/results/<date>-ryz
 
 - **CPU:** AMD Ryzen 9 9950X (Zen 5), one socket.
 - **OS:** Linux 7.0 (Ubuntu).
-- **JDK:** Loom build of JDK 28 (Shipilev, b59).
+- **JDK:** the Loom JDK of openjdk/loom pull request 227, built from source (`28-internal-pr227-731930d`).
+  The campaigns of 2026-10-22 and 2026-10-24 ran on the Loom JDK 28 of builds.shipilev.net (b59).
 - **Setup:** `scripts/prepare-linux-bench.sh`, run by `bench.sh`: turbo off, so every core runs
   at 4.3 GHz; `performance` governor; perf allowed.
 
@@ -301,10 +304,10 @@ friendships follow another random order, so the walk jumps around in memory.
 cache of the core that runs it. A moved actor must read it again on its new core: from the L3,
 from the old core's cache, or from memory.
 
-**Why a real socket.** A virtual thread that waits on a socket is woken up by the JDK's poller,
-and the scheduler picks its carrier then. A carrier-affine scheduler puts it back on its home
-carrier. `Thread.sleep` would not take this path. The backend runs in its own process, so its
-CPU is not counted and it does not slow down the carriers.
+**Why a real socket.** A virtual thread that waits on a socket is woken up by the JDK's poller, and
+the scheduler picks its carrier then. A carrier-affine scheduler puts it back on its home carrier,
+unless an idle carrier steals it. `Thread.sleep` would not take this path. The backend runs in its
+own process, so its CPU is not counted and it does not slow down the carriers.
 
 **Why repetitions.** Each run is a new JVM: the JIT and the GC make their own choices in each
 one. Three runs show whether a result holds. They follow each other, so a drift of the machine
@@ -330,8 +333,10 @@ clients and the backend.
 **Why `jdk-pinned`.** It tells whether pinning alone makes the difference.
 
 **Why only these four.** Earlier campaigns also ran other setups of the same schedulers: see
-[Older campaigns](results/README.md#older-campaigns). For each scheduler, one setup was the fastest, and it is the
-only one left.
+[Older campaigns](results/README.md#older-campaigns). Letting an idle carrier steal an actor cost
+CPU, in the published campaigns. Short runs, not published, also found stealing within an L3
+faster than from any carrier, and the MPSC scheduler faster with poller mode 4 than with mode 3.
+So each scheduler keeps one setup.
 
 **Why count the StackChunks.** A parked virtual thread keeps its stack in a `StackChunk`, on the
 heap. If chunks were kept alive and piled up, the GC would have more to do under some

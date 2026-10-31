@@ -8,9 +8,9 @@ number of it comes from. [`../benchmark.md`](../benchmark.md) explains the bench
 ### AMD Ryzen 9 9950X
 
 - [`2026-10-31-ryzen9-9950x/summary.md`](2026-10-31-ryzen9-9950x/summary.md): the latest.
-  `stealing-local-home`, `mpsc-home`, `jdk` and `jdk-pinned`, on the JDK of openjdk/loom pull
-  request 227. `stealing-local-home` and `mpsc-home` are the old names of `affine` and `mpsc`:
-  the setups are the same.
+  `affine`, `mpsc`, `jdk` and `jdk-pinned`, on the JDK of openjdk/loom pull request 227. It
+  replaces a campaign of the same day that ran the same setups under their old names,
+  `stealing-local-home` and `mpsc-home`.
 - [`2026-10-24-ryzen9-9950x/summary.md`](2026-10-24-ryzen9-9950x/summary.md): `stealing-local`,
   `stealing-local-home`, `jdk` and `jdk-pinned`, on the Loom JDK of builds.shipilev.net, after
   [#9](https://github.com/pderop/looma/pull/9). `stealing-local-home` spends less CPU per request
@@ -57,18 +57,23 @@ Every number of `summary.md` comes from one of these files, and each of its sect
 of each part, the heap, and the command. Then, with no reading of the numbers:
 
 - **The runs:** how the runs were made.
+- **At a glance:** per scheduler and case, the cpu µs/req at depth 256.
+- **In short:** per case, depth and scheduler, the CPU and the latency of r1 to r3.
+- **Controls:** per case, depth and scheduler, the rate reached, the GC pauses, the live
+  StackChunks.
 - **perf stat:** per case and scheduler, from its stat run, with the formulas.
 - **perf c2c:** per case and scheduler, from its c2c run, with the formulas.
-- **Controls:** per case, scheduler and depth, the rate reached, the GC pauses, the live
-  StackChunks.
-- **In short:** per case, scheduler and depth, the CPU and the latency of r1 to r3.
 - **Epsilon:** per case and scheduler, the CPU with G1 and with Epsilon, and the heap used.
+
+Each section gives its table first, then the formulas and the files its numbers come from.
+The campaigns of 2026-10-22 and 2026-10-24 give the sections in another order, the sources first,
+and the raw counts of perf stat and perf c2c before the computed columns.
 
 | Column | What it is |
 | --- | --- |
 | **cpu µs/req** | the CPU cost of one request, the mean of r1 to r3. All schedulers serve the same rate, so this is the main number to compare. "not a measurement" when a run could not keep up with its rate, a GET failed, or a pinning failed |
 | **cpu range** | the lowest and the highest cpu µs/req of r1 to r3: how much the runs differ |
-| **vs jdk** | cpu µs/req against `jdk`'s, in the same case and at the same depth |
+| **vs jdk** | cpu µs/req against `jdk`'s, in the same case and at the same depth. Empty when `jdk` is not a measurement |
 | **walk µs** | cpu µs/req at depth 256 minus at depth 0: the cost of reading the users |
 | **p50, p99, p99.9 µs** | how long a request waited for its answer: 50%, 99% and 99.9% of the requests got their answer faster than that. The latency starts at the planned send time, not when the request was really sent. The lowest and the highest of r1 to r3 |
 | **migrations** | how often an actor ran a message on another carrier than the message before it. One message in 64 is checked |
@@ -81,7 +86,7 @@ of each part, the heap, and the command. Then, with no reading of the numbers:
 | **live StackChunks** | during the warm-up → after the measure. A `StackChunk` holds the stack of a parked virtual thread |
 | **cpu µs/req G1, Epsilon** | the cpu µs/req of the same scheduler at depth 256: with G1, the mean of r1 to r3; with Epsilon, the epsilon run. Their difference is the CPU of the GC, with this caveat: Epsilon never reuses memory, so every allocation touches new memory |
 | **heap used** | what the epsilon run allocated, in all: Epsilon frees nothing |
-| **note** | in perf stat and perf c2c: "this run: not a measurement" when the stat or c2c run itself was not, "r1 to r3: not a measurement" when the runs of that case and scheduler were not. Their counts are then not comparable with the others |
+| **note** | in perf stat and perf c2c: "this run: not a measurement" when the stat or c2c run itself was not, "r1 to r3: not a measurement" when the runs of that case and scheduler were not; their counts are then not comparable with the others. In Controls: "not a measurement", followed by the runs that were not, as in "(r1 to r3, c2c run, stat run)" |
 
 ## Where the numbers come from
 
@@ -90,13 +95,14 @@ from other numbers of the same line. This section shows how, on one line of each
 
 ### perf stat
 
-The line:
+The line, from [`2026-10-22-ryzen9-9950x/summary.md`](2026-10-22-ryzen9-9950x/summary.md) (in
+newer campaigns, the computed columns come before the raw counts):
 
 | case | scheduler | instructions | cycles | requests | instructions/req | IPC | cycles per instruction | cycles/req | note |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | default | jdk | 287,653,929,416 | 307,912,670,779 | 2,100,000 | 136,978 | 0.93 | 1.07 | 146,625 | |
 
-It comes from `runs/default-stat-jdk.csv`, the output of `perf stat` during the stat
+It comes from `2026-10-22-ryzen9-9950x/runs/default-stat-jdk.csv`, the output of `perf stat` during the stat
 run of `jdk`. The file has one line per thread and counter, for example:
 
 ```
@@ -113,7 +119,8 @@ the word. The comment at the top of the file lists every field.
    `<not counted>` have no number: those threads did not run.
 2. **cycles** is the same sum, on the lines whose field 4 is `cycles`.
 3. **requests** is not counted: it is the rate times the window of perf stat, 150,000 req/s ×
-   14 s. The line `throughput` of the console of the run, `runs/default-stat-jdk-256.out`,
+   14 s. The line `throughput` of the console of the run,
+   `2026-10-22-ryzen9-9950x/runs/default-stat-jdk-256.out`,
    shows that the run kept that rate.
 4. The other columns divide these three numbers:
 

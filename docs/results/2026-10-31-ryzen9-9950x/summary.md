@@ -1,7 +1,7 @@
 # User benchmark
 
 ```
-date         2026-10-31 02:15:51 +0000
+date         2026-10-31 04:35:59 +0000
 host         gabuzo-amd, Linux 7.0.0-38-generic
 cpu model    AMD Ryzen 9 9950X 16-Core Processor
 turbo        off
@@ -10,7 +10,7 @@ carriers     CPUs 2-7,10-15
 clients      CPUs 0,1,16,17
 backend      CPUs 8,9,24,25
 heap         2g, G1; the epsilon runs 12g, Epsilon
-command      scripts/bench.sh --out /home/pderop/work/projects/looma-test/bench/20261031-021551
+command      scripts/bench.sh --out /home/pderop/work/projects/looma-test/bench/20261031-043559
 ```
 
 ## The runs
@@ -27,11 +27,12 @@ more with perf c2c, once more with perf stat, and once more with the Epsilon GC,
 - Open loop: the clients send at a fixed rate. A latency is from the planned send time of a
   request to its answer. cpu µs/req is the server's: the process minus the clients.
 - Each carrier has a core to itself: the script refuses two carrier CPUs on one core.
-- The schedulers: stealing-local-home, mpsc-home, jdk, jdk-pinned.
+- The schedulers: affine, mpsc, jdk, jdk-pinned.
 - jdk-pinned is jdk with each of its workers pinned to one carrier CPU. The clients are pinned to
   their own CPUs.
-- mpsc-home and mpsc-home-poller3: the MPSC scheduler of the JDK (openjdk/loom pull request 227).
-  mpsc-home-poller3 runs it with jdk.pollerMode=3, the poller mode of the stealing-* schedulers.
+- affine: Looma's copy of the Netty-VirtualThread-Scheduler. mpsc: the MPSC scheduler of the JDK
+  (openjdk/loom pull request 227). In both, each carrier is pinned to one CPU, and an actor never
+  moves to another carrier.
 - Heap: -Xms2g -Xmx2g -XX:+AlwaysPreTouch, G1, and a GC log per run. The epsilon run:
   -XX:+UseEpsilonGC -Xms12g -Xmx12g -XX:+AlwaysPreTouch. Epsilon frees nothing, so no GC runs:
   each allocation takes new memory.
@@ -40,12 +41,88 @@ more with perf c2c, once more with perf stat, and once more with the Epsilon GC,
   The full report of each c2c run is in <case>-c2c-<scheduler>.txt, the files of every run in
   runs/.
 
+## At a glance
+
+| scheduler | default, cpu µs/req | big, cpu µs/req |
+|---|---|---|
+| affine | 20.99 | 64.98 |
+| mpsc | 15.48 | 63.24 |
+| jdk | 36.25 | not a measurement |
+| jdk-pinned | 43.83 | 75.13 |
+
+cpu µs/req at depth 256, the mean of r1 to r3, as in In short.
+
+## In short
+
+| case | scheduler | depth | cpu µs/req | cpu range | vs jdk | walk µs | p50 µs | p99 µs | p99.9 µs | migrations |
+|---|---|---|---|---|---|---|---|---|---|---|
+| default | affine | 256 | 20.99 | 20.72–21.28 | -42.1% | 4.59 | 25 | 35–36 | 189–571 | 0.0% |
+| default | mpsc | 256 | 15.48 | 14.81–15.83 | -57.3% | 4.01 | 20–21 | 29–32 | 70–96 | 0.0% |
+| default | jdk | 256 | 36.25 | 35.74–36.60 |  | 9.16 | 33–35 | 86–90 | 2,445–3,131 | 70.9% |
+| default | jdk-pinned | 256 | 43.83 | 43.57–44.34 | +20.9% | 15.03 | 43–45 | 87–94 | 166–433 | 65.4% |
+| default | affine | 0 | 16.40 | 15.90–16.81 | -39.5% |  | 20–21 | 28–30 | 61–334 | 0.0% |
+| default | mpsc | 0 | 11.48 | 11.08–11.82 | -57.6% |  | 16 | 24–26 | 34–123 | 0.0% |
+| default | jdk | 0 | 27.09 | 26.61–27.42 |  |  | 21–23 | 31–32 | 782–1,947 | 86.5% |
+| default | jdk-pinned | 0 | 28.80 | 28.50–29.21 | +6.3% |  | 19–20 | 28–30 | 38–50 | 85.1% |
+| big | affine | 256 | 64.98 | 64.57–65.79 |  | 48.59 | 164–179 | 566–591 | 817–1,078 | 0.0% |
+| big | mpsc | 256 | 63.24 | 62.12–63.81 |  | 51.70 | 117–125 | 455–498 | 907–1,022 | 0.0% |
+| big | jdk | 256 | not a measurement |  |  |  | 828–1,146 | 22,790–37,847 | 38,470–57,934 | 5.2% |
+| big | jdk-pinned | 256 | 75.13 | 73.40–76.75 |  | 46.02 | 380–561 | 1,528–2,136 | 2,370–3,226 | 11.1% |
+| big | affine | 0 | 16.40 | 15.96–16.62 | -38.0% |  | 20–21 | 28–29 | 34–35 | 0.0% |
+| big | mpsc | 0 | 11.54 | 11.43–11.65 | -56.4% |  | 15–16 | 24–26 | 30–53 | 0.0% |
+| big | jdk | 0 | 26.46 | 25.87–27.16 |  |  | 20–21 | 30–31 | 490–1,044 | 86.7% |
+| big | jdk-pinned | 0 | 29.11 | 28.61–30.01 | +10.0% |  | 18–21 | 27–30 | 34–45 | 85.2% |
+
+```
+vs jdk = cpu µs/req / cpu µs/req of jdk, same case and depth, - 1
+walk   = cpu µs/req at depth 256 - cpu µs/req at depth 0
+```
+
+From the console of each run, runs/<case>-<run>-<scheduler>-<depth>.out: cpu µs/req, the line
+cpu; latencies, the line latency; migrations, the line migrations. cpu µs/req and migrations:
+the mean of r1 to r3. cpu range and latencies: the lowest and the highest of r1 to r3. vs jdk is empty when jdk is not a measurement.
+Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from).
+
+## Controls
+
+| case | scheduler | depth | req/s | GCs | live StackChunks | note |
+|---|---|---|---|---|---|---|
+| default | affine | 256 | 149,999 | 9 | 54 → 25 |  |
+| default | mpsc | 256 | 149,999–150,000 | 7 | 3 → 1 |  |
+| default | jdk | 256 | 149,999 | 7 | 25 → 25 |  |
+| default | jdk-pinned | 256 | 149,999 | 7 | 28 → 28 |  |
+| default | affine | 0 | 149,999 | 9–10 |  |  |
+| default | mpsc | 0 | 149,999–150,000 | 7 |  |  |
+| default | jdk | 0 | 149,999 | 7 |  |  |
+| default | jdk-pinned | 0 | 149,999–150,000 | 7 |  |  |
+| big | affine | 256 | 150,001–150,002 | 8 | 138 → 39 |  |
+| big | mpsc | 256 | 149,998–150,001 | 7 | 9 → 4 |  |
+| big | jdk | 256 | 149,458–149,986 | 6–7 | 47 → 25 | not a measurement (r1 to r3, c2c run, stat run) |
+| big | jdk-pinned | 256 | 150,001–150,008 | 6–7 | 26 → 54 |  |
+| big | affine | 0 | 149,999–150,000 | 10 |  |  |
+| big | mpsc | 0 | 149,999–150,000 | 8 |  |  |
+| big | jdk | 0 | 149,999–150,000 | 8–9 |  |  |
+| big | jdk-pinned | 0 | 149,999–150,000 | 8 |  |  |
+
+From the files of each run, in runs/. req/s: the line throughput of its console. GCs: the Pause
+lines of its GC log, less the full GCs of the StackChunk counts. live StackChunks: the line
+stackchunks of the console of the c2c run, during the warm-up → after the measure. req/s and
+GCs: the lowest and the highest of r1 to r3. A run is not a measurement when its console says it could not keep up
+with its rate, a GET failed, or a pinning failed.
+Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from).
+
 ## perf stat
 
-The stat run of each scheduler, at depth 256. instructions and cycles: the counts of perf
-stat, summed over the server's threads (every thread but client-*), in
-runs/<case>-stat-<scheduler>.csv. requests: 150,000 req/s × 14 s, the window of perf stat.
-Step by step, on one line: [Where the numbers come from](../README.md#where-the-numbers-come-from).
+| case | scheduler | instructions/req | IPC | cycles per instruction | cycles/req | instructions | cycles | requests | note |
+|---|---|---|---|---|---|---|---|---|---|
+| default | affine | 91,723 | 1.09 | 0.92 | 84,167 | 192,618,575,784 | 176,750,716,430 | 2,100,000 |  |
+| default | mpsc | 71,391 | 1.13 | 0.88 | 62,954 | 149,922,066,427 | 132,203,014,918 | 2,100,000 |  |
+| default | jdk | 133,352 | 0.88 | 1.14 | 151,753 | 280,039,390,067 | 318,681,134,553 | 2,100,000 |  |
+| default | jdk-pinned | 124,822 | 0.69 | 1.46 | 181,767 | 262,126,958,721 | 381,710,110,860 | 2,100,000 |  |
+| big | affine | 75,851 | 0.28 | 3.62 | 274,719 | 159,286,682,312 | 576,909,931,678 | 2,100,000 |  |
+| big | mpsc | 64,727 | 0.24 | 4.18 | 270,518 | 135,925,784,002 | 568,088,564,425 | 2,100,000 |  |
+| big | jdk | 53,174 | 0.18 | 5.50 | 292,445 | 111,666,280,094 | 614,134,366,750 | 2,100,000 | this run: not a measurement |
+| big | jdk-pinned | 63,829 | 0.20 | 4.95 | 315,923 | 134,041,617,921 | 663,438,976,837 | 2,100,000 |  |
 
 ```
 instructions/req       = instructions / requests
@@ -54,18 +131,28 @@ IPC                    = instructions / cycles
 cycles per instruction = cycles / instructions = 1 / IPC
 ```
 
-| case | scheduler | instructions | cycles | requests | instructions/req | IPC | cycles per instruction | cycles/req | note |
-|---|---|---|---|---|---|---|---|---|---|
-| default | stealing-local-home | 230,190,123,645 | 181,366,101,430 | 2,100,000 | 109,614 | 1.27 | 0.79 | 86,365 |  |
-| default | mpsc-home | 171,697,438,761 | 142,564,640,728 | 2,100,000 | 81,761 | 1.20 | 0.83 | 67,888 |  |
-| default | jdk | 276,548,008,030 | 316,519,295,579 | 2,100,000 | 131,690 | 0.87 | 1.14 | 150,723 |  |
-| default | jdk-pinned | 263,010,957,974 | 385,560,943,943 | 2,100,000 | 125,243 | 0.68 | 1.47 | 183,600 |  |
-| big | stealing-local-home | 145,758,100,211 | 591,596,496,734 | 2,100,000 | 69,409 | 0.25 | 4.06 | 281,713 |  |
-| big | mpsc-home | 135,124,026,831 | 574,688,110,091 | 2,100,000 | 64,345 | 0.24 | 4.25 | 273,661 |  |
-| big | jdk | 110,004,626,985 | 609,450,179,260 | 2,100,000 | 52,383 | 0.18 | 5.54 | 290,214 | this run: not a measurement |
-| big | jdk-pinned | 125,381,964,192 | 686,827,381,384 | 2,100,000 | 59,706 | 0.18 | 5.48 | 327,061 |  |
+The stat run of each scheduler, at depth 256. instructions and cycles: the counts of perf
+stat, summed over the server's threads (every thread but client-*), in
+runs/<case>-stat-<scheduler>.csv. requests: 150,000 req/s × 14 s, the window of perf stat.
+Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from).
 
 ## perf c2c
+
+| case | scheduler | migrations | other L3 | DRAM | Load Operations | Load Remote HITM | Load DRAM | note |
+|---|---|---|---|---|---|---|---|---|
+| default | affine | 0.0% | 0.46% | 0.06% | 25,934 | 118 | 15 |  |
+| default | mpsc | 0.0% | 0.34% | 0.03% | 22,607 | 76 | 6 |  |
+| default | jdk | 69.8% | 1.28% | 0.25% | 38,870 | 497 | 96 |  |
+| default | jdk-pinned | 65.3% | 1.54% | 0.26% | 54,545 | 840 | 140 |  |
+| big | affine | 0.0% | 0.32% | 4.43% | 64,572 | 208 | 2,861 |  |
+| big | mpsc | 0.0% | 0.36% | 4.55% | 61,849 | 221 | 2,812 |  |
+| big | jdk | 3.1% | 0.44% | 5.73% | 57,911 | 257 | 3,317 | this run: not a measurement |
+| big | jdk-pinned | 10.5% | 0.67% | 5.58% | 67,127 | 449 | 3,743 |  |
+
+```
+other L3 = Load Remote HITM / Load Operations
+DRAM     = Load DRAM / Load Operations
+```
 
 The c2c run of each scheduler, at depth 256. Load Operations, Load Remote HITM and Load DRAM
 are copied from its report, <case>-c2c-<scheduler>.txt, block Trace Event Information:
@@ -78,100 +165,25 @@ are copied from its report, <case>-c2c-<scheduler>.txt, block Trace Event Inform
 migrations: the line migrations of the console of the c2c run, runs/<case>-c2c-<scheduler>-256.out.
 Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from).
 
-```
-other L3 = Load Remote HITM / Load Operations
-DRAM     = Load DRAM / Load Operations
-```
-
-| case | scheduler | migrations | Load Operations | Load Remote HITM | Load DRAM | other L3 | DRAM | note |
-|---|---|---|---|---|---|---|---|---|
-| default | stealing-local-home | 0.0% | 25,729 | 91 | 11 | 0.35% | 0.04% |  |
-| default | mpsc-home | 0.0% | 22,444 | 60 | 7 | 0.27% | 0.03% |  |
-| default | jdk | 72.9% | 35,758 | 361 | 33 | 1.01% | 0.09% |  |
-| default | jdk-pinned | 66.4% | 53,932 | 1,199 | 245 | 2.22% | 0.45% |  |
-| big | stealing-local-home | 0.0% | 65,079 | 195 | 2,984 | 0.30% | 4.59% |  |
-| big | mpsc-home | 0.0% | 65,527 | 259 | 3,278 | 0.40% | 5.00% |  |
-| big | jdk | 5.7% | 55,179 | 296 | 2,772 | 0.54% | 5.02% | this run: not a measurement |
-| big | jdk-pinned | 9.6% | 56,422 | 359 | 3,205 | 0.64% | 5.68% |  |
-
-## Controls
-
-From the files of each run, in runs/: req/s, the line throughput of its console
-(<case>-<run>-<scheduler>-<depth>.out); GCs, the Pause lines of its GC log (.gc.log), less
-the full GCs of the StackChunk counts (Heap Inspection); live StackChunks, the line
-stackchunks of the console of the c2c run, during the warm-up → after the measure; note,
-"not a measurement" when a console says the run could not keep up with its rate, a GET
-failed, or a pinning failed (the line pinning). req/s and GCs: the lowest and the highest of r1 to r3. Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from).
-
-| case | scheduler | depth | req/s | GCs | live StackChunks | note |
-|---|---|---|---|---|---|---|
-| default | stealing-local-home | 256 | 149,999–150,000 | 9 | 28 → 27 |  |
-| default | stealing-local-home | 0 | 149,994–149,999 | 9 |  |  |
-| default | mpsc-home | 256 | 149,999–150,001 | 7 | 2 → 0 |  |
-| default | mpsc-home | 0 | 149,998–149,999 | 7 |  |  |
-| default | jdk | 256 | 149,999 | 7 | 27 → 27 |  |
-| default | jdk | 0 | 149,999 | 7–8 |  |  |
-| default | jdk-pinned | 256 | 149,999–150,000 | 7 | 26 → 27 |  |
-| default | jdk-pinned | 0 | 149,999–150,001 | 7 |  |  |
-| big | stealing-local-home | 256 | 149,996–149,999 | 8 | 68 → 46 |  |
-| big | stealing-local-home | 0 | 149,999–150,001 | 10–11 |  |  |
-| big | mpsc-home | 256 | 149,999–150,001 | 7–8 | 8 → 3 |  |
-| big | mpsc-home | 0 | 149,999–150,000 | 8 |  |  |
-| big | jdk | 256 | 148,941–150,053 | 6 | 72 → 107 | not a measurement, c2c run: not a measurement, stat run: not a measurement |
-| big | jdk | 0 | 149,999–150,000 | 8–9 |  |  |
-| big | jdk-pinned | 256 | 149,969–150,000 | 7 | 26 → 29 |  |
-| big | jdk-pinned | 0 | 149,998–149,999 | 8–9 |  |  |
-
-## In short
-
-From the console of each run, runs/<case>-<run>-<scheduler>-<depth>.out, r1 to r3: cpu µs/req,
-the line cpu; latencies, the line latency; migrations, the line migrations.
-cpu µs/req and migrations: the mean of r1 to r3. cpu range and latencies: the lowest and the highest of r1 to r3.
-Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from).
-
-```
-vs jdk = cpu µs/req / cpu µs/req of jdk, same case and depth, - 1
-walk   = cpu µs/req at depth 256 - cpu µs/req at depth 0
-```
-
-| case | scheduler | depth | cpu µs/req | cpu range | vs jdk | walk µs | p50 µs | p99 µs | p99.9 µs | migrations |
-|---|---|---|---|---|---|---|---|---|---|---|
-| default | stealing-local-home | 256 | 20.96 | 20.76–21.16 | -41.6% | 4.44 | 24–26 | 34–36 | 213–941 | 0.0% |
-| default | stealing-local-home | 0 | 16.52 | 16.28–16.89 | -39.0% |  | 20–21 | 28–29 | 159–346 | 0.0% |
-| default | mpsc-home | 256 | 15.98 | 15.50–16.37 | -55.5% | 4.28 | 20 | 29–30 | 48–111 | 0.0% |
-| default | mpsc-home | 0 | 11.70 | 11.05–12.26 | -56.8% |  | 16 | 24–26 | 79–96 | 0.0% |
-| default | jdk | 256 | 35.89 | 35.34–36.21 |  | 8.79 | 33–35 | 83–88 | 2,277–2,765 | 69.4% |
-| default | jdk | 0 | 27.10 | 26.03–27.78 |  |  | 20–21 | 28–30 | 1,056–1,733 | 85.7% |
-| default | jdk-pinned | 256 | 43.93 | 43.29–44.26 | +22.4% | 15.05 | 43–44 | 89–92 | 148–186 | 65.4% |
-| default | jdk-pinned | 0 | 28.88 | 28.51–29.35 | +6.6% |  | 20–22 | 29–30 | 38–48 | 85.6% |
-| big | stealing-local-home | 256 | 63.08 | 62.36–64.48 |  | 46.49 | 147–166 | 470–552 | 739–1,024 | 0.0% |
-| big | stealing-local-home | 0 | 16.59 | 16.08–16.90 | -36.5% |  | 20–21 | 28–30 | 34–90 | 0.0% |
-| big | mpsc-home | 256 | 62.17 | 60.54–63.33 |  | 50.78 | 109–122 | 456–489 | 898–960 | 0.0% |
-| big | mpsc-home | 0 | 11.39 | 10.91–12.15 | -56.4% |  | 16 | 25–26 | 29–30 | 0.0% |
-| big | jdk | 256 | not a measurement |  |  |  | 826–2,175 | 31,179–60,522 | 57,082–103,154 | 4.3% |
-| big | jdk | 0 | 26.12 | 24.49–29.22 |  |  | 20–22 | 30–31 | 102–1,816 | 87.5% |
-| big | jdk-pinned | 256 | 74.51 | 74.39–74.64 |  | 45.06 | 394–413 | 1,413–1,576 | 2,148–2,402 | 12.6% |
-| big | jdk-pinned | 0 | 29.45 | 28.24–30.59 | +12.7% |  | 19–22 | 29–30 | 35–48 | 85.7% |
-
 ## Epsilon
+
+| case | scheduler | cpu µs/req G1 | cpu µs/req Epsilon | difference | heap used | note |
+|---|---|---|---|---|---|---|
+| default | affine | 20.99 | 21.14 | +0.15 | 9,122 MiB |  |
+| default | mpsc | 15.48 | 16.32 | +0.84 | 7,271 MiB |  |
+| default | jdk | 36.25 | 35.42 | -0.83 | 6,815 MiB |  |
+| default | jdk-pinned | 43.83 | 44.79 | +0.96 | 6,748 MiB |  |
+| big | affine | 64.98 | 70.84 | +5.86 | 6,602 MiB |  |
+| big | mpsc | 63.24 | 70.64 | +7.40 | 5,653 MiB |  |
+| big | jdk | not a measurement | not a measurement |  | 5,190 MiB | this run: not a measurement |
+| big | jdk-pinned | 75.13 | 78.65 | +3.52 | 5,053 MiB |  |
+
+```
+difference = cpu µs/req Epsilon - cpu µs/req G1
+```
 
 The epsilon run of each scheduler, at depth 256: the same run with the Epsilon GC, which
 frees nothing, so no GC runs. cpu µs/req G1: the mean of r1 to r3, as in In short. cpu µs/req Epsilon:
 the line cpu of its console, runs/<case>-epsilon-<scheduler>-256.out. heap used: from its GC log
 (.gc.log), the line of the heap at exit "space ... used [start, top, end)", top - start.
 Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from).
-
-```
-difference = cpu µs/req Epsilon - cpu µs/req G1
-```
-
-| case | scheduler | cpu µs/req G1 | cpu µs/req Epsilon | difference | heap used | note |
-|---|---|---|---|---|---|---|
-| default | stealing-local-home | 20.96 | 21.16 | +0.20 | 9,595 MiB |  |
-| default | mpsc-home | 15.98 | 17.07 | +1.09 | 6,675 MiB |  |
-| default | jdk | 35.89 | 37.27 | +1.38 | 6,963 MiB |  |
-| default | jdk-pinned | 43.93 | 44.22 | +0.29 | 6,792 MiB |  |
-| big | stealing-local-home | 63.08 | 70.51 | +7.43 | 6,698 MiB |  |
-| big | mpsc-home | 62.17 | 70.71 | +8.54 | 5,700 MiB |  |
-| big | jdk | not a measurement | not a measurement |  | 5,042 MiB | this run: not a measurement |
-| big | jdk-pinned | 74.51 | 78.56 | +4.05 | 4,986 MiB |  |

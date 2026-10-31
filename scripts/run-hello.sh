@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 #
-# Runs the carrier-affine hello example (io.github.pderop.looma.examples.hello.Main).
+# Runs the hello example (io.github.pderop.looma.examples.hello.Main), on the MPSC scheduler.
 #
 # A script rather than an exec-maven-plugin execution, on purpose: `--enable-preview` and
 # `--enable-native-access` have to be on the command line of the JVM that runs the code, and
 # Maven's own JVM does not have them. The
-# scheduler itself -- two carriers -- is chosen in Main, through ActorSystem.Builder.carriers(...),
+# scheduler itself -- the MPSC one, two carriers -- is chosen in Main, through ActorSystem.Builder.carriers(...),
 # so it needs no flag here.
 
 set -euo pipefail

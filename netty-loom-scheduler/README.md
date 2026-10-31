@@ -1,9 +1,13 @@
 # `netty-loom-scheduler`
 
-This module is a copy of the upstream carrier-affine virtual thread scheduler, **byte-for-byte
-except for two documented patches, one per file** (below), plus the `ActorSchedulerProvider` / `ActorScheduler`
-adapter that lets `looma` reach it through the SPI declared in `core`
-(`io.github.pderop.looma.spi`).
+This module holds:
+
+- a copy of the upstream carrier-affine virtual thread scheduler, **byte-for-byte except for two
+  documented patches, one per file** (below);
+- the `ActorSchedulerProvider` / `ActorScheduler` adapter that lets `looma` reach it through the
+  SPI declared in `core` (`io.github.pderop.looma.spi`), for `Carriers.affine(n)`;
+- the adapter of the JDK's MPSC scheduler, `io.github.pderop.looma.scheduler.mpsc`, for
+  `Carriers.mpsc(n)`. It uses the copied `LinuxCarrierTopology` to pin the MPSC carriers.
 
 ## Origin
 
@@ -15,7 +19,7 @@ adapter that lets `looma` reach it through the SPI declared in `core`
 - Licence: Apache License, Version 2.0. See `NOTICE` at the repository root for the
   full attribution block and the Section 4(b) statement.
 
-## The Looma patch: a home queue that stealing never reads
+## The Looma patches: a home queue that stealing never reads, and the pollers
 
 Two copied files are modified: `io/netty/loom/scheduler/EventLoopScheduler.java` and
 `io/netty/loom/scheduler/NettyScheduler.java`.
@@ -110,7 +114,9 @@ implementation class installed via
 the command line, or by `ActorSystem.builder().carriers(Carriers.affine(n))` through
 `NettyActorSchedulerProvider.install`, which sets it before the JVM's first virtual
 thread. That
-SPI is a **preview feature of a Loom-enabled JDK 28+**, not of stock JDK 25. That is
+SPI is a **preview feature of a Loom-enabled JDK 28+**, not of stock JDK 25. The MPSC adapter
+needs more: the JDK of openjdk/loom pull request 227, the only one with the MPSC scheduler and
+`Thread.Affinity`. That is
 why this module alone compiles at `release=28` with `--enable-preview` (both on the
 compiler and on Surefire), while `core` and `examples` compile at
 `release=25` without it — see the root `pom.xml`'s `loom-jdk` profile

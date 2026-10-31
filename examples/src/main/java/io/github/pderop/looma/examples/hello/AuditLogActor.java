@@ -22,9 +22,9 @@ import io.github.pderop.looma.Message;
  * A child of {@link MyActor} that simply prints every request it is forwarded.
  *
  * <p>
- * Its only job in this example is to show the {@code carrier-N} suffix of the
- * thread it runs on: it is the same carrier as its parent's, because a child
- * spawned through {@link ActorContext#spawn} inherits its parent's home
+ * Its only job in this example is to show the {@code mpsc-carrier-N} suffix of
+ * the thread it runs on: it is the same carrier as its parent's, because a
+ * child spawned through {@link ActorContext#spawn} inherits its parent's home
  * carrier.
  */
 public class AuditLogActor implements Actor {

@@ -23,21 +23,21 @@ import io.github.pderop.looma.Carriers;
 
 /**
  * Asks a single actor a few questions: they are handled one at a time, in
- * order, always on that actor's home carrier thread — as is its child, and as
- * are the virtual threads it offloads its blocking work to (see the
- * {@code carrier-N} suffix printed by {@link MyActor} and
- * {@link AuditLogActor}).
+ * order, always on that actor's home carrier — as is its child. The virtual
+ * threads it offloads its blocking work to start there too, and the other, idle
+ * carrier may steal them (see the {@code mpsc-carrier-N} suffix printed by
+ * {@link MyActor} and {@link AuditLogActor}).
  *
  * <p>
- * Asks for two carriers through {@link ActorSystem.Builder#carriers}, so the
- * only JVM flag it needs is {@code --enable-preview} — run it with
- * {@code scripts/run-hello.sh}. Without the flag, or on a stock JDK, there is
- * no carrier-affine scheduler to install and {@code build()} says so.
+ * Asks for the JDK's MPSC scheduler with two carriers, through
+ * {@link ActorSystem.Builder#carriers}, so the only JVM flag it needs is
+ * {@code --enable-preview} — run it with {@code scripts/run-hello.sh}. On a JDK
+ * without the MPSC scheduler, {@code build()} says so.
  */
 public class Main {
 
 	public static void main(String[] args) throws InterruptedException {
-		ActorSystem actorSystem = ActorSystem.builder().carriers(Carriers.affine(2)).build();
+		ActorSystem actorSystem = ActorSystem.builder().carriers(Carriers.mpsc(2)).build();
 
 		ActorRef hello = actorSystem.spawn("hello", MyActor::new);
 

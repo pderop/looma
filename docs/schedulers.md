@@ -146,8 +146,9 @@ With `affine` and `mpsc`, each actor has a home carrier, chosen at spawn. Two de
 overridable per spawn with `SpawnOptions.placedOn(Placement)`:
 
 - a **root** actor is placed round-robin over the carriers (`Placement.roundRobin()`);
-- a **child** gets its parent's carrier (`Placement.inherit()`): a parent and its children, and
-  their offloaded work, share one core, and a message between them never crosses carriers.
+- a **child** gets its parent's carrier (`Placement.inherit()`): a parent and its children share
+  one core, and a message between them never crosses carriers. Their offloaded work starts on that
+  core too, and an idle carrier may steal it.
 
 A pool (`SpawnOptions.pooled(n)`) applies its placement to each actor: `inherit()` or
 `carrier(i)` keeps the pool on one carrier, `roundRobin()` spreads it one actor per carrier.
@@ -226,9 +227,10 @@ public interface ActorScheduler extends AutoCloseable {
 ```
 
 `ActorSchedulerProvider` creates one, says whether it `isAvailable()`, and can install itself for
-`Carriers.Affine` or `Carriers.Mpsc`. A third-party scheduler plugs in the same way as Looma's own: implement both, register the
-provider under `META-INF/services/io.github.pderop.looma.spi.ActorSchedulerProvider`, and `core`
-never learns its name.
+`Carriers.Affine` or `Carriers.Mpsc`. A third-party scheduler plugs in the same way as Looma's own:
+implement both, register the provider under
+`META-INF/services/io.github.pderop.looma.spi.ActorSchedulerProvider`, and `core` never learns its
+name.
 
 `ActorRuntime` wraps every factory it gets before anything uses it, so that each thread it creates
 counts as in-flight work; a scheduler never counts its own.
@@ -296,8 +298,9 @@ those is a chance to move.
 
 Nothing was shared, nothing needed a lock, and the actor still pays to bring its state back — only
 because the scheduler moved the code away from the data. With a home carrier pinned to a CPU, the
-state is written and read on one core for the whole life of the actor; children and offloaded work
-land there too.
+state is written and read on one core for the whole life of the actor; its children land there
+too. Its offloaded work starts there, and an idle carrier may steal it: that work reads none of the
+actor's state.
 
 Affinity preserves the **L2**, not the L1: an actor's state rarely fits a core's L1d, and whatever
 else the carrier ran meanwhile has flushed it. Hence the claim the

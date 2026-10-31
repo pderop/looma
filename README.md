@@ -22,9 +22,9 @@ one core. Looma exists to measure whether it does.
   one reference. Ten types in one package — enough to write a realistic workload against, small
   enough that a benchmark compares schedulers rather than frameworks. See
   [what it does not do](docs/api.md#10-what-looma-does-not-do).
-- **One engine, two schedulers.** The same actors run on the JDK's builtin scheduler or on the
-  carrier-affine one, chosen by `ActorSystem.builder().carriers(...)` or by JVM flags — never by
-  the actor code.
+- **One engine, three schedulers.** The same actors run on the JDK's builtin scheduler, on Looma's
+  copy of the carrier-affine one, or on the JDK's MPSC scheduler, chosen by
+  `ActorSystem.builder().carriers(...)` or by JVM flags — never by the actor code.
 - **A benchmark** that runs the same workload under each scheduler and compares CPU per request,
   latency and migrations.
 
@@ -40,13 +40,13 @@ sdk env                                            # reads .sdkmanrc, picks 28-l
 # 2. Build, and run every test under every scheduler configuration
 mvn clean install
 
-# 3. Carrier affinity in one trace: an actor, its child and its offloaded work, all on one carrier
+# 3. Carrier affinity in one trace: an actor and its child stay on one carrier, its offloaded work can move
 scripts/run-hello.sh
 
 # 4. The benchmark: the carrier-affine schedulers against the JDK builtin, same binary. One
-#    repetition of both cases, about 21 minutes; the results go to bench/<date>-<time>/summary.md. The default CPUs are those of
-#    an AMD Ryzen 9 9950X. On another machine, give yours: --cpus-carriers, --cpus-client and
-#    --cpus-backend (docs/benchmark.md, "Where things run").
+#    repetition of both cases, about 21 minutes; the results go to bench/<date>-<time>/summary.md.
+#    The default CPUs are those of an AMD Ryzen 9 9950X. On another machine, give yours:
+#    --cpus-carriers, --cpus-client and --cpus-backend (docs/benchmark.md, "Where things run").
 scripts/bench.sh --reps 1
 ```
 
@@ -103,8 +103,8 @@ ActorSystem system = ActorSystem.builder()
 `affine(8)` and `mpsc(8)` keep each actor on one carrier for life, each carrier pinned to one CPU.
 They have no options: each one is the setup the benchmark found the fastest.
 
-The carrier-affine scheduler also needs `looma-netty-scheduler` on the classpath and
-`--enable-preview` on the command line. Everything else is in [`docs/api.md`](docs/api.md) and
+`affine` and `mpsc` also need `looma-netty-scheduler` on the classpath, `--enable-preview` on the
+command line, and the Loom JDK below. Everything else is in [`docs/api.md`](docs/api.md) and
 [`docs/schedulers.md`](docs/schedulers.md).
 
 ## Documentation
@@ -244,9 +244,9 @@ mvn -B verify -P '!dev'      # what CI runs: formatting checked, not applied
 ```
 
 The scheduler is configured once per JVM, so the tests run in several Surefire executions, one per
-configuration: the contract suites over the builtin in `core`, then again over the carrier-affine
-scheduler with and without work stealing, plus `carriers(...)` installing the scheduler in a fresh
-JVM per class. The table is in [`docs/schedulers.md`](docs/schedulers.md#tests). To run a single
+configuration: the contract suites over the builtin in `core`, then again over `affine` with and
+without work stealing, and over `mpsc`, plus `carriers(...)` installing a scheduler in a fresh JVM
+per class. The table is in [`docs/schedulers.md`](docs/schedulers.md#tests). To run a single
 class, name the execution too — `-Dtest=` alone applies to every execution, with the wrong flags:
 
 ```sh
@@ -259,28 +259,31 @@ mvn -pl netty-loom-scheduler test-compile surefire:test@carrier-test -Dtest=Carr
 scripts/run-hello.sh
 ```
 
-`hello.Main` asks for two carriers with `carriers(Carriers.affine(2))`, so the only flag it needs
-is `--enable-preview`. Every line it prints names `carrier-0`: the `/hello` actor's `onReceive`,
-the `/hello/audit` child it spawned, and each thread it offloads through `vThreadFactory()` to
-simulate a blocking call:
+`hello.Main` asks for the JDK's MPSC scheduler with two carriers, `carriers(Carriers.mpsc(2))`,
+so the only flag it needs is `--enable-preview`. Each line names the carrier it ran on:
 
 ```
-[/hello] handling 'Pierre' on VirtualThread[#32,looma-/hello]/runnable@carrier-0
-[/hello] handling 'John' on VirtualThread[#32,looma-/hello]/runnable@carrier-0
-[/hello] handling 'Bob' on VirtualThread[#32,looma-/hello]/runnable@carrier-0
-[/hello/audit] audited Hello[name=Pierre] from /hello on VirtualThread[#34,looma-/hello/audit]/runnable@carrier-0
+[/hello] handling 'Pierre' on VirtualThread[#38,looma-/hello]/runnable@mpsc-carrier-0
+[/hello] handling 'John' on VirtualThread[#38,looma-/hello]/runnable@mpsc-carrier-0
+[/hello] handling 'Bob' on VirtualThread[#38,looma-/hello]/runnable@mpsc-carrier-0
+[/hello] blocking (simulated I/O) for 'Pierre' on VirtualThread[#41]/runnable@mpsc-carrier-1
+[/hello] blocking (simulated I/O) for 'John' on VirtualThread[#42]/runnable@mpsc-carrier-1
+[/hello] blocking (simulated I/O) for 'Bob' on VirtualThread[#43]/runnable@mpsc-carrier-1
+[/hello/audit] audited Hello[name=Pierre] from /hello on VirtualThread[#39,looma-/hello/audit]/runnable@mpsc-carrier-0
 ...
-[/hello] blocking (simulated I/O) for 'Pierre' on VirtualThread[#35]/runnable@carrier-0
-[/hello] blocking (simulated I/O) for 'John' on VirtualThread[#36]/runnable@carrier-0
-[/hello] blocking (simulated I/O) for 'Bob' on VirtualThread[#37]/runnable@carrier-0
-[/hello] greeting 'Pierre' on VirtualThread[#35]/runnable@carrier-0
+[/hello] greeting 'Pierre' on VirtualThread[#41]/runnable@mpsc-carrier-1
 Greeting[text=Greeting Pierre]
 ...
 ```
 
-An actor runs on a virtual thread only while it has messages: the three messages arrive
-together, so one virtual thread of `/hello` (`#32`) handles them all, then ends. Each offloaded
-call gets a fresh one (`#35` to `#37`), on the same carrier.
+- The `/hello` actor, and the `/hello/audit` child it spawned, always run on `mpsc-carrier-0`:
+  an actor never leaves its carrier, and a child gets its parent's.
+- Each call `/hello` offloads through `vThreadFactory()`, to simulate a blocking call, starts on
+  `mpsc-carrier-0` too. The other carrier is idle, so it steals them: they run on
+  `mpsc-carrier-1`, and sometimes on `mpsc-carrier-0`.
+- An actor runs on a virtual thread only while it has messages: the three messages arrive
+  together, so one virtual thread of `/hello` (`#38`) handles them all, then ends. Each offloaded
+  call gets a fresh one (`#41` to `#43`).
 
 ## Not to be confused with
 
