@@ -32,8 +32,8 @@ change in it is marked `Looma:`.
   other. Parking checks both; signalling an idle sibling to steal looks at the stealable one
   only.
 
-Looma uses it for `Carriers.affine(n)...actorsStayHome()`: actor loops come from the home
-factory, the virtual threads an actor offloads from the ordinary one. The test is
+Looma uses it for `Carriers.affine(n)`: actor bursts come from the home factory, the virtual
+threads an actor offloads from the ordinary one. The test is
 `HomeVirtualThreadTest` (Looma's own file, run by the `workstealing-test` execution).
 
 In `NettyScheduler`, the constructor starts the JDK's pollers before it creates the carriers.

@@ -90,8 +90,8 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 	 *
 	 * <p>
 	 * Sets the properties, then starts the JDK's pollers, then checks that the
-	 * carriers are the MPSC ones and that there are as many as asked. Pins them
-	 * last, if asked.
+	 * carriers are the MPSC ones and that there are as many as asked. Pins each
+	 * carrier to one CPU last.
 	 *
 	 * <p>
 	 * The JDK starts its poller threads from the thread that first needs them. A
@@ -113,6 +113,11 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 				throw new IllegalStateException("-D" + IMPL_CLASS + " is set, so this JVM runs another scheduler:"
 						+ " cannot install " + carriers);
 			}
+			if (System.getProperty(USE_MPSC) != null) {
+				throw new IllegalStateException("-D" + USE_MPSC + " is on the command line, so the scheduler is"
+						+ " configured there: cannot also configure it as " + carriers
+						+ ". Drop the -D flags or the carriers(...) call");
+			}
 			List<String> added = set(carriers);
 			try {
 				startJdkPollers();
@@ -128,7 +133,7 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 				throw new IllegalStateException("could not install " + carriers + ": " + e, e);
 			}
 			// From here on the JDK runs this scheduler for good: the properties stay.
-			pool = MpscPool.probe(carriers.count(), carriers.pinnedToCpus());
+			pool = MpscPool.probe(carriers.count(), true);
 			installed = carriers;
 			return true;
 		}
@@ -141,7 +146,7 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 	private static List<String> set(Carriers.Mpsc carriers) {
 		Map<String, String> properties = new LinkedHashMap<>();
 		properties.put(PARALLELISM, Integer.toString(carriers.count()));
-		properties.put(STEAL, Boolean.toString(carriers.workStealing()));
+		properties.put(STEAL, "true");
 		properties.put(USE_MPSC, "true");
 		properties.forEach((key, value) -> {
 			String current = System.getProperty(key);

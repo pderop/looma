@@ -23,7 +23,6 @@ import io.github.pderop.looma.Carriers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -40,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class CarriersInstallTest {
 
-	private static final Carriers.Affine CARRIERS = Carriers.affine(3).workStealing(Carriers.WorkStealing.GLOBAL);
+	private static final Carriers.Affine CARRIERS = Carriers.affine(3);
 
 	private ActorSystem system;
 
@@ -59,14 +58,14 @@ class CarriersInstallTest {
 		assertEquals(3, system.carrierCount());
 		assertEquals("NettyActorScheduler", system.scheduler().getClass().getSimpleName());
 		assertEquals("true", System.getProperty("io.netty.loom.workstealing.enabled"));
-		assertEquals("GLOBAL", System.getProperty("io.netty.loom.workstealing.scope"));
+		assertEquals("CLUSTER_LOCAL", System.getProperty("io.netty.loom.workstealing.scope"));
 	}
 
 	@Test
 	void anEqualRequestGetsTheSamePool() {
 		ActorSystem.builder().carriers(CARRIERS).build().shutdown();
 
-		system = ActorSystem.builder().carriers(Carriers.affine(3).workStealing(Carriers.WorkStealing.GLOBAL)).build();
+		system = ActorSystem.builder().carriers(Carriers.affine(3)).build();
 
 		assertEquals(3, system.carrierCount());
 	}
@@ -88,18 +87,13 @@ class CarriersInstallTest {
 		system = ActorSystem.builder().build();
 
 		assertEquals(3, system.carrierCount());
-		assertSame(system.scheduler().vThreadFactory(0), system.scheduler().actorLoopFactory(0));
 	}
 
 	@Test
-	void actorsStayHomeIsAChoiceOfEachSystem() throws InterruptedException {
-		ActorSystem plain = ActorSystem.builder().carriers(CARRIERS).build();
-		system = ActorSystem.builder().carriers(CARRIERS.actorsStayHome()).build();
+	void anActorLoopComesFromTheHomeQueue() {
+		system = ActorSystem.builder().carriers(CARRIERS).build();
 
-		assertSame(plain.scheduler().vThreadFactory(0), plain.scheduler().actorLoopFactory(0));
 		assertNotSame(system.scheduler().vThreadFactory(0), system.scheduler().actorLoopFactory(0));
-		plain.shutdown();
-		assertTrue(plain.awaitTermination(5, TimeUnit.SECONDS));
 	}
 
 	@Test

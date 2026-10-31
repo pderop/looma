@@ -16,7 +16,6 @@ package io.github.pderop.looma;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -30,26 +29,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class CarriersTest {
 
 	@Test
-	void affineStartsUnpinnedWithoutStealing() {
-		Carriers.Affine carriers = Carriers.affine(4);
-
-		assertEquals(4, carriers.count());
-		assertFalse(carriers.pinnedToCpus());
-		assertEquals(Carriers.WorkStealing.OFF, carriers.workStealing());
-	}
-
-	@Test
-	void refinementsReturnNewValues() {
-		Carriers.Affine carriers = Carriers.affine(4).pinned().workStealing(Carriers.WorkStealing.CLUSTER_LOCAL);
-
-		assertTrue(carriers.pinnedToCpus());
-		assertEquals(Carriers.WorkStealing.CLUSTER_LOCAL, carriers.workStealing());
-		assertEquals(new Carriers.Affine(4, true, Carriers.WorkStealing.CLUSTER_LOCAL, true), carriers);
+	void eachKindIsItsCount() {
+		assertEquals(4, Carriers.affine(4).count());
+		assertEquals(4, Carriers.mpsc(4).count());
+		assertEquals(4, Carriers.builtin(4).parallelism());
+		assertEquals(Carriers.affine(4), Carriers.affine(4));
 	}
 
 	@Test
 	void rejectsAnEmptyPool() {
 		assertThrows(IllegalArgumentException.class, () -> Carriers.affine(0));
+		assertThrows(IllegalArgumentException.class, () -> Carriers.mpsc(0));
 		assertThrows(IllegalArgumentException.class, () -> Carriers.builtin(0));
 	}
 

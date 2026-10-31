@@ -73,9 +73,7 @@ public interface ActorSchedulerProvider {
 	/**
 	 * Creates a new {@link ActorScheduler} for a system built with
 	 * {@code carriers}, after {@link #install(Carriers.Affine)} accepted them. The
-	 * pool belongs to the JVM; what {@code carriers} adds on top of it, such as
-	 * {@link Carriers.Affine#actorsStealable()}, belongs to this one system. The
-	 * default ignores it and calls {@link #create()}.
+	 * default calls {@link #create()}.
 	 */
 	default ActorScheduler create(Carriers.Affine carriers) {
 		return create();

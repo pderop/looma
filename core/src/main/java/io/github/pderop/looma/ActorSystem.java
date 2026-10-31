@@ -92,20 +92,17 @@ public interface ActorSystem {
 		 * threads, and cannot be changed afterwards. So {@link #build()} throws
 		 * {@link IllegalStateException}:
 		 * <ul>
-		 * <li>for {@link Carriers#affine(int)}, when no provider on the classpath can
-		 * install one — no scheduler module, or a JVM started without
-		 * {@code --enable-preview};
-		 * <li>for {@link Carriers#affine(int)}, when a virtual thread already ran under
-		 * another scheduler, or under this one configured differently;
-		 * <li>for {@link Carriers#builtin(int)}, when
-		 * {@code -Djdk.virtualThreadScheduler.implClass} names another scheduler;
-		 * <li>for {@link Carriers#affine(int)}, when
-		 * {@code -Djdk.virtualThreadScheduler.implClass} is set, whatever its value:
-		 * the pool is configured by the flags or by the code, not by both;
-		 * <li>for either, when a property it sets already holds another value — from a
-		 * {@code -D} flag — or when an earlier system in this JVM was built with
-		 * another pool. A second system on the same pool is fine, and may differ in
-		 * {@link Carriers.Affine#actorsStayHome()} only.
+		 * <li>for {@link Carriers#affine(int)} and {@link Carriers#mpsc(int)}, when no
+		 * provider on the classpath can install it: no scheduler module, a JVM started
+		 * without {@code --enable-preview}, or a JDK without the MPSC scheduler;
+		 * <li>for either of them, when a virtual thread already ran under another
+		 * scheduler;
+		 * <li>when {@code -Djdk.virtualThreadScheduler.implClass} or
+		 * {@code -Djdk.virtualThreadScheduler.useMpsc} is set: the pool is configured
+		 * by the flags or by the code, not by both;
+		 * <li>when a property it sets already holds another value, from a {@code -D}
+		 * flag, or when an earlier system in this JVM was built with another pool. A
+		 * second system on the same pool is fine.
 		 * </ul>
 		 * The one case that cannot be detected is {@link Carriers#builtin(int)} after
 		 * the JDK's scheduler was initialised by an earlier virtual thread: the

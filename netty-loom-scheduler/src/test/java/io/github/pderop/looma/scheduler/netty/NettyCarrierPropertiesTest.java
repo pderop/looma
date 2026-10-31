@@ -21,47 +21,22 @@ import io.github.pderop.looma.Carriers;
 import io.netty.loom.topology.LinuxCarrierTopology;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
- * {@link NettyCarrierProperties#of(Carriers.Affine)} as a pure function: a
- * pinned pool names a topology, an unpinned one must leave that property unset.
- * Nothing here sets a system property or touches a live scheduler — see
- * {@code install-test} for that.
+ * {@link NettyCarrierProperties#of(Carriers.Affine)} as a pure function: the
+ * one setup of {@code affine(n)}. Nothing here sets a system property or
+ * touches a live scheduler; see {@code install-test} for that.
  */
 class NettyCarrierPropertiesTest {
 
 	@Test
-	void pinnedWithClusterLocalUsesLinuxCarrierTopology() {
-		Map<String, String> properties = NettyCarrierProperties
-				.of(Carriers.affine(4).pinned().workStealing(Carriers.WorkStealing.CLUSTER_LOCAL));
+	void pinsStealsWithinAnL3AndPollsPerCarrier() {
+		Map<String, String> properties = NettyCarrierProperties.of(Carriers.affine(4));
 
+		assertEquals("4", properties.get(NettyCarrierProperties.CARRIERS));
 		assertEquals(LinuxCarrierTopology.class.getName(), properties.get(NettyCarrierProperties.TOPOLOGY));
+		assertEquals("true", properties.get(NettyCarrierProperties.WORK_STEALING));
 		assertEquals("CLUSTER_LOCAL", properties.get(NettyCarrierProperties.STEAL_SCOPE));
-	}
-
-	@Test
-	void pinnedWithGlobalUsesLinuxCarrierTopologyToo() {
-		Map<String, String> properties = NettyCarrierProperties
-				.of(Carriers.affine(4).pinned().workStealing(Carriers.WorkStealing.GLOBAL));
-
-		assertEquals(LinuxCarrierTopology.class.getName(), properties.get(NettyCarrierProperties.TOPOLOGY));
-		assertEquals("GLOBAL", properties.get(NettyCarrierProperties.STEAL_SCOPE));
-	}
-
-	@Test
-	void everyPoolAsksForPerCarrierPollers() {
-		assertEquals("3",
-				NettyCarrierProperties.of(Carriers.affine(4).pinned()).get(NettyCarrierProperties.POLLER_MODE));
-		assertEquals("3", NettyCarrierProperties.of(Carriers.affine(4).workStealing(Carriers.WorkStealing.GLOBAL))
-				.get(NettyCarrierProperties.POLLER_MODE));
-	}
-
-	@Test
-	void unpinnedNeverSetsATopology() {
-		Map<String, String> properties = NettyCarrierProperties
-				.of(Carriers.affine(4).workStealing(Carriers.WorkStealing.GLOBAL));
-
-		assertNull(properties.get(NettyCarrierProperties.TOPOLOGY));
+		assertEquals("3", properties.get(NettyCarrierProperties.POLLER_MODE));
 	}
 }

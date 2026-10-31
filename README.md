@@ -33,14 +33,9 @@ Looma is a lab, not a production framework.
 ## Quickstart
 
 ```sh
-# 1. The Loom JDK of openjdk/loom pull request 227 (see Prerequisites), built from source
-#    with a JDK 27 or 28 as boot JDK. About 15 minutes on 16 cores.
-mkdir -p "$HOME/openjdk-loom-pr227" && cd "$HOME/openjdk-loom-pr227"
-curl -fsSL https://github.com/franz1981/loom/archive/731930db54a052cc4549db7361816f16a0119835.tar.gz \
-  | tar -xz --strip-components=1
-bash configure --with-boot-jdk=<a JDK 27 or 28> --disable-warnings-as-errors && make images
-sdk install java 28-loom-pr227 "$PWD/build/linux-x86_64-server-release/images/jdk"
-cd - && sdk env                                    # reads .sdkmanrc, picks 28-loom-pr227
+# 1. The Loom JDK of openjdk/loom pull request 227, built from source and registered in
+#    SDKMAN as 28-loom-pr227: see "Building the Loom JDK" below. Then, in this project:
+sdk env                                            # reads .sdkmanrc, picks 28-loom-pr227
 
 # 2. Build, and run every test under every scheduler configuration
 mvn clean install
@@ -101,11 +96,12 @@ code instead — before the JVM's first virtual thread:
 
 ```java
 ActorSystem system = ActorSystem.builder()
-        .carriers(Carriers.affine(8).pinned())      // carrier-affine, 8 carriers, one per CPU
+        .carriers(Carriers.affine(8))   // or Carriers.mpsc(8), or Carriers.builtin(8)
         .build();
-// or the JDK's MPSC scheduler, each actor on one carrier for life:
-//      .carriers(Carriers.mpsc(8).pinned().workStealing(true))
 ```
+
+`affine(8)` and `mpsc(8)` keep each actor on one carrier for life, each carrier pinned to one CPU.
+They have no options: each one is the setup the benchmark found the fastest.
 
 The carrier-affine scheduler also needs `looma-netty-scheduler` on the classpath and
 `--enable-preview` on the command line. Everything else is in [`docs/api.md`](docs/api.md) and
@@ -116,7 +112,7 @@ The carrier-affine scheduler also needs `looma-netty-scheduler` on the classpath
 | | |
 | --- | --- |
 | [`docs/api.md`](docs/api.md) | The API: actors, messages, `tell`/`ask`, hierarchy, supervision, placement, pools, offloading, shutdown. |
-| [`docs/schedulers.md`](docs/schedulers.md) | The three schedulers: choosing one in code or by flags, placement, work stealing (`GLOBAL`, `CLUSTER_LOCAL`, `actorsStayHome()`), the engine and the SPI, and why carrier affinity. |
+| [`docs/schedulers.md`](docs/schedulers.md) | The three schedulers (`affine`, `mpsc`, `builtin`): what each one does, choosing one in code or by flags, placement, the engine and the SPI, and why carrier affinity. |
 | [`docs/benchmark.md`](docs/benchmark.md) | The benchmark: the question and the answer, the program, the schedulers it compares, running it, reading `summary.md`, and the results per machine. |
 | [`netty-loom-scheduler/README.md`](netty-loom-scheduler/README.md) | The copy of the Netty scheduler: upstream commit, Looma's two patches, refresh procedure. |
 
@@ -146,14 +142,98 @@ It has two things a stock JDK 28 does not:
   [`fibers` branch of `openjdk/loom`](https://github.com/openjdk/loom/tree/fibers);
 - the MPSC scheduler and `Thread.Affinity`, which the pull request adds.
 
-On another JDK, Maven fails with `cannot find symbol`. There is no binary: build it from source
-(the commands in the Quickstart). On macOS without the Metal toolchain, `configure` also needs
-`METAL` and `METALLIB` set to stub scripts. Check a build with
-`javap 'java.lang.Thread$Affinity'`.
+On another JDK, Maven fails with `cannot find symbol`. There is no binary: build it from source,
+as below.
 
 `.sdkmanrc` names `28-loom-pr227`, a local SDKMAN identifier for that build. Without SDKMAN, export
 `JAVA_HOME`; Maven runs on that JDK itself, no toolchain. `LOOM_JDK_HOME` overrides it for the
 scripts, which all check for a Loom build before launching anything.
+
+### Building the Loom JDK
+
+About 15 minutes on 16 cores, and about 3 GB of disk.
+
+**1. The tools.** On Ubuntu or Debian:
+
+```sh
+sudo apt-get install -y autoconf make zip unzip file gcc g++ \
+  libasound2-dev libcups2-dev libfontconfig1-dev \
+  libx11-dev libxext-dev libxrender-dev libxrandr-dev libxtst-dev libxt-dev
+```
+
+On macOS: the Xcode command line tools (`xcode-select --install`) and `autoconf`
+(`brew install autoconf`).
+
+**2. A boot JDK**, a JDK 27 or 28. The Loom build of builds.shipilev.net is one (a JDK 28); CI
+uses it:
+
+```sh
+mkdir -p "$HOME/boot-jdk"
+curl -fsSL https://builds.shipilev.net/openjdk-jdk-loom/openjdk-jdk-loom-linux-x86_64-server.tar.xz \
+  | tar -xJ -C "$HOME/boot-jdk" --strip-components=1
+```
+
+Other systems have their tarball next to this one on builds.shipilev.net.
+
+**3. The sources** of the pull request, at the commit Looma uses:
+
+```sh
+mkdir -p "$HOME/openjdk-loom-pr227" && cd "$HOME/openjdk-loom-pr227"
+curl -fsSL https://github.com/franz1981/loom/archive/731930db54a052cc4549db7361816f16a0119835.tar.gz \
+  | tar -xz --strip-components=1
+```
+
+**4. The build.** On Linux:
+
+```sh
+bash configure --with-boot-jdk="$HOME/boot-jdk" --disable-warnings-as-errors \
+  --with-native-debug-symbols=none --with-version-opt=pr227-731930d
+make images
+```
+
+On macOS, `configure` also needs the Metal compiler, which recent Xcode versions no longer ship.
+Looma needs no graphics, so two stub scripts are enough. Create them once:
+
+```sh
+mkdir -p "$HOME/.metal-stubs"
+cat > "$HOME/.metal-stubs/metal" <<'STUB'
+#!/bin/bash
+# No Metal toolchain: writes an empty output file, so that the build goes on.
+out=""; prev=""
+for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
+[ -n "$out" ] && { mkdir -p "$(dirname "$out")"; : > "$out"; }
+exit 0
+STUB
+cp "$HOME/.metal-stubs/metal" "$HOME/.metal-stubs/metallib"
+chmod +x "$HOME/.metal-stubs/metal" "$HOME/.metal-stubs/metallib"
+```
+
+Then, with a macOS boot JDK in `$HOME/boot-jdk`:
+
+```sh
+bash configure --with-boot-jdk="$HOME/boot-jdk" --disable-warnings-as-errors \
+  --with-native-debug-symbols=none --with-version-opt=pr227-731930d \
+  METAL="$HOME/.metal-stubs/metal" METALLIB="$HOME/.metal-stubs/metallib"
+make images
+```
+
+`--with-version-opt` is not needed, but `java -version` then names the commit
+(`28-internal-pr227-731930d`), and the benchmark's `summary.md` copies that line.
+
+**5. SDKMAN.** Register the image under the name `.sdkmanrc` expects. The image is in
+`build/<os>-<arch>-server-release/images/jdk`, for example `linux-x86_64` or `macosx-aarch64`:
+
+```sh
+sdk install java 28-loom-pr227 "$HOME/openjdk-loom-pr227/build/linux-x86_64-server-release/images/jdk"
+```
+
+SDKMAN only links to that folder: keep it. Then check the JDK, in this project:
+
+```sh
+sdk env
+java -version                                      # ... (build 28-internal-pr227-731930d)
+javap 'java.lang.Thread$Affinity'                  # no error: this is the right JDK
+```
 
 ## Build and test
 

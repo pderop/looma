@@ -152,24 +152,23 @@ builder has three knobs, and applications normally need at most the first:
 
 ```java
 ActorSystem system = ActorSystem.builder()
-        .carriers(Carriers.affine(8).pinned())     // chooses and sizes the JVM's scheduler, in code
+        .carriers(Carriers.affine(8))              // chooses and sizes the JVM's scheduler, in code
         .mailboxQueueFactory(myQueueFactory)       // per-actor envelope queue; default ConcurrentLinkedQueue
         .build();
 
 ActorSystem.builder().scheduler(someScheduler);    // bypasses everything — tests only
 ```
 
-`carriers(...)` is the code form of the scheduler's JVM flags: `Carriers.affine(n)` for the
-carrier-affine pool (refined with `.pinned()`, `.workStealing(...)` and `.actorsStayHome()`),
-`Carriers.builtin(n)` for the JDK's own with its parallelism fixed. Without it, the system takes
+`carriers(...)` is the code form of the scheduler's JVM flags: `Carriers.affine(n)` for Looma's
+copy of the Netty-VirtualThread-Scheduler, `Carriers.mpsc(n)` for the JDK's MPSC scheduler,
+`Carriers.builtin(n)` for the JDK's default one with its parallelism fixed. They have no options. Without it, the system takes
 whatever the flags installed. Because the JDK resolves its scheduler once per process, `build()`
 must run **before the JVM's first virtual thread**, and throws rather than run on the wrong
-scheduler — see [`schedulers.md`](schedulers.md#in-code-carriers) for every case it refuses.
+scheduler — see [`schedulers.md`](schedulers.md#in-code) for every case it refuses.
 
-`.actorsStayHome()` matters only with work stealing on: stealing then takes only the virtual
-threads actors create through `ActorContext.vThreadFactory()`, never an actor's own loop, so every
-actor keeps its home carrier and its state in that core's cache, while the work it offloads can
-still be balanced across carriers.
+With `affine` and `mpsc`, an actor never leaves its home carrier, so its state stays in that
+core's cache. An idle carrier may steal only the threads actors create through
+`ActorContext.vThreadFactory()`.
 
 The `factory` passed to `spawn` is a `Supplier<Actor>`, not an instance, because the engine calls it
 **again** to obtain a fresh instance after a `RESTART`.
@@ -339,9 +338,8 @@ public void onReceive(Message message, ActorRef sender, ActorContext context) {
 `vThreadFactory()` is the only offload mechanism, and it is the one that carries the actor's
 affinity to the work:
 
-- under the **carrier-affine** scheduler, the new virtual thread has this actor's home carrier as
-  its own, so it runs on the same core the actor does — unless work stealing moves it, which
-  `actorsStayHome()` still allows for these threads;
+- under **`affine`** and **`mpsc`**, the new virtual thread starts on this actor's home carrier,
+  so it runs on the same core the actor does, unless an idle carrier steals it;
 - under the **JDK builtin** scheduler, it is a plain virtual thread on the JDK's default scheduler.
 
 The engine counts every thread created through this factory as in-flight work, so `awaitTermination`

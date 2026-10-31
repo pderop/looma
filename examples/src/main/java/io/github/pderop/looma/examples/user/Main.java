@@ -162,22 +162,13 @@ public final class Main {
 	 * carriers.
 	 */
 	private static Carriers carriers(int count) {
-		String name = System.getProperty("bench.scheduler", "stealing-local-home");
+		String name = System.getProperty("bench.scheduler", "affine");
 		return switch (name) {
-			case "stealing-local" -> Carriers.affine(count).pinned().workStealing(Carriers.WorkStealing.CLUSTER_LOCAL);
-			case "stealing-local-home" ->
-				Carriers.affine(count).pinned().workStealing(Carriers.WorkStealing.CLUSTER_LOCAL).actorsStayHome();
-			case "stealing-global-home" ->
-				Carriers.affine(count).pinned().workStealing(Carriers.WorkStealing.GLOBAL).actorsStayHome();
-			case "mpsc-home" -> Carriers.mpsc(count).pinned().workStealing(true);
-			case "mpsc-home-poller3" -> {
-				// The same pool with poller mode 3, the mode of the stealing-* schedulers.
-				System.setProperty("jdk.pollerMode", "3");
-				yield Carriers.mpsc(count).pinned().workStealing(true);
-			}
+			case "affine" -> Carriers.affine(count);
+			case "mpsc" -> Carriers.mpsc(count);
 			case "jdk" -> Carriers.builtin(count);
-			default -> throw new IllegalArgumentException("bench.scheduler must be stealing-local, stealing-local-home,"
-					+ " stealing-global-home, mpsc-home, mpsc-home-poller3 or jdk, not '" + name + "'");
+			default ->
+				throw new IllegalArgumentException("bench.scheduler must be affine, mpsc or jdk, not '" + name + "'");
 		};
 	}
 

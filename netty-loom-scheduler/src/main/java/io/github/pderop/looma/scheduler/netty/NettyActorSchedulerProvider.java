@@ -76,20 +76,14 @@ public final class NettyActorSchedulerProvider implements ActorSchedulerProvider
 		}
 	}
 
-	/** A system found by discovery: its actor loops can be stolen. */
 	@Override
 	public ActorScheduler create() {
 		return new NettyActorScheduler(EventLoopSchedulerGroup.instance());
 	}
 
-	/**
-	 * A system built with {@code carriers}: its actor loops stay home if
-	 * {@link Carriers.Affine#actorsStayHome()} asked for it. Only this system:
-	 * another one on the same pool makes its own choice.
-	 */
 	@Override
 	public ActorScheduler create(Carriers.Affine carriers) {
-		return new NettyActorScheduler(EventLoopSchedulerGroup.instance(), carriers.actorsStealable());
+		return create();
 	}
 
 	/**
@@ -116,8 +110,7 @@ public final class NettyActorSchedulerProvider implements ActorSchedulerProvider
 	 * reporting {@code false} after the properties were set says unambiguously.
 	 * </ul>
 	 * A second call for the same pool is allowed: it is what building two actor
-	 * systems in one process does. {@link Carriers.Affine#actorsStealable()} may
-	 * differ between the two, since it is not part of the pool.
+	 * systems in one process does.
 	 *
 	 * <p>
 	 * If the install fails before the JDK installed the scheduler, the properties
@@ -131,7 +124,7 @@ public final class NettyActorSchedulerProvider implements ActorSchedulerProvider
 				throw new IllegalStateException(unusable);
 			}
 			if (installed != null) {
-				if (!samePool(installed, carriers)) {
+				if (!installed.equals(carriers)) {
 					throw new IllegalStateException("this JVM's carrier pool is already installed as " + installed
 							+ " and cannot also be " + carriers);
 				}
@@ -174,12 +167,5 @@ public final class NettyActorSchedulerProvider implements ActorSchedulerProvider
 			installed = carriers;
 			return true;
 		}
-	}
-
-	/**
-	 * Whether two configurations describe the same pool: all but actorsStealable.
-	 */
-	private static boolean samePool(Carriers.Affine a, Carriers.Affine b) {
-		return a.count() == b.count() && a.pinnedToCpus() == b.pinnedToCpus() && a.workStealing() == b.workStealing();
 	}
 }

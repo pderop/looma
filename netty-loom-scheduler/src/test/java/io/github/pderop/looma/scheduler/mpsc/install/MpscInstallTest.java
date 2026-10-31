@@ -35,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 class MpscInstallTest {
 
-	private static final Carriers.Mpsc CARRIERS = Carriers.mpsc(3).workStealing(true);
+	private static final Carriers.Mpsc CARRIERS = Carriers.mpsc(3);
 
 	private ActorSystem system;
 
@@ -62,7 +62,7 @@ class MpscInstallTest {
 	void anEqualRequestGetsTheSamePool() {
 		ActorSystem.builder().carriers(CARRIERS).build().shutdown();
 
-		system = ActorSystem.builder().carriers(Carriers.mpsc(3).workStealing(true)).build();
+		system = ActorSystem.builder().carriers(Carriers.mpsc(3)).build();
 
 		assertEquals(3, system.carrierCount());
 	}

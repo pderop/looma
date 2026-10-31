@@ -130,10 +130,7 @@ final class ActorSchedulers {
 	 *             when the scheduler asked for cannot be installed in this JVM
 	 */
 	static synchronized ActorScheduler install(Carriers carriers) {
-		// Affine against affine is the provider's call: two systems may differ in
-		// actorsStayHome().
-		boolean bothAffine = installed instanceof Carriers.Affine && carriers instanceof Carriers.Affine;
-		if (installed != null && !bothAffine && !installed.equals(carriers)) {
+		if (installed != null && !installed.equals(carriers)) {
 			throw new IllegalStateException(
 					"this JVM's scheduler is already installed as " + installed + " and cannot also be " + carriers);
 		}
