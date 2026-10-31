@@ -74,6 +74,11 @@ final class MpscActorScheduler implements ActorScheduler {
 	}
 
 	@Override
+	public ThreadFactory platformThreadFactory() {
+		return AllCpus.platform();
+	}
+
+	@Override
 	public OptionalInt pinnedCpu() {
 		int cpu = LinuxCpus.pinnedCpu();
 		return cpu < 0 ? OptionalInt.empty() : OptionalInt.of(cpu);

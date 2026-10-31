@@ -13,7 +13,9 @@
  */
 package io.github.pderop.looma.scheduler.mpsc;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * The JDK's MPSC carriers, as Looma sees them: one {@link Thread.Affinity} per
@@ -43,6 +45,12 @@ final class MpscPool {
 	 * Finds the {@code count} carriers of the MPSC scheduler, and pins each one to
 	 * a CPU if {@code pinned}.
 	 *
+	 * <p>
+	 * Before it pins them, it parks a virtual thread with a timeout on each one.
+	 * The JDK keeps a few timer threads, and a carrier always uses the same one. It
+	 * starts that thread from the carrier, at its first timed park. Started here,
+	 * the timer threads keep every CPU.
+	 *
 	 * @throws IllegalStateException
 	 *             if the scheduler in force is not the MPSC one, or has another
 	 *             number of carriers
@@ -62,6 +70,10 @@ final class MpscPool {
 		LinuxCpus cpus = null;
 		if (pinned) {
 			LinuxCpus found = LinuxCpus.discover();
+			for (int id = 0; id < count; id++) {
+				// The JDK starts the timer thread of a carrier at its first timed park.
+				run(homes[id], () -> LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1)));
+			}
 			boolean[] all = {true};
 			for (int id = 0; id < count; id++) {
 				int carrier = id;

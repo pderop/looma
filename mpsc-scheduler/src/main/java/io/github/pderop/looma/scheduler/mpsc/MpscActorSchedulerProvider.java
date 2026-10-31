@@ -17,6 +17,9 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.TimeUnit;
 
 import io.github.pderop.looma.Carriers;
 import io.github.pderop.looma.spi.ActorScheduler;
@@ -40,6 +43,8 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 	static final String PARALLELISM = "jdk.virtualThreadScheduler.parallelism";
 
 	static final String IMPL_CLASS = "jdk.virtualThreadScheduler.implClass";
+
+	static final String COMMON_FACTORY = "java.util.concurrent.ForkJoinPool.common.threadFactory";
 
 	/** What {@link #install(Carriers.Mpsc)} installed in this JVM, or null. */
 	private static Carriers.Mpsc installed;
@@ -94,10 +99,12 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 	 * carrier to one CPU last.
 	 *
 	 * <p>
-	 * The JDK starts its poller threads from the thread that first needs them. A
-	 * new thread runs only on the CPUs of the thread that starts it. So the pollers
+	 * A new thread runs only on the CPUs of the thread that starts it. The JDK
+	 * starts some of its threads from the thread that first needs them: the
+	 * pollers, the timers of virtual threads, the timer of the common pool. So they
 	 * are started here, before any carrier is pinned: otherwise they would stay on
-	 * one carrier's CPU.
+	 * one carrier's CPU. The common pool starts its workers all the time: its
+	 * factory gives them back every CPU.
 	 */
 	@Override
 	public boolean install(Carriers.Mpsc carriers) {
@@ -133,7 +140,10 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 				throw new IllegalStateException("could not install " + carriers + ": " + e, e);
 			}
 			// From here on the JDK runs this scheduler for good: the properties stay.
+			AllCpus.save();
+			startCommonPoolTimer();
 			pool = MpscPool.probe(carriers.count(), true);
+			checkCommonPool();
 			installed = carriers;
 			return true;
 		}
@@ -155,6 +165,8 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 						+ carriers + ", which sets it to " + value);
 			}
 		});
+		// The application may have its own factory for the common pool: it stays.
+		properties.put(COMMON_FACTORY, AllCpus.class.getName());
 		List<String> added = new ArrayList<>();
 		properties.forEach((key, value) -> {
 			if (System.getProperty(key) == null) {
@@ -183,6 +195,28 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 			Class.forName("sun.nio.ch.Poller");
 		} catch (ClassNotFoundException e) {
 			// Nothing to do: the JDK starts its pollers later, as usual.
+		}
+	}
+
+	/**
+	 * Starts the thread of the common pool that runs the timeouts of
+	 * {@link CompletableFuture}, from the calling thread. The first timeout starts
+	 * it, and it never stops. The JDK makes it without the pool's factory.
+	 */
+	private static void startCommonPoolTimer() {
+		new CompletableFuture<Void>().orTimeout(1, TimeUnit.NANOSECONDS);
+	}
+
+	/**
+	 * Warns if the common pool does not use {@link AllCpus}, while the carriers are
+	 * pinned and the application did not give the pool a factory of its own. The
+	 * common pool reads its factory once: it ran before this install.
+	 */
+	private static void checkCommonPool() {
+		if (pool.cluster(0) >= 0 && AllCpus.class.getName().equals(System.getProperty(COMMON_FACTORY))
+				&& !(ForkJoinPool.commonPool().getFactory() instanceof AllCpus)) {
+			System.err.println("WARNING: the common pool started before the MPSC scheduler was installed. Its"
+					+ " threads started from an actor run on one CPU only.");
 		}
 	}
 }

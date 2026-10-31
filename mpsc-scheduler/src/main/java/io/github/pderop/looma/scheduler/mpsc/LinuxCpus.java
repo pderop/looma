@@ -82,7 +82,11 @@ final class LinuxCpus {
 		}
 		BitSet cpu = new BitSet();
 		cpu.set(cpus[carrier]);
-		return setAffinity(cpu);
+		if (!setAffinity(cpu)) {
+			System.err.println("WARNING: sched_setaffinity failed. mpsc-carrier-" + carrier + " is not pinned.");
+			return false;
+		}
+		return true;
 	}
 
 	/**
@@ -90,6 +94,12 @@ final class LinuxCpus {
 	 */
 	int cluster(int carrier) {
 		return carrier < cpus.length ? clusters[carrier] : -1;
+	}
+
+	/** The CPUs the calling thread may run on, or null if unknown. */
+	static BitSet callerCpus() {
+		long[] mask = affinity();
+		return mask == null ? null : BitSet.valueOf(mask);
 	}
 
 	/** The one CPU the calling thread is pinned to, or -1. */
@@ -116,7 +126,10 @@ final class LinuxCpus {
 		}
 	}
 
-	private static boolean setAffinity(BitSet cpus) {
+	/**
+	 * Lets the calling thread run on {@code cpus} only. Returns whether it did.
+	 */
+	static boolean setAffinity(BitSet cpus) {
 		if (SCHED_SET_AFFINITY == null) {
 			return false;
 		}
@@ -125,12 +138,7 @@ final class LinuxCpus {
 			long[] words = cpus.toLongArray();
 			MemorySegment.copy(words, 0, set, ValueLayout.JAVA_LONG, 0,
 					Math.min(words.length, CPU_SET_SIZE / Long.BYTES));
-			int rc = (int) SCHED_SET_AFFINITY.invoke(0, (long) CPU_SET_SIZE, set);
-			if (rc < 0) {
-				System.err.println("WARNING: sched_setaffinity failed (rc=" + rc + "). The carrier is not pinned.");
-				return false;
-			}
-			return true;
+			return (int) SCHED_SET_AFFINITY.invoke(0, (long) CPU_SET_SIZE, set) == 0;
 		} catch (RuntimeException e) {
 			throw e;
 		} catch (Throwable e) {

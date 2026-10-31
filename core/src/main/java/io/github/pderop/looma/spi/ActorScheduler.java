@@ -92,6 +92,19 @@ public interface ActorScheduler extends AutoCloseable {
 	}
 
 	/**
+	 * Returns a factory of platform threads for the code of an actor. By default
+	 * {@code Thread.ofPlatform().factory()}.
+	 *
+	 * <p>
+	 * A new thread runs only on the CPUs of the thread that starts it. A scheduler
+	 * that pins its carriers returns a factory whose threads run on every CPU
+	 * again, even when an actor starts them.
+	 */
+	default ThreadFactory platformThreadFactory() {
+		return Thread.ofPlatform().factory();
+	}
+
+	/**
 	 * Returns the id of the carrier the <b>calling thread</b> belongs to, or
 	 * {@code -1} if the calling thread belongs to none (e.g. it is not a virtual
 	 * thread this scheduler placed).

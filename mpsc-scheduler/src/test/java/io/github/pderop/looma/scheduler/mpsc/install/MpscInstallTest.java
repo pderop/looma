@@ -25,8 +25,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
@@ -61,6 +67,9 @@ class MpscInstallTest {
 
 	/** Where Linux lists the threads of this process. */
 	private static final Path TASKS = Path.of("/proc/self/task");
+
+	/** The calling thread, as Linux sees it: for a virtual thread, its carrier. */
+	private static final Path SELF = Path.of("/proc/thread-self");
 
 	private ActorSystem system;
 
@@ -148,12 +157,102 @@ class MpscInstallTest {
 		system = ActorSystem.builder().carriers(CARRIERS).build();
 		readOnCarrier(system.scheduler(), 0);
 
-		String all = cpusAllowed(Path.of("/proc/thread-self"));
+		String all = cpusAllowed(SELF);
 		List<Path> pollers = tasks().filter(task -> name(task).contains("Poller")).toList();
 		assertFalse(pollers.isEmpty(), "no poller thread in this process");
 		for (Path poller : pollers) {
 			assertEquals(all, cpusAllowed(poller), name(poller) + " lost CPUs");
 		}
+	}
+
+	/**
+	 * The workers of the common pool run on every CPU, even when an actor makes the
+	 * pool start them. Without the pool's factory, they would keep the one CPU of
+	 * the actor's carrier.
+	 */
+	@Test
+	void theCommonPoolKeepsEveryCpu() throws Exception {
+		assumeTrue(Files.isDirectory(TASKS), "not Linux");
+		system = ActorSystem.builder().carriers(CARRIERS).build();
+		String all = cpusAllowed(SELF);
+		int workers = ForkJoinPool.getCommonPoolParallelism();
+
+		Set<String> seen = call(system.scheduler(), 0, () -> {
+			// Each task waits for all the others: the pool must run them on as many
+			// workers.
+			CountDownLatch together = new CountDownLatch(workers);
+			List<CompletableFuture<String>> tasks = IntStream.range(0, workers)
+					.mapToObj(i -> CompletableFuture.supplyAsync(() -> {
+						together.countDown();
+						await(together);
+						return cpusAllowed(SELF);
+					})).toList();
+			return tasks.stream().map(CompletableFuture::join).collect(Collectors.toSet());
+		});
+
+		assertEquals(Set.of(all), seen);
+	}
+
+	/**
+	 * The thread that runs the timeouts of {@link CompletableFuture} starts before
+	 * the carriers are pinned. Without that, the first timeout an actor sets would
+	 * start it on the actor's CPU.
+	 */
+	@Test
+	void theCommonPoolTimerKeepsEveryCpu() throws Exception {
+		assumeTrue(Files.isDirectory(TASKS), "not Linux");
+		system = ActorSystem.builder().carriers(CARRIERS).build();
+		String all = cpusAllowed(SELF);
+
+		String[] seen = call(system.scheduler(), 0,
+				() -> new CompletableFuture<String[]>().orTimeout(1, TimeUnit.MILLISECONDS)
+						.handle((value, timeout) -> new String[]{Thread.currentThread().getName(), cpusAllowed(SELF)})
+						.get(5, TimeUnit.SECONDS));
+
+		assertTrue(seen[0].contains("delayScheduler"), "the timeout ran on " + seen[0]);
+		assertEquals(all, seen[1], seen[0] + " lost CPUs");
+	}
+
+	/**
+	 * The JDK's timer threads for virtual threads start before the carriers are
+	 * pinned. Without that, the first sleep on a carrier would start the timer of
+	 * that carrier on its CPU.
+	 */
+	@Test
+	void theVirtualThreadTimersKeepEveryCpu() throws Exception {
+		assumeTrue(Files.isDirectory(TASKS), "not Linux");
+		system = ActorSystem.builder().carriers(CARRIERS).build();
+		String all = cpusAllowed(SELF);
+		for (int carrier = 0; carrier < 3; carrier++) {
+			call(system.scheduler(), carrier, () -> {
+				Thread.sleep(1);
+				return null;
+			});
+		}
+
+		// The JDK shortens "VirtualThread-unparker" to 15 characters for Linux, keeping
+		// its end.
+		List<Path> timers = tasks().filter(task -> name(task).endsWith("parker")).toList();
+		assertFalse(timers.isEmpty(), "no timer thread in this process");
+		for (Path timer : timers) {
+			assertEquals(all, cpusAllowed(timer), name(timer) + " lost CPUs");
+		}
+	}
+
+	@Test
+	void thePlatformThreadFactoryKeepsEveryCpu() throws Exception {
+		assumeTrue(Files.isDirectory(TASKS), "not Linux");
+		system = ActorSystem.builder().carriers(CARRIERS).build();
+		String all = cpusAllowed(SELF);
+		ThreadFactory factory = system.scheduler().platformThreadFactory();
+
+		String seen = call(system.scheduler(), 0, () -> {
+			CompletableFuture<String> cpus = new CompletableFuture<>();
+			factory.newThread(() -> cpus.complete(cpusAllowed(SELF))).start();
+			return cpus.get(5, TimeUnit.SECONDS);
+		});
+
+		assertEquals(all, seen);
 	}
 
 	@Test
@@ -176,6 +275,29 @@ class MpscInstallTest {
 						() -> seen.complete(new int[]{scheduler.currentCarrierId(), scheduler.pinnedCpu().orElse(-1)}))
 				.start();
 		return seen.get(5, TimeUnit.SECONDS);
+	}
+
+	/** Runs {@code task} on a thread of {@code carrier}, and waits. */
+	private static <T> T call(ActorScheduler scheduler, int carrier, Callable<T> task) throws Exception {
+		CompletableFuture<T> result = new CompletableFuture<>();
+		scheduler.actorLoopFactory(carrier).newThread(() -> {
+			try {
+				result.complete(task.call());
+			} catch (Throwable e) {
+				result.completeExceptionally(e);
+			}
+		}).start();
+		return result.get(10, TimeUnit.SECONDS);
+	}
+
+	private static void await(CountDownLatch latch) {
+		try {
+			if (!latch.await(5, TimeUnit.SECONDS)) {
+				throw new IllegalStateException("the pool did not run every task at once");
+			}
+		} catch (InterruptedException e) {
+			throw new IllegalStateException(e);
+		}
 	}
 
 	/**
