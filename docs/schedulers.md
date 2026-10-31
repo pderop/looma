@@ -136,7 +136,9 @@ The MPSC scheduler comes with the JDK of openjdk/loom pull request 227, a draft 
 - Looma pins each carrier: one thread with that carrier's affinity calls `sched_setaffinity`.
   Before that, it starts the JDK's poller threads, for the reason given above.
 - On Linux, the JDK uses poller mode 4 by default with this scheduler: each carrier has its own
-  epoll, and looks at it between two rounds of its queue. There is no read poller thread.
+  epoll, and looks at it between two rounds of its queue. The JDK still starts one `Read-Poller`
+  thread, for the virtual threads that run on no MPSC carrier, and a `Write-Poller`. There is no
+  `Master-Poller`.
 
 ## `builtin`: the JDK's default scheduler
 
@@ -267,9 +269,9 @@ In `mpsc-scheduler`:
 | `default-test` | `mpsc`, 4 carriers, stealing | the actor suites, and `MpscAffinityTest`: an actor never leaves its carrier, an offloaded thread can be stolen |
 | `install-test` | no scheduler flag, one JVM per class | `carriers(...)` installing `mpsc`, and refusing to once a virtual thread has run. On Linux: each carrier on its own CPU, and the JDK's pollers on every CPU after a socket read from a carrier |
 
-The executions of `netty-loom-scheduler` carry upstream's `-Djdk.traceVirtualThreadLocals=false` and
-`--add-opens=java.base/java.lang=ALL-UNNAMED`, so that a failing upstream test can be reproduced
-upstream under the same command line.
+The executions of `netty-loom-scheduler` carry upstream's
+`-Djdk.traceVirtualThreadLocals=false` and `--add-opens=java.base/java.lang=ALL-UNNAMED`, so that a
+failing upstream test can be reproduced upstream under the same command line.
 
 ## Blocking and pinning
 

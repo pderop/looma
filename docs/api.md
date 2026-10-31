@@ -456,8 +456,8 @@ Rules and bounds:
 - `Placement.inherit()` on `ActorSystem.spawn` throws `IllegalArgumentException` — a root has no
   parent.
 - Under the JDK builtin scheduler `carrierCount()` is `1`, so every valid placement resolves to that
-  one factory, and only `carrier(0)` is in bounds. Placement code therefore runs unchanged on both
-  schedulers.
+  one factory, and only `carrier(0)` is in bounds. Placement code therefore runs unchanged on every
+  scheduler.
 
 **Placing a child away from its parent is not free**: every parent↔child `tell` becomes a
 cross-carrier hop instead of the same-core delivery the default gives for nothing. Reach for an

@@ -100,12 +100,13 @@ ActorSystem system = ActorSystem.builder()
         .build();
 ```
 
-`affine(8)` and `mpsc(8)` keep each actor on one carrier for life, each carrier pinned to one CPU.
-They have no options: each one is the setup the benchmark found the fastest.
+`affine(8)` and `mpsc(8)` keep each actor on one carrier for life, each carrier pinned to one CPU
+on Linux. They have no options: each one is the setup the benchmark found the fastest for it (see
+[why no options](docs/schedulers.md#why-no-options)).
 
 `affine` needs `looma-netty-scheduler` on the classpath and `--enable-preview` on the command
-line. `mpsc` needs `looma-mpsc-scheduler` on the classpath. Both need the Loom JDK below. Everything else is in [`docs/api.md`](docs/api.md) and
-[`docs/schedulers.md`](docs/schedulers.md).
+line. `mpsc` needs `looma-mpsc-scheduler` on the classpath. Both need the Loom JDK below.
+Everything else is in [`docs/api.md`](docs/api.md) and [`docs/schedulers.md`](docs/schedulers.md).
 
 ## Documentation
 
@@ -133,7 +134,7 @@ class. Inside `core`, everything under `impl` but `DefaultActorSystem` is packag
 ## Prerequisites
 
 **A stock JDK 25 is enough to use Looma.** On one, `mvn verify` builds and tests `core` and
-`examples`, the carrier-affine module is not even in the reactor, and every `ActorSystem` runs on
+`examples`, the scheduler modules are not even in the reactor, and every `ActorSystem` runs on
 the JDK's builtin scheduler: a complete actor runtime, without carrier affinity.
 
 **The carrier-affine schedulers need the Loom JDK of

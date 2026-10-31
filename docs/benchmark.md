@@ -84,8 +84,8 @@ for a random user.
 
 Between steps 2 and 4, the actor's mailbox is empty, so its virtual thread ends.
 `UpstreamAnswered` starts a new one, and the scheduler picks the carrier it runs on. If it is the
-same carrier as before, the users are still in that core's cache, and the walk is fast. If not, the users must be read
-again, and the walk is slow.
+same carrier as before, the users are still in that core's cache, and the walk is fast. If not,
+the users must be read again, and the walk is slow.
 
 **The backend**, [`BackendServer`](../examples/src/main/java/io/github/pderop/looma/examples/user/BackendServer.java),
 runs in a JVM of its own. One thread accepts the connections. The others read the requests and
@@ -115,14 +115,15 @@ The poller modes:
 - `affine` sets `jdk.pollerMode=3`. Each carrier has its own read poller, a virtual thread. The
   JDK's Master-Poller wakes it when a socket has data.
 - `mpsc` uses mode 4. Each carrier has its own epoll, and looks at it between two rounds of its
-  queue. There is no read poller and no Master-Poller.
+  queue. The JDK still starts one Read-Poller thread, for the virtual threads that run on no MPSC
+  carrier, and a Write-Poller. There is no Master-Poller.
 - `jdk` and `jdk-pinned` keep the JDK's default mode.
 
 ### Where things run
 
 Three lists of CPUs, with commas and ranges (`2-7,10-15`), and no CPU in two lists. The defaults
-are those of the AMD machine ([The layout](#the-layout)); on another machine, give the three lists. `lscpu -e` shows
-the core and the caches of each CPU.
+are those of the AMD machine ([The layout](#the-layout)); on another machine, give the three
+lists. `lscpu -e` shows the core and the caches of each CPU.
 
 - **`--cpus-carriers`**: one carrier and one group per CPU. Give one CPU per core: the script
   refuses two CPUs of the same core.
@@ -238,8 +239,9 @@ scripts/publish.sh bench/<date>-<time>    # copies it to docs/results/<date>-ryz
 
 - **CPU:** AMD Ryzen 9 9950X (Zen 5), one socket.
 - **OS:** Linux 7.0 (Ubuntu).
-- **JDK:** the Loom JDK of openjdk/loom pull request 227, built from source (`28-internal-pr227-731930d`).
-  The campaigns of 2026-10-22 and 2026-10-24 ran on the Loom JDK 28 of builds.shipilev.net (b59).
+- **JDK:** the Loom JDK of openjdk/loom pull request 227, built from source
+  (`28-internal-pr227-731930d`). The campaigns of 2026-10-22 and 2026-10-24 ran on the Loom JDK
+  28 of builds.shipilev.net (b59).
 - **Setup:** `scripts/prepare-linux-bench.sh`, run by `bench.sh`: turbo off, so every core runs
   at 4.3 GHz; `performance` governor; perf allowed.
 

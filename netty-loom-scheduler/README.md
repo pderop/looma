@@ -17,7 +17,7 @@ The adapter of the JDK's MPSC scheduler, for `Carriers.mpsc(n)`, is in its own m
 - Copied packages:
   - `io.netty.loom.scheduler.*` (including `.jfr`), from `bootstrap/src/{main,test}/java/io/netty/loom/scheduler/**`
   - `io.netty.loom.topology.*`, from `topology/src/{main,test}/java/io/netty/loom/topology/**`
-- Licence: Apache License, Version 2.0. See `NOTICE` at the repository root for the
+- License: Apache License, Version 2.0. See `NOTICE` at the repository root for the
   full attribution block and the Section 4(b) statement.
 
 ## The Looma patches: a home queue that stealing never reads, and the pollers
@@ -45,8 +45,8 @@ In `NettyScheduler`, the constructor starts the JDK's pollers before it creates 
 The JDK starts its `Master-Poller` and `Write-Poller` threads the first time a virtual thread
 waits on a socket, from the carrier that runs it. On Linux, a new thread runs only on the CPUs of
 the thread that starts it. So both pollers stayed for good on that carrier's one CPU, and that
-carrier had more work than the others. Started from the constructor, they may run on the CPUs
-of the thread that installs the scheduler. The read pollers do not change: there is still one
+carrier had more work than the others. Started from the constructor, they keep the CPUs of the
+thread that installs the scheduler. The read pollers do not change: there is still one
 per carrier, as before.
 
 ## The copied files are not edited, and never formatted
@@ -103,9 +103,7 @@ S=netty-loom-scheduler/src/main/java/io/netty/loom/scheduler
 ```
 
 (`a/` holding the upstream files, `b/` the patched ones.) Then update the commit hash above and
-in `NOTICE`, and check with `diff -r` that every other copied file is identical to upstream. Do
-not run `mvn spotless:apply` afterwards — the exclude means it will not touch these files, but
-running it on the whole repo after a manual edit elsewhere is a habit worth keeping deliberate.
+in `NOTICE`, and check with `diff -r` that every other copied file is identical to upstream.
 
 ## Why this module needs a separate JDK / preview flag
 
