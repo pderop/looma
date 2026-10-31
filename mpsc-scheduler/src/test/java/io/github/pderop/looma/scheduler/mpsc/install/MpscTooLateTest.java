@@ -39,6 +39,7 @@ class MpscTooLateTest {
 		assertTrue(e.getMessage().contains("before"), e.getMessage());
 		// The properties it set are removed again.
 		assertNull(System.getProperty("jdk.virtualThreadScheduler.useMpsc"));
+		assertNull(System.getProperty("jdk.virtualThreadScheduler.mpscSteal"));
 		assertNull(System.getProperty("jdk.virtualThreadScheduler.parallelism"));
 	}
 }

@@ -165,6 +165,19 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 		return added;
 	}
 
+	/**
+	 * Starts the JDK's poller threads from the calling thread, which may still run
+	 * on every CPU. Loading the class {@code sun.nio.ch.Poller} starts them.
+	 *
+	 * <p>
+	 * It must run before the carriers are pinned. Otherwise the first carrier that
+	 * reads a socket starts them, and they keep only that carrier's CPU.
+	 *
+	 * <p>
+	 * It works in every poller mode, because it runs outside the JDK's own set-up
+	 * of virtual threads. When it loads {@code Poller}, virtual threads can already
+	 * start, and some modes need them.
+	 */
 	private static void startJdkPollers() {
 		try {
 			Class.forName("sun.nio.ch.Poller");

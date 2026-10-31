@@ -27,5 +27,8 @@ preview API, so this module compiles at `release=28` without `--enable-preview`.
 - `default-test`: the actor suites of `core`, and `MpscAffinityTest`, on four MPSC carriers
   chosen by flags;
 - `install-test`: `Carriers.mpsc(n)` installing the scheduler, with no flag, one JVM per class.
+  On Linux, it also checks that each carrier has its own CPU, and that the JDK's pollers keep
+  every CPU after a carrier reads a socket. Elsewhere, it checks that the carriers have no
+  cluster, since nothing pins them.
 
 Without `-am`, Maven takes `looma-core` from `~/.m2`, which may be older than the sources.

@@ -18,7 +18,7 @@ import io.github.pderop.looma.ActorSystem;
 
 /**
  * Runs the shared {@link ActorHierarchyTest} suite against the MPSC scheduler,
- * chosen by the flags of the {@code mpsc-test} execution (see
+ * chosen by the flags of the {@code default-test} execution (see
  * {@code mpsc-scheduler/pom.xml}).
  */
 class MpscActorHierarchyTest extends ActorHierarchyTest {

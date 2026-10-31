@@ -31,7 +31,7 @@ final class MpscPool {
 	/** Carrier id to the affinity that runs on it. */
 	private final Thread.Affinity[] homes;
 
-	/** The CPUs the carriers are pinned to, or null if they float. */
+	/** The CPUs the carriers are pinned to, or null if any of them floats. */
 	private final LinuxCpus cpus;
 
 	private MpscPool(Thread.Affinity[] homes, LinuxCpus cpus) {
@@ -62,12 +62,14 @@ final class MpscPool {
 		LinuxCpus cpus = null;
 		if (pinned) {
 			LinuxCpus found = LinuxCpus.discover();
+			boolean[] all = {true};
 			for (int id = 0; id < count; id++) {
 				int carrier = id;
 				// Mounted on the carrier: sched_setaffinity(0) pins that carrier's own thread.
-				run(homes[id], () -> found.pin(carrier));
+				run(homes[id], () -> all[0] &= found.pin(carrier));
 			}
-			cpus = found;
+			// The clusters mean something only if every carrier stays on its CPU.
+			cpus = all[0] ? found : null;
 		}
 		return new MpscPool(homes, cpus);
 	}
@@ -89,7 +91,10 @@ final class MpscPool {
 		return homes[carrier];
 	}
 
-	/** The last-level-cache cluster of a carrier, or -1 if the carriers float. */
+	/**
+	 * The last-level-cache cluster of a carrier, or -1 if the carriers are not all
+	 * pinned.
+	 */
 	int cluster(int carrier) {
 		return cpus == null ? -1 : cpus.cluster(carrier);
 	}

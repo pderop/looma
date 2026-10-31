@@ -265,7 +265,7 @@ In `mpsc-scheduler`:
 | Execution | Flags | Runs |
 | --- | --- | --- |
 | `default-test` | `mpsc`, 4 carriers, stealing | the actor suites, and `MpscAffinityTest`: an actor never leaves its carrier, an offloaded thread can be stolen |
-| `install-test` | no scheduler flag, one JVM per class | `carriers(...)` installing `mpsc`, and refusing to once a virtual thread has run |
+| `install-test` | no scheduler flag, one JVM per class | `carriers(...)` installing `mpsc`, and refusing to once a virtual thread has run. On Linux: each carrier on its own CPU, and the JDK's pollers on every CPU after a socket read from a carrier |
 
 The executions of `netty-loom-scheduler` carry upstream's `-Djdk.traceVirtualThreadLocals=false` and
 `--add-opens=java.base/java.lang=ALL-UNNAMED`, so that a failing upstream test can be reproduced

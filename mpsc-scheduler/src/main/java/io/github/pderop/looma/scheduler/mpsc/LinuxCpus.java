@@ -31,7 +31,7 @@ import java.util.Map;
  * <p>
  * Carrier {@code i} goes to the {@code i}-th CPU the process may run on. The
  * calls go through {@code sched_setaffinity} and {@code sched_getaffinity}. On
- * a system without them, nothing is pinned.
+ * a system without them, nothing is pinned, and {@link #pin} says so.
  */
 final class LinuxCpus {
 
@@ -70,16 +70,19 @@ final class LinuxCpus {
 		return new LinuxCpus(BitSet.valueOf(mask).stream().toArray());
 	}
 
-	/** Pins the calling thread to the CPU of carrier {@code carrier}. */
-	void pin(int carrier) {
+	/**
+	 * Pins the calling thread to the CPU of carrier {@code carrier}. Returns
+	 * whether it did.
+	 */
+	boolean pin(int carrier) {
 		if (carrier >= cpus.length) {
 			System.err.println("WARNING: mpsc-carrier-" + carrier + " has no CPU of its own (" + cpus.length
 					+ " CPUs). It runs on all of them.");
-			return;
+			return false;
 		}
 		BitSet cpu = new BitSet();
 		cpu.set(cpus[carrier]);
-		setAffinity(cpu);
+		return setAffinity(cpu);
 	}
 
 	/**
@@ -113,9 +116,9 @@ final class LinuxCpus {
 		}
 	}
 
-	private static void setAffinity(BitSet cpus) {
+	private static boolean setAffinity(BitSet cpus) {
 		if (SCHED_SET_AFFINITY == null) {
-			return;
+			return false;
 		}
 		try (Arena arena = Arena.ofConfined()) {
 			MemorySegment set = arena.allocate(CPU_SET_SIZE);
@@ -125,7 +128,9 @@ final class LinuxCpus {
 			int rc = (int) SCHED_SET_AFFINITY.invoke(0, (long) CPU_SET_SIZE, set);
 			if (rc < 0) {
 				System.err.println("WARNING: sched_setaffinity failed (rc=" + rc + "). The carrier is not pinned.");
+				return false;
 			}
+			return true;
 		} catch (RuntimeException e) {
 			throw e;
 		} catch (Throwable e) {
