@@ -31,12 +31,16 @@ import java.util.Map;
  * <p>
  * Carrier {@code i} goes to the {@code i}-th CPU the process may run on. The
  * calls go through {@code sched_setaffinity} and {@code sched_getaffinity}. On
- * a system without them, nothing is pinned, and {@link #pin} says so.
+ * a system without them, or when the JVM refuses native calls, nothing is
+ * pinned, and {@link #pin} says so.
  */
 final class LinuxCpus {
 
 	/** The bytes of a {@code cpu_set_t}: 1024 CPUs. */
 	private static final int CPU_SET_SIZE = 128;
+
+	/** Whether the warning about native access was printed. */
+	private static boolean warned;
 
 	private static final MethodHandle SCHED_SET_AFFINITY = lookup("sched_setaffinity");
 
@@ -75,6 +79,10 @@ final class LinuxCpus {
 	 * whether it did.
 	 */
 	boolean pin(int carrier) {
+		if (SCHED_SET_AFFINITY == null) {
+			// No such call here, as on macOS, or no native access: nothing can be pinned.
+			return false;
+		}
 		if (carrier >= cpus.length) {
 			System.err.println("WARNING: mpsc-carrier-" + carrier + " has no CPU of its own (" + cpus.length
 					+ " CPUs). It runs on all of them.");
@@ -172,9 +180,18 @@ final class LinuxCpus {
 
 	private static MethodHandle lookup(String name) {
 		Linker linker = Linker.nativeLinker();
-		return linker
-				.defaultLookup().find(name).map(symbol -> linker.downcallHandle(symbol, FunctionDescriptor
-						.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)))
-				.orElse(null);
+		try {
+			return linker.defaultLookup().find(name).map(symbol -> linker.downcallHandle(symbol, FunctionDescriptor
+					.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)))
+					.orElse(null);
+		} catch (IllegalCallerException e) {
+			// The JVM refuses native calls from this code.
+			if (!warned) {
+				warned = true;
+				System.err.println("WARNING: the JVM refuses native calls from looma-mpsc-scheduler, so the carriers"
+						+ " are not pinned. Start it with --enable-native-access=ALL-UNNAMED.");
+			}
+			return null;
+		}
 	}
 }

@@ -41,5 +41,6 @@ class MpscTooLateTest {
 		assertNull(System.getProperty("jdk.virtualThreadScheduler.useMpsc"));
 		assertNull(System.getProperty("jdk.virtualThreadScheduler.mpscSteal"));
 		assertNull(System.getProperty("jdk.virtualThreadScheduler.parallelism"));
+		assertNull(System.getProperty("java.util.concurrent.ForkJoinPool.common.threadFactory"));
 	}
 }

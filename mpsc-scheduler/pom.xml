@@ -75,6 +75,21 @@
                             </includes>
                         </configuration>
                     </execution>
+                    <!-- The same install, in a JVM that refuses native calls: nothing is pinned. -->
+                    <execution>
+                        <id>no-native-access-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <argLine>--illegal-native-access=deny</argLine>
+                            <reuseForks>false</reuseForks>
+                            <includes>
+                                <include>**/scheduler/mpsc/nonative/*Test.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>

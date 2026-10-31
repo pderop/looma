@@ -13,8 +13,6 @@
  */
 package io.github.pderop.looma.scheduler.mpsc.install;
 
-import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -25,15 +23,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.OptionalInt;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +34,12 @@ import io.github.pderop.looma.ActorSystem;
 import io.github.pderop.looma.Carriers;
 import io.github.pderop.looma.spi.ActorScheduler;
 
+import static io.github.pderop.looma.scheduler.mpsc.install.LinuxThreads.SELF;
+import static io.github.pderop.looma.scheduler.mpsc.install.LinuxThreads.TASKS;
+import static io.github.pderop.looma.scheduler.mpsc.install.LinuxThreads.call;
+import static io.github.pderop.looma.scheduler.mpsc.install.LinuxThreads.cpusAllowed;
+import static io.github.pderop.looma.scheduler.mpsc.install.LinuxThreads.name;
+import static io.github.pderop.looma.scheduler.mpsc.install.LinuxThreads.tasks;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -64,12 +62,6 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 class MpscInstallTest {
 
 	private static final Carriers.Affine CARRIERS = Carriers.affine(3);
-
-	/** Where Linux lists the threads of this process. */
-	private static final Path TASKS = Path.of("/proc/self/task");
-
-	/** The calling thread, as Linux sees it: for a virtual thread, its carrier. */
-	private static final Path SELF = Path.of("/proc/thread-self");
 
 	private ActorSystem system;
 
@@ -165,34 +157,6 @@ class MpscInstallTest {
 	}
 
 	/**
-	 * The workers of the common pool run on every CPU, even when an actor makes the
-	 * pool start them. Without the pool's factory, they would keep the one CPU of
-	 * the actor's carrier.
-	 */
-	@Test
-	void theCommonPoolKeepsEveryCpu() throws Exception {
-		assumeTrue(Files.isDirectory(TASKS), "not Linux");
-		system = ActorSystem.builder().carriers(CARRIERS).build();
-		String all = cpusAllowed(SELF);
-		int workers = ForkJoinPool.getCommonPoolParallelism();
-
-		Set<String> seen = call(system.scheduler(), 0, () -> {
-			// Each task waits for all the others: the pool must run them on as many
-			// workers.
-			CountDownLatch together = new CountDownLatch(workers);
-			List<CompletableFuture<String>> tasks = IntStream.range(0, workers)
-					.mapToObj(i -> CompletableFuture.supplyAsync(() -> {
-						together.countDown();
-						await(together);
-						return cpusAllowed(SELF);
-					})).toList();
-			return tasks.stream().map(CompletableFuture::join).collect(Collectors.toSet());
-		});
-
-		assertEquals(Set.of(all), seen);
-	}
-
-	/**
 	 * The thread that runs the timeouts of {@link CompletableFuture} starts before
 	 * the carriers are pinned. Without that, the first timeout an actor sets would
 	 * start it on the actor's CPU.
@@ -276,29 +240,6 @@ class MpscInstallTest {
 		return seen.get(5, TimeUnit.SECONDS);
 	}
 
-	/** Runs {@code task} on a thread of {@code carrier}, and waits. */
-	private static <T> T call(ActorScheduler scheduler, int carrier, Callable<T> task) throws Exception {
-		CompletableFuture<T> result = new CompletableFuture<>();
-		scheduler.actorLoopFactory(carrier).newThread(() -> {
-			try {
-				result.complete(task.call());
-			} catch (Throwable e) {
-				result.completeExceptionally(e);
-			}
-		}).start();
-		return result.get(10, TimeUnit.SECONDS);
-	}
-
-	private static void await(CountDownLatch latch) {
-		try {
-			if (!latch.await(5, TimeUnit.SECONDS)) {
-				throw new IllegalStateException("the pool did not run every task at once");
-			}
-		} catch (InterruptedException e) {
-			throw new IllegalStateException(e);
-		}
-	}
-
 	/**
 	 * Waits for a socket read on a thread of {@code carrier}: it needs a poller.
 	 */
@@ -317,32 +258,6 @@ class MpscInstallTest {
 				}
 			}).start();
 			done.get(5, TimeUnit.SECONDS);
-		}
-	}
-
-	private static Stream<Path> tasks() {
-		try {
-			return Files.list(TASKS).toList().stream();
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
-		}
-	}
-
-	private static String name(Path task) {
-		try {
-			return Files.readString(task.resolve("comm")).trim();
-		} catch (IOException e) {
-			// The thread ended.
-			return "";
-		}
-	}
-
-	/** The line {@code Cpus_allowed_list} of a thread's status. */
-	private static String cpusAllowed(Path task) {
-		try (Stream<String> lines = Files.lines(task.resolve("status"))) {
-			return lines.filter(line -> line.startsWith("Cpus_allowed_list:")).findFirst().orElseThrow();
-		} catch (IOException e) {
-			throw new UncheckedIOException(e);
 		}
 	}
 }

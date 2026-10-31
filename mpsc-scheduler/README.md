@@ -38,7 +38,7 @@ preview API, so this module compiles at `release=28` without `--enable-preview`.
 
 ## Tests
 
-`mvn -pl mpsc-scheduler -am test` runs two Surefire executions:
+`mvn -pl mpsc-scheduler -am test` runs three Surefire executions:
 
 - `default-test`: the actor suites of `core`, and `MpscAffinityTest`, on four MPSC carriers
   chosen by flags;
@@ -46,6 +46,8 @@ preview API, so this module compiles at `release=28` without `--enable-preview`.
   On Linux, it also checks that each carrier has its own CPU, and that these threads keep every
   CPU when an actor starts them or uses them: the JDK's pollers, its timers, the common pool and
   `platformThreadFactory()`. Elsewhere, it checks that the carriers have no cluster, since
-  nothing pins them.
+  nothing pins them. It also checks that a `maxPoolSize` below the count is refused.
+- `no-native-access-test`: the same install, in a JVM started with
+  `--illegal-native-access=deny`. The system runs, and nothing is pinned.
 
 Without `-am`, Maven takes `looma-core` from `~/.m2`, which may be older than the sources.

@@ -51,14 +51,20 @@ another scheduler when:
   `-Djdk.virtualThreadScheduler.useMpsc`;
 - no provider can install it: no `looma-mpsc-scheduler` on the classpath for `affine`, or a JDK
   without the MPSC scheduler;
+- `-Djdk.virtualThreadScheduler.maxPoolSize` is below the count of `affine(n)`: the JDK would
+  start fewer carriers;
 - an earlier system in this JVM was built with another pool. A second system on the same pool is
-  fine.
+  fine;
+- an earlier `affine(n)` failed after the JDK had started the scheduler: nothing can be undone,
+  so it fails again, with the first reason.
 
 One case goes undetected: `builtin(n)` after a virtual thread already ran. The JDK has sized its
 pool, and `n` is silently not what is in force.
 
 `--enable-native-access=ALL-UNNAMED` is a launch flag, not a property: it stays on the command
-line.
+line. `affine(n)` pins its carriers through native calls. Without the flag, the JVM warns today;
+if it refuses them, as with `--illegal-native-access=deny`, the carriers are not pinned, and Looma
+says so.
 
 ### As JVM flags
 
@@ -222,7 +228,8 @@ configured once per JVM. In `mpsc-scheduler`:
 | Execution | Flags | Runs |
 | --- | --- | --- |
 | `default-test` | the MPSC scheduler, 4 carriers, stealing | the actor suites, and `MpscAffinityTest`: an actor never leaves its carrier, an offloaded thread can be stolen |
-| `install-test` | no scheduler flag, one JVM per class | `carriers(...)` installing `affine`, and refusing to once a virtual thread has run. On Linux: each carrier on its own CPU, and the threads an actor makes start on every CPU: the JDK's pollers and timers, the common pool, `platformThreadFactory()` |
+| `install-test` | no scheduler flag, one JVM per class | `carriers(...)` installing `affine`, and refusing to once a virtual thread has run, or below a `maxPoolSize`. On Linux: each carrier on its own CPU, and the threads an actor makes start on every CPU: the JDK's pollers and timers, the common pool, `platformThreadFactory()` |
+| `no-native-access-test` | `--illegal-native-access=deny` | `carriers(...)` installing `affine` in a JVM that refuses native calls: it runs, and nothing is pinned |
 
 ## Blocking and pinning
 

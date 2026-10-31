@@ -13,6 +13,7 @@
  */
 package io.github.pderop.looma.scheduler.mpsc;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -42,6 +43,8 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 
 	static final String PARALLELISM = "jdk.virtualThreadScheduler.parallelism";
 
+	static final String MAX_POOL_SIZE = "jdk.virtualThreadScheduler.maxPoolSize";
+
 	static final String IMPL_CLASS = "jdk.virtualThreadScheduler.implClass";
 
 	static final String COMMON_FACTORY = "java.util.concurrent.ForkJoinPool.common.threadFactory";
@@ -51,6 +54,12 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 
 	/** The carriers, once found. Static because the scheduler is. */
 	private static MpscPool pool;
+
+	/**
+	 * Why an install failed after the JDK started the scheduler, or null. Nothing
+	 * can be undone then, so every later install fails the same way.
+	 */
+	private static IllegalStateException failure;
 
 	/**
 	 * Required by {@link java.util.ServiceLoader}.
@@ -76,8 +85,10 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 	public ActorScheduler create() {
 		synchronized (MpscActorSchedulerProvider.class) {
 			if (pool == null) {
-				pool = MpscPool.probe(Integer.getInteger(PARALLELISM, Runtime.getRuntime().availableProcessors()),
-						false);
+				// As the JDK counts its carriers.
+				int count = Integer.getInteger(PARALLELISM, Runtime.getRuntime().availableProcessors());
+				Integer max = Integer.getInteger(MAX_POOL_SIZE);
+				pool = MpscPool.probe(max == null ? count : Math.min(count, max), false);
 			}
 			return new MpscActorScheduler(pool);
 		}
@@ -95,8 +106,10 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 	 *
 	 * <p>
 	 * Sets the properties, then starts the JDK's pollers, then checks that the
-	 * carriers are the MPSC ones and that there are as many as asked. Pins each
-	 * carrier to one CPU last.
+	 * scheduler is the MPSC one, and only then sets the factory of the common pool.
+	 * Then finds the carriers, checks that there are as many as asked, and pins
+	 * each one to one CPU last. If a step fails once the JDK runs the scheduler,
+	 * nothing can be undone: this install, and every later one, throws.
 	 *
 	 * <p>
 	 * A new thread runs only on the CPUs of the thread that starts it. The JDK
@@ -116,6 +129,10 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 				}
 				return true;
 			}
+			if (failure != null) {
+				throw new IllegalStateException("an earlier install of " + carriers + " failed in this JVM, after the"
+						+ " JDK started the scheduler: " + failure.getMessage(), failure);
+			}
 			if (System.getProperty(IMPL_CLASS) != null) {
 				throw new IllegalStateException("-D" + IMPL_CLASS + " is set, so this JVM runs another scheduler:"
 						+ " cannot install " + carriers);
@@ -132,6 +149,11 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 					throw new IllegalStateException("this JVM does not run the MPSC scheduler: a JDK without it, or a"
 							+ " virtual thread started before " + carriers + " could be installed");
 				}
+				// Only now: a failed install must not leave its factory in the common pool.
+				if (System.getProperty(COMMON_FACTORY) == null) {
+					System.setProperty(COMMON_FACTORY, AllCpus.class.getName());
+					added.add(COMMON_FACTORY);
+				}
 			} catch (IllegalStateException e) {
 				added.forEach(System::clearProperty);
 				throw e;
@@ -140,10 +162,22 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 				throw new IllegalStateException("could not install " + carriers + ": " + e, e);
 			}
 			// From here on the JDK runs this scheduler for good: the properties stay.
-			AllCpus.save();
-			startCommonPoolTimer();
-			pool = MpscPool.probe(carriers.count(), true);
-			checkCommonPool();
+			try {
+				AllCpus.save();
+				startCommonPoolTimer();
+				boolean commonPool = adoptCommonPool();
+				pool = MpscPool.probe(carriers.count(), true);
+				if (!commonPool && pool.cluster(0) >= 0) {
+					System.err.println("WARNING: the common pool does not use " + AllCpus.class.getName() + ": it"
+							+ " started before the MPSC scheduler was installed, or the system class loader cannot"
+							+ " load looma-mpsc-scheduler. Its threads started from an actor run on one CPU only.");
+				}
+			} catch (RuntimeException e) {
+				failure = e instanceof IllegalStateException ise
+						? ise
+						: new IllegalStateException("could not install " + carriers + ": " + e, e);
+				throw failure;
+			}
 			installed = carriers;
 			return true;
 		}
@@ -151,9 +185,15 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 
 	/**
 	 * Sets the properties {@code carriers} stands for, after checking that none is
-	 * set to another value. Returns those it added.
+	 * set to another value, and that no {@code maxPoolSize} caps the carriers.
+	 * Returns those it added.
 	 */
 	private static List<String> set(Carriers.Affine carriers) {
+		String max = System.getProperty(MAX_POOL_SIZE);
+		if (max != null && !(max.matches("[0-9]{1,9}") && Integer.parseInt(max) >= carriers.count())) {
+			throw new IllegalStateException("-D" + MAX_POOL_SIZE + "=" + max + " is set: the JDK would not start the "
+					+ carriers.count() + " carriers of " + carriers);
+		}
 		Map<String, String> properties = new LinkedHashMap<>();
 		properties.put(PARALLELISM, Integer.toString(carriers.count()));
 		properties.put(STEAL, "true");
@@ -165,8 +205,6 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 						+ carriers + ", which sets it to " + value);
 			}
 		});
-		// The application may have its own factory for the common pool: it stays.
-		properties.put(COMMON_FACTORY, AllCpus.class.getName());
 		List<String> added = new ArrayList<>();
 		properties.forEach((key, value) -> {
 			if (System.getProperty(key) == null) {
@@ -208,15 +246,31 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 	}
 
 	/**
-	 * Warns if the common pool does not use {@link AllCpus}, while the carriers are
-	 * pinned and the application did not give the pool a factory of its own. The
-	 * common pool reads its factory once: it ran before this install.
+	 * Whether the workers of the common pool take back the saved CPUs: the pool
+	 * uses {@link AllCpus}, or the application gave it a factory of its own, which
+	 * is its choice. The common pool reads its factory once, so it may have started
+	 * before this install. And the JDK loads the factory with the system class
+	 * loader: under another class loader, the pool has its own copy of
+	 * {@link AllCpus}, which needs the CPUs too.
 	 */
-	private static void checkCommonPool() {
-		if (pool.cluster(0) >= 0 && AllCpus.class.getName().equals(System.getProperty(COMMON_FACTORY))
-				&& !(ForkJoinPool.commonPool().getFactory() instanceof AllCpus)) {
-			System.err.println("WARNING: the common pool started before the MPSC scheduler was installed. Its"
-					+ " threads started from an actor run on one CPU only.");
+	private static boolean adoptCommonPool() {
+		if (!AllCpus.class.getName().equals(System.getProperty(COMMON_FACTORY))) {
+			return true;
+		}
+		ForkJoinPool.ForkJoinWorkerThreadFactory factory = ForkJoinPool.commonPool().getFactory();
+		if (factory instanceof AllCpus) {
+			return true;
+		}
+		if (!factory.getClass().getName().equals(AllCpus.class.getName())) {
+			return false;
+		}
+		try {
+			Method save = factory.getClass().getDeclaredMethod("save");
+			save.setAccessible(true);
+			save.invoke(null);
+			return true;
+		} catch (ReflectiveOperationException | RuntimeException e) {
+			return false;
 		}
 	}
 }
