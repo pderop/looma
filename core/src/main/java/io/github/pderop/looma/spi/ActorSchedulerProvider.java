@@ -21,8 +21,9 @@ import io.github.pderop.looma.Carriers;
  * A {@link ServiceLoader}-discoverable factory for one {@link ActorScheduler}.
  *
  * <p>
- * {@code core} ships no implementation of this interface: the only one in this
- * project lives in the {@code netty-loom-scheduler} module, registered under
+ * {@code core} ships no implementation of this interface: the two in this
+ * project live in the {@code netty-loom-scheduler} and {@code mpsc-scheduler}
+ * modules, each registered under
  * {@code META-INF/services/io.github.pderop.looma.spi.ActorSchedulerProvider}.
  * A third-party scheduler is added to a process the same way — implement both
  * SPI interfaces and register the provider — without {@code core} ever

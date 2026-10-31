@@ -42,8 +42,9 @@ another scheduler when:
 - a property it sets already holds another value, from a `-D` flag;
 - the command line already chooses a scheduler, with `-Djdk.virtualThreadScheduler.implClass` or
   `-Djdk.virtualThreadScheduler.useMpsc`;
-- no provider can install it: no `looma-netty-scheduler` on the classpath, no `--enable-preview`,
-  or a JDK without the MPSC scheduler;
+- no provider can install it: no `looma-netty-scheduler` on the classpath for `affine`, or no
+  `--enable-preview`; no `looma-mpsc-scheduler` on the classpath for `mpsc`; or a JDK without the
+  MPSC scheduler;
 - an earlier system in this JVM was built with another pool. A second system on the same pool is
   fine.
 
@@ -77,13 +78,20 @@ Looma reads no system property of its own.
 
 ### On the classpath
 
-For `affine` and `mpsc`, `looma-netty-scheduler` must be on the classpath, or there is no provider:
-discovery falls back to the builtin, and `carriers(...)` throws.
+Each scheduler has its module, which must be on the classpath, or there is no provider: discovery
+falls back to the builtin, and `carriers(...)` throws.
 
 ```xml
+<!-- affine -->
 <dependency>
     <groupId>io.github.pderop</groupId>
     <artifactId>looma-netty-scheduler</artifactId>
+    <version>1.0-SNAPSHOT</version>
+</dependency>
+<!-- mpsc -->
+<dependency>
+    <groupId>io.github.pderop</groupId>
+    <artifactId>looma-mpsc-scheduler</artifactId>
     <version>1.0-SNAPSHOT</version>
 </dependency>
 ```
@@ -241,19 +249,25 @@ counts as in-flight work; a scheduler never counts its own.
 
 ## Tests
 
-The `netty-loom-scheduler` module runs its tests in several Surefire executions, because the
-scheduler is configured once per JVM:
+The two scheduler modules run their tests in several Surefire executions, because the scheduler
+is configured once per JVM. In `netty-loom-scheduler`:
 
 | Execution | Flags | Runs |
 | --- | --- | --- |
 | `default-test` | 2 carriers | the copied scheduler's own tests |
 | `carrier-test` | `affine`, 2 carriers, no stealing | the actor suites, `CarriersCommandLineTest` |
 | `workstealing-test` | `affine`, 4 carriers, stealing, `FakeClusterTopology` | the actor suites again, `EventLoopSchedulerWorkStealingTest`, `HomeVirtualThreadTest` |
-| `install-test` | no scheduler flag, one JVM per class | `carriers(...)` installing `affine` and `mpsc`, and refusing to once a virtual thread has run |
-| `mpsc-test` | `mpsc`, 4 carriers, stealing | the actor suites, and `MpscAffinityTest`: an actor never leaves its carrier, an offloaded thread can be stolen |
+| `install-test` | no scheduler flag, one JVM per class | `carriers(...)` installing `affine`, and refusing to once a virtual thread has run |
 | `replaceBuiltinScheduler-test` | upstream's | `ReplaceBuiltinSchedulerTest` |
 
-The executions carry upstream's `-Djdk.traceVirtualThreadLocals=false` and
+In `mpsc-scheduler`:
+
+| Execution | Flags | Runs |
+| --- | --- | --- |
+| `default-test` | `mpsc`, 4 carriers, stealing | the actor suites, and `MpscAffinityTest`: an actor never leaves its carrier, an offloaded thread can be stolen |
+| `install-test` | no scheduler flag, one JVM per class | `carriers(...)` installing `mpsc`, and refusing to once a virtual thread has run |
+
+The executions of `netty-loom-scheduler` carry upstream's `-Djdk.traceVirtualThreadLocals=false` and
 `--add-opens=java.base/java.lang=ALL-UNNAMED`, so that a failing upstream test can be reproduced
 upstream under the same command line.
 
@@ -354,15 +368,18 @@ queue otherwise; either way another worker can run it. Under `affine` and `mpsc`
 its home carrier. A yielding burst would therefore give `jdk` runs a migration path the other
 runs do not have. The price is the one stated above: a busy actor holds its carrier.
 
-### Why a separate module, reached through an SPI
+### Why separate modules, reached through an SPI
 
 `jdk.virtualThreadScheduler.implClass` is a single, process-wide, **preview** hook of a Loom JDK 28,
 and the MPSC scheduler exists only in the JDK of openjdk/loom pull request 227.
-`netty-loom-scheduler` is compiled with `--enable-preview` at `release=28` and only exists in the
+`netty-loom-scheduler` is compiled with `--enable-preview` at `release=28`. `mpsc-scheduler` is
+compiled at `release=28` without it: `Thread.Affinity` is not a preview API. Both only exist in the
 reactor on a Loom JDK (the root pom's `loom-jdk` profile). `core` and `examples` compile at
-`release=25` and run on a stock JDK; neither names a scheduler class.
+`release=25` and run on a stock JDK; neither names a scheduler class. Each scheduler has its own
+module, so one can be dropped without touching the other.
 
 The copied code under `io/netty/loom/**` keeps upstream's packages, class names, properties and
 JFR events, so it stays diffable against upstream; Spotless leaves it alone for the same reason.
-Looma's own code beside it is the adapters, in `io.github.pderop.looma.scheduler.netty` and
-`io.github.pderop.looma.scheduler.mpsc`, and the tests that need package-private access.
+Looma's own code beside it is the adapter, in `io.github.pderop.looma.scheduler.netty`, and the
+tests that need package-private access. The MPSC adapter does not use the copy: it pins its
+carriers with its own `LinuxCpus`.

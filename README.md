@@ -103,8 +103,8 @@ ActorSystem system = ActorSystem.builder()
 `affine(8)` and `mpsc(8)` keep each actor on one carrier for life, each carrier pinned to one CPU.
 They have no options: each one is the setup the benchmark found the fastest.
 
-`affine` and `mpsc` also need `looma-netty-scheduler` on the classpath, `--enable-preview` on the
-command line, and the Loom JDK below. Everything else is in [`docs/api.md`](docs/api.md) and
+`affine` needs `looma-netty-scheduler` on the classpath and `--enable-preview` on the command
+line. `mpsc` needs `looma-mpsc-scheduler` on the classpath. Both need the Loom JDK below. Everything else is in [`docs/api.md`](docs/api.md) and
 [`docs/schedulers.md`](docs/schedulers.md).
 
 ## Documentation
@@ -116,13 +116,15 @@ command line, and the Loom JDK below. Everything else is in [`docs/api.md`](docs
 | [`docs/benchmark.md`](docs/benchmark.md) | The benchmark: the question and the answer, the program, the schedulers it compares, running it, the machine, and why it is built this way. |
 | [`docs/results/README.md`](docs/results/README.md) | The published campaigns, what a campaign folder contains, and where each number of a `summary.md` comes from. |
 | [`netty-loom-scheduler/README.md`](netty-loom-scheduler/README.md) | The copy of the Netty scheduler: upstream commit, Looma's two patches, refresh procedure. |
+| [`mpsc-scheduler/README.md`](mpsc-scheduler/README.md) | The adapter of the JDK's MPSC scheduler: its classes, its JDK, its tests. |
 
 ## Modules
 
 | Directory | Artifact | Java | Contents |
 | --- | --- | --- | --- |
 | `core` | `looma-core` | 25 | The API (`io.github.pderop.looma`), the engine (`….impl`), the scheduler and mailbox SPIs (`….spi`). |
-| `netty-loom-scheduler` | `looma-netty-scheduler` | 28 + `--enable-preview` | A copy of the upstream scheduler under `io.netty.loom.*` (two documented patches), the adapter `….scheduler.netty` that exposes it through Looma's SPI, and `….scheduler.mpsc`, the adapter of the JDK's MPSC scheduler. |
+| `netty-loom-scheduler` | `looma-netty-scheduler` | 28 + `--enable-preview` | `affine`: a copy of the upstream scheduler under `io.netty.loom.*` (two documented patches), and the adapter `….scheduler.netty` that exposes it through Looma's SPI. |
+| `mpsc-scheduler` | `looma-mpsc-scheduler` | 28 | `mpsc`: the adapter `….scheduler.mpsc` of the JDK's MPSC scheduler. |
 | `examples` | `looma-examples` | 25 | `….examples.hello` (the affinity trace) and `….examples.user` (the benchmark). |
 
 Everything depends on `looma-core`, never the reverse, and `looma-core` never names a scheduler
@@ -260,7 +262,7 @@ scripts/run-hello.sh
 ```
 
 `hello.Main` asks for the JDK's MPSC scheduler with two carriers, `carriers(Carriers.mpsc(2))`,
-so the only flag it needs is `--enable-preview`. Each line names the carrier it ran on:
+so it needs no scheduler flag. Each line names the carrier it ran on:
 
 ```
 [/hello] handling 'Pierre' on VirtualThread[#38,looma-/hello]/runnable@mpsc-carrier-0

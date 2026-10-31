@@ -13,15 +13,15 @@
  */
 package io.github.pderop.looma.scheduler.mpsc;
 
-import io.github.pderop.looma.GracefulStopTest;
+import io.github.pderop.looma.ActorHierarchyTest;
 import io.github.pderop.looma.ActorSystem;
 
 /**
- * Runs the shared {@link GracefulStopTest} suite against the MPSC scheduler,
+ * Runs the shared {@link ActorHierarchyTest} suite against the MPSC scheduler,
  * chosen by the flags of the {@code mpsc-test} execution (see
- * {@code netty-loom-scheduler/pom.xml}).
+ * {@code mpsc-scheduler/pom.xml}).
  */
-class MpscGracefulStopTest extends GracefulStopTest {
+class MpscActorHierarchyTest extends ActorHierarchyTest {
 
 	@Override
 	protected ActorSystem newActorSystem() {

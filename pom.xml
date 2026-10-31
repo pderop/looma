@@ -12,12 +12,13 @@
 
     <!--
         Two JDKs, on purpose: core and examples compile at release=25, without the
-        preview compiler flag, and run on a stock JDK 25. Only netty-loom-scheduler needs a
+        preview compiler flag, and run on a stock JDK 25. netty-loom-scheduler needs a
         Loom-enabled JDK 28+ and that preview flag, for the JDK's preview virtual thread
-        scheduler SPI (Thread.VirtualThreadScheduler); it joins the reactor only under the
-        loom-jdk profile below, activated automatically when the build JDK is 28 or newer
-        (see .sdkmanrc). A stock JDK fails at compile time on Thread.VirtualThreadScheduler
-        only inside that one module.
+        scheduler SPI (Thread.VirtualThreadScheduler). mpsc-scheduler needs the JDK of
+        openjdk/loom pull request 227, for Thread.Affinity, but no preview flag. Both join the
+        reactor only under the loom-jdk profile below, activated automatically when the build
+        JDK is 28 or newer (see .sdkmanrc). A stock JDK fails at compile time only inside
+        those two modules.
     -->
     <modules>
         <module>core</module>
@@ -138,7 +139,7 @@
         </profile>
         <!--
             Additive: profile <modules> add to the base <modules>, they do not replace them, so
-            netty-loom-scheduler must not also be listed there. Activated by the JDK the build
+            netty-loom-scheduler and mpsc-scheduler must not also be listed there. Activated by the JDK the build
             itself runs on (not by an explicit -P), so `mvn verify` on a stock JDK 25 simply does
             not see this module, and `mvn verify` on JDK 28-loom (or newer) does.
         -->
@@ -147,6 +148,7 @@
             <activation><jdk>[28,)</jdk></activation>
             <modules>
                 <module>netty-loom-scheduler</module>
+                <module>mpsc-scheduler</module>
             </modules>
         </profile>
     </profiles>

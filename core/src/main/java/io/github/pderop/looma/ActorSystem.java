@@ -95,7 +95,8 @@ public interface ActorSystem {
 		 * <ul>
 		 * <li>for {@link Carriers#affine(int)} and {@link Carriers#mpsc(int)}, when no
 		 * provider on the classpath can install it: no scheduler module, a JVM started
-		 * without {@code --enable-preview}, or a JDK without the MPSC scheduler;
+		 * without {@code --enable-preview} for {@code affine}, or a JDK without the
+		 * MPSC scheduler;
 		 * <li>for either of them, when a virtual thread already ran under another
 		 * scheduler;
 		 * <li>when {@code -Djdk.virtualThreadScheduler.implClass} or

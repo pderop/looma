@@ -13,15 +13,15 @@
  */
 package io.github.pderop.looma.scheduler.mpsc;
 
-import io.github.pderop.looma.ActorHierarchyTest;
+import io.github.pderop.looma.SpawnPlacementTest;
 import io.github.pderop.looma.ActorSystem;
 
 /**
- * Runs the shared {@link ActorHierarchyTest} suite against the MPSC scheduler,
+ * Runs the shared {@link SpawnPlacementTest} suite against the MPSC scheduler,
  * chosen by the flags of the {@code mpsc-test} execution (see
- * {@code netty-loom-scheduler/pom.xml}).
+ * {@code mpsc-scheduler/pom.xml}).
  */
-class MpscActorHierarchyTest extends ActorHierarchyTest {
+class MpscSpawnPlacementTest extends SpawnPlacementTest {
 
 	@Override
 	protected ActorSystem newActorSystem() {

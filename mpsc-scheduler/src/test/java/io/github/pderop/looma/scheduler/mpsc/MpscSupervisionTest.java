@@ -19,7 +19,7 @@ import io.github.pderop.looma.ActorSystem;
 /**
  * Runs the shared {@link SupervisionTest} suite against the MPSC scheduler,
  * chosen by the flags of the {@code mpsc-test} execution (see
- * {@code netty-loom-scheduler/pom.xml}).
+ * {@code mpsc-scheduler/pom.xml}).
  */
 class MpscSupervisionTest extends SupervisionTest {
 

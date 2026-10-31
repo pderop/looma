@@ -15,8 +15,6 @@ package io.github.pderop.looma.scheduler.mpsc;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-import io.netty.loom.topology.LinuxCarrierTopology;
-
 /**
  * The JDK's MPSC carriers, as Looma sees them: one {@link Thread.Affinity} per
  * carrier, and the CPU topology when the carriers are pinned.
@@ -33,12 +31,12 @@ final class MpscPool {
 	/** Carrier id to the affinity that runs on it. */
 	private final Thread.Affinity[] homes;
 
-	/** The topology the carriers are pinned with, or null if they float. */
-	private final LinuxCarrierTopology topology;
+	/** The CPUs the carriers are pinned to, or null if they float. */
+	private final LinuxCpus cpus;
 
-	private MpscPool(Thread.Affinity[] homes, LinuxCarrierTopology topology) {
+	private MpscPool(Thread.Affinity[] homes, LinuxCpus cpus) {
 		this.homes = homes;
-		this.topology = topology;
+		this.cpus = cpus;
 	}
 
 	/**
@@ -61,17 +59,17 @@ final class MpscPool {
 			}
 			homes[id] = affinity;
 		}
-		LinuxCarrierTopology topology = null;
+		LinuxCpus cpus = null;
 		if (pinned) {
-			topology = new LinuxCarrierTopology();
+			LinuxCpus found = LinuxCpus.discover();
 			for (int id = 0; id < count; id++) {
 				int carrier = id;
-				LinuxCarrierTopology bound = topology;
 				// Mounted on the carrier: sched_setaffinity(0) pins that carrier's own thread.
-				run(homes[id], () -> bound.bindCarrier(carrier, count, null));
+				run(homes[id], () -> found.pin(carrier));
 			}
+			cpus = found;
 		}
-		return new MpscPool(homes, topology);
+		return new MpscPool(homes, cpus);
 	}
 
 	/** Whether the current scheduler is the MPSC one. */
@@ -93,7 +91,7 @@ final class MpscPool {
 
 	/** The last-level-cache cluster of a carrier, or -1 if the carriers float. */
 	int cluster(int carrier) {
-		return topology == null ? -1 : topology.cluster(carrier);
+		return cpus == null ? -1 : cpus.cluster(carrier);
 	}
 
 	/**

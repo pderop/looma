@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>io.github.pderop</groupId>
+        <artifactId>looma-parent</artifactId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>looma-mpsc-scheduler</artifactId>
+
+    <!--
+        The adapter of the JDK's MPSC scheduler (openjdk/loom pull request 227) to Looma's SPI.
+        It needs that JDK, for Thread.Affinity, but no preview flag: Thread.Affinity is not a
+        preview API. It joins the reactor only under the loom-jdk profile of the root pom, like
+        netty-loom-scheduler.
+    -->
+    <properties>
+        <java.version>28</java.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>io.github.pderop</groupId>
+            <artifactId>looma-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.github.pderop</groupId>
+            <artifactId>looma-core</artifactId>
+            <version>${project.version}</version>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!--
+                Two executions. The suites need the MPSC scheduler chosen by the flags. The
+                install tests need no flag at all, and one fresh JVM per class: each one tests
+                the first and only choice of scheduler of its process.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <executions>
+                    <!-- The actor suites: four carriers, stealing on, found by discovery. -->
+                    <execution>
+                        <id>default-test</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <argLine>--enable-native-access=ALL-UNNAMED -Djdk.virtualThreadScheduler.useMpsc=true -Djdk.virtualThreadScheduler.mpscSteal=true -Djdk.virtualThreadScheduler.parallelism=4</argLine>
+                            <includes>
+                                <include>**/scheduler/mpsc/*Test.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                    <!-- ActorSystem.Builder.carriers(Carriers.mpsc(n)) installing the scheduler itself. -->
+                    <execution>
+                        <id>install-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <argLine>--enable-native-access=ALL-UNNAMED</argLine>
+                            <reuseForks>false</reuseForks>
+                            <includes>
+                                <include>**/scheduler/mpsc/install/*Test.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>

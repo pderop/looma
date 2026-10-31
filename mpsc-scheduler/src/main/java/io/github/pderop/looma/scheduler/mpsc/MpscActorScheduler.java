@@ -17,7 +17,6 @@ import java.util.OptionalInt;
 import java.util.concurrent.ThreadFactory;
 
 import io.github.pderop.looma.spi.ActorScheduler;
-import io.netty.loom.topology.LinuxCarrierTopology;
 
 /**
  * The {@link ActorScheduler} view over the JDK's MPSC scheduler.
@@ -76,7 +75,7 @@ final class MpscActorScheduler implements ActorScheduler {
 
 	@Override
 	public OptionalInt pinnedCpu() {
-		int cpu = LinuxCarrierTopology.pinnedCpu();
+		int cpu = LinuxCpus.pinnedCpu();
 		return cpu < 0 ? OptionalInt.empty() : OptionalInt.of(cpu);
 	}
 

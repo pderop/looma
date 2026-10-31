@@ -30,9 +30,9 @@ import io.github.pderop.looma.Carriers;
  *
  * <p>
  * Asks for the JDK's MPSC scheduler with two carriers, through
- * {@link ActorSystem.Builder#carriers}, so the only JVM flag it needs is
- * {@code --enable-preview} — run it with {@code scripts/run-hello.sh}. On a JDK
- * without the MPSC scheduler, {@code build()} says so.
+ * {@link ActorSystem.Builder#carriers}, so it needs no scheduler flag — run it
+ * with {@code scripts/run-hello.sh}. On a JDK without the MPSC scheduler,
+ * {@code build()} says so.
  */
 public class Main {
 

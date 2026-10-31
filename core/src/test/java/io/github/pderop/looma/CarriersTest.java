@@ -24,7 +24,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@link ActorSystem.Builder#build()} makes before installing anything. Nothing
  * here installs a scheduler: this JVM is the builtin control, and a property
  * set here would leak into every other test in it. Installing is tested where a
- * scheduler can be, in {@code netty-loom-scheduler}'s {@code install-test}.
+ * scheduler can be, in the {@code install-test} of {@code netty-loom-scheduler}
+ * and {@code mpsc-scheduler}.
  */
 class CarriersTest {
 

@@ -146,7 +146,7 @@ final class ActorSchedulers {
 			case Carriers.Mpsc mpsc -> {
 				ActorSchedulerProvider provider = firstProvider(p -> p.install(mpsc), true)
 						.orElseThrow(() -> new IllegalStateException("no ActorSchedulerProvider could install " + mpsc
-								+ ": the MPSC scheduler needs looma-netty-scheduler on the classpath of a JDK built"
+								+ ": the MPSC scheduler needs looma-mpsc-scheduler on the classpath of a JDK built"
 								+ " from openjdk/loom pull request 227"));
 				discovered = Optional.of(provider);
 				yield provider.create(mpsc);

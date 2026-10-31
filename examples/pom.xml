@@ -54,8 +54,8 @@
     </build>
 
     <!--
-        The scheduler module only builds on the Loom JDK (root pom, same activation), so the
-        dependency on it is profile-scoped too: on JDK 25 it is simply absent, target/classpath.txt
+        The scheduler modules only build on the Loom JDK (root pom, same activation), so the
+        dependencies on them are profile-scoped too: on JDK 25 it is simply absent, target/classpath.txt
         does not name it, and the example runs on the ForkJoinPool fallback. Runtime scope on
         purpose: nothing here compiles against it, the ServiceLoader finds it or it does not.
     -->
@@ -67,6 +67,12 @@
                 <dependency>
                     <groupId>io.github.pderop</groupId>
                     <artifactId>looma-netty-scheduler</artifactId>
+                    <version>${project.version}</version>
+                    <scope>runtime</scope>
+                </dependency>
+                <dependency>
+                    <groupId>io.github.pderop</groupId>
+                    <artifactId>looma-mpsc-scheduler</artifactId>
                     <version>${project.version}</version>
                     <scope>runtime</scope>
                 </dependency>

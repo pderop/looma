@@ -13,15 +13,15 @@
  */
 package io.github.pderop.looma.scheduler.mpsc;
 
-import io.github.pderop.looma.AbstractActorSystemTest;
+import io.github.pderop.looma.ActorPoolTest;
 import io.github.pderop.looma.ActorSystem;
 
 /**
- * Runs the shared {@link AbstractActorSystemTest} suite against the MPSC
- * scheduler, chosen by the flags of the {@code mpsc-test} execution (see
- * {@code netty-loom-scheduler/pom.xml}).
+ * Runs the shared {@link ActorPoolTest} suite against the MPSC scheduler,
+ * chosen by the flags of the {@code mpsc-test} execution (see
+ * {@code mpsc-scheduler/pom.xml}).
  */
-class MpscActorSystemTest extends AbstractActorSystemTest {
+class MpscActorPoolTest extends ActorPoolTest {
 
 	@Override
 	protected ActorSystem newActorSystem() {

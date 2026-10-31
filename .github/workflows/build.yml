@@ -18,8 +18,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Everything, on the Loom JDK: core, examples AND netty-loom-scheduler, which the
-  # root pom's loom-jdk profile only adds to the reactor on JDK 28+.
+  # Everything, on the Loom JDK: core, examples, netty-loom-scheduler AND mpsc-scheduler,
+  # which the root pom's loom-jdk profile only adds to the reactor on JDK 28+.
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -118,9 +118,9 @@ jobs:
 
       # CI must CHECK formatting, not rewrite it: "-P '!dev'" disables the profile that applies
       # Spotless at compile time, leaving only the spotless:check bound to verify. "verify" also
-      # runs core's single Surefire execution (the JDK builtin) and all of
-      # netty-loom-scheduler's -- the vendored scheduler's own tests, carrier, work stealing,
-      # install, mpsc, replaceBuiltinScheduler.
+      # runs core's single Surefire execution (the JDK builtin), all of netty-loom-scheduler's
+      # -- the vendored scheduler's own tests, carrier, work stealing, install,
+      # replaceBuiltinScheduler -- and mpsc-scheduler's: the suites and install.
       - name: Build with Maven
         env:
           JAVA_HOME: ${{ env.LOOM_JDK }}

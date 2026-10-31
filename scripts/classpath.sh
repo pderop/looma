@@ -49,7 +49,7 @@ stale_classpath() {
 # backup) is invisible to both. `REBUILD=1` is the way out.
 stale_sources() {
 	local module ref
-	for module in core netty-loom-scheduler examples; do
+	for module in core netty-loom-scheduler mpsc-scheduler examples; do
 		[ -d "$ROOT/$module/src/main/java" ] || continue
 		[ -d "$ROOT/$module/target/classes" ] || continue
 		ref=$(find "$ROOT/$module/target/classes" -name '*.class' -exec ls -t {} + 2> /dev/null | head -1)
