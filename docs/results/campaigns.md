@@ -9,11 +9,15 @@ number of it comes from. [`../benchmark.md`](../benchmark.md) explains the bench
 
 - [`2026-10-31-ryzen9-9950x/summary.md`](2026-10-31-ryzen9-9950x/summary.md): the latest.
   `mpsc`, `jdk` and `jdk-pinned`, on the JDK of openjdk/loom pull request 227, without
-  `--enable-preview`. It replaces two earlier campaigns of the same day. The first ran the same
-  setups under their old names, `stealing-local-home` and `mpsc-home`. The second ran `affine`,
-  the copied Netty scheduler, next to `mpsc`, `jdk` and `jdk-pinned`, all with
-  `--enable-preview`; it is in the git history, at commit `268ff6b`. Without the flag, `mpsc`
-  spent the same CPU per request as with it, within 4%, and so did `jdk` and `jdk-pinned`.
+  `--enable-preview`, with the client threads counting their own answers. It replaces three
+  earlier campaigns of the same day, all in the git history:
+  - the same setups under their old names, `stealing-local-home` and `mpsc-home`;
+  - at commit `268ff6b`: `affine`, the copied Netty scheduler, next to `mpsc`, `jdk` and
+    `jdk-pinned`, all with `--enable-preview`;
+  - at commit `0521e04`: the same three schedulers without the flag, the latency still counted on
+    the carriers. Against `268ff6b`, `mpsc` spent the same CPU per request without the flag,
+    within 4%, and so did `jdk` and `jdk-pinned`. This campaign, against `0521e04`, moves by
+    -5.7% to +5.8%, every range of r1 to r3 overlapping.
 - [`2026-10-24-ryzen9-9950x/summary.md`](2026-10-24-ryzen9-9950x/summary.md): `stealing-local`,
   `stealing-local-home`, `jdk` and `jdk-pinned`, on the Loom JDK of builds.shipilev.net, after
   [#9](https://github.com/pderop/looma/pull/9). `stealing-local-home` spends less CPU per request

@@ -5,9 +5,9 @@ backend      127.0.0.1:8081
 window       5s warm-up, 20s measured
 
 measure      started, 20s
-throughput   149,999 req/s
-cpu          35.84 us/req (5.38 cores busy) -- server: process minus clients
+throughput   150,002 req/s
+cpu          36.19 us/req (5.43 cores busy) -- server: process minus clients
 client cpu   26.65 us/req (4.00 cores busy)
-migrations   71.7% of 93,761 sampled messages ran on another carrier than the one before
-latency      p50 33.0  p90 52.3  p99 87.4  p99.9 3389.4  max 11624.4 us (from the scheduled send)
-send lag     p50 0.1  p99 0.2 us (how late the clients sent)
+migrations   71.6% of 93,761 sampled messages ran on another carrier than the one before
+latency      p50 33.2  p90 52.7  p99 87.9  p99.9 2828.3  max 4882.4 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)

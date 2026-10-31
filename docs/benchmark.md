@@ -8,7 +8,7 @@ request makes an actor read a few hundred of its objects. The benchmark compares
 scheduler spends per request, the latency, and how often actors moved to another core.
 
 **The answer**, on an AMD Ryzen 9 9950X: when an actor's data fits in its core's L2 cache,
-`mpsc`, which keeps each actor on its core, spends 57.0% less CPU per request than the JDK's
+`mpsc`, which keeps each actor on its core, spends 57.7% less CPU per request than the JDK's
 scheduler. When the data fits in no cache, the JDK's scheduler cannot keep up with the rate. With
 its workers pinned, it keeps up, but spends 19.6% more CPU per request than `mpsc`. The numbers:
 [`results/2026-10-31-ryzen9-9950x/summary.md`](results/2026-10-31-ryzen9-9950x/summary.md).

@@ -1,7 +1,7 @@
 # User benchmark
 
 ```
-date         2026-10-31 14:56:17 +0000
+date         2026-10-31 16:00:03 +0000
 host         gabuzo-amd, Linux 7.0.0-38-generic
 cpu model    AMD Ryzen 9 9950X 16-Core Processor
 turbo        off
@@ -10,7 +10,7 @@ carriers     CPUs 2-7,10-15
 clients      CPUs 0,1,16,17
 backend      CPUs 8,9,24,25
 heap         2g, G1; the epsilon runs 12g, Epsilon
-command      scripts/bench.sh --out /home/pderop/work/projects/looma-test/bench/20261031-145617
+command      scripts/bench.sh --out /home/pderop/work/projects/looma-test/bench/20261031-160003
 ```
 
 ## The runs
@@ -44,9 +44,9 @@ more with perf c2c, once more with perf stat, and once more with the Epsilon GC,
 
 | scheduler | default, cpu µs/req | big, cpu µs/req |
 |---|---|---|
-| mpsc | 15.68 | 63.30 |
-| jdk | 36.50 | not a measurement |
-| jdk-pinned | 44.31 | 75.70 |
+| mpsc | 15.31 | 63.20 |
+| jdk | 36.16 | not a measurement |
+| jdk-pinned | 43.79 | 75.58 |
 
 cpu µs/req at depth 256, the mean of r1 to r3, as in In short.
 
@@ -54,18 +54,18 @@ cpu µs/req at depth 256, the mean of r1 to r3, as in In short.
 
 | case | scheduler | depth | cpu µs/req | cpu range | vs jdk | walk µs | p50 µs | p99 µs | p99.9 µs | migrations |
 |---|---|---|---|---|---|---|---|---|---|---|
-| default | mpsc | 256 | 15.68 | 15.66–15.72 | -57.0% | 4.64 | 20 | 30 | 54–436 | 0.0% |
-| default | jdk | 256 | 36.50 | 35.84–37.33 |  | 9.69 | 33–37 | 87–88 | 2,355–3,389 | 69.7% |
-| default | jdk-pinned | 256 | 44.31 | 44.10–44.48 | +21.4% | 14.84 | 43–44 | 88–92 | 153–296 | 66.0% |
-| default | mpsc | 0 | 11.05 | 10.63–11.52 | -58.8% |  | 16–17 | 25–27 | 53–344 | 0.0% |
-| default | jdk | 0 | 26.81 | 25.60–28.13 |  |  | 18–21 | 29–31 | 1,288–1,859 | 86.7% |
-| default | jdk-pinned | 0 | 29.48 | 28.28–30.78 | +10.0% |  | 20–22 | 29–32 | 47–48 | 85.8% |
-| big | mpsc | 256 | 63.30 | 63.01–63.55 |  | 51.88 | 120–123 | 458–500 | 903–1,140 | 0.0% |
-| big | jdk | 256 | not a measurement |  |  |  | 1,033–1,799 | 28,082–48,923 | 45,548–77,464 | 4.0% |
-| big | jdk-pinned | 256 | 75.70 | 75.12–76.15 |  | 47.12 | 426–489 | 1,686–1,708 | 2,666–2,943 | 10.5% |
-| big | mpsc | 0 | 11.42 | 11.01–11.69 | -56.2% |  | 16 | 24–26 | 29–31 | 0.0% |
-| big | jdk | 0 | 26.07 | 25.78–26.21 |  |  | 18–19 | 28–29 | 57–1,196 | 85.1% |
-| big | jdk-pinned | 0 | 28.58 | 28.28–29.03 | +9.7% |  | 19–20 | 28–30 | 35–37 | 84.6% |
+| default | mpsc | 256 | 15.31 | 14.94–15.73 | -57.7% | 4.63 | 20 | 30 | 39–279 | 0.0% |
+| default | jdk | 256 | 36.16 | 34.89–37.41 |  | 10.64 | 33–35 | 85–88 | 2,501–2,828 | 70.0% |
+| default | jdk-pinned | 256 | 43.79 | 43.35–44.11 | +21.1% | 15.01 | 43–44 | 89–93 | 176–189 | 65.1% |
+| default | mpsc | 0 | 10.68 | 10.46–10.84 | -58.2% |  | 16–17 | 25–27 | 83–193 | 0.0% |
+| default | jdk | 0 | 25.52 | 25.07–25.86 |  |  | 19–23 | 29–32 | 1,033–1,460 | 87.1% |
+| default | jdk-pinned | 0 | 28.78 | 28.15–29.71 | +12.7% |  | 21–22 | 29–30 | 42–64 | 86.5% |
+| big | mpsc | 256 | 63.20 | 62.26–64.13 |  | 52.43 | 117–126 | 430–476 | 847–992 | 0.0% |
+| big | jdk | 256 | not a measurement |  |  |  | 1,016–1,772 | 26,411–50,561 | 54,002–84,083 | 3.8% |
+| big | jdk-pinned | 256 | 75.58 | 74.84–76.12 |  | 46.67 | 449–497 | 1,768–1,837 | 2,599–2,888 | 10.3% |
+| big | mpsc | 0 | 10.77 | 10.37–11.40 | -61.0% |  | 16–17 | 25–27 | 29–33 | 0.0% |
+| big | jdk | 0 | 27.59 | 26.15–28.86 |  |  | 19–22 | 29–31 | 59–1,093 | 86.6% |
+| big | jdk-pinned | 0 | 28.91 | 27.92–30.25 | +4.8% |  | 19–21 | 29–30 | 35–55 | 86.0% |
 
 ```
 vs jdk = cpu µs/req / cpu µs/req of jdk, same case and depth, - 1
@@ -81,18 +81,18 @@ Step by step: [Where the numbers come from](../campaigns.md#where-the-numbers-co
 
 | case | scheduler | depth | req/s | GCs | live StackChunks | note |
 |---|---|---|---|---|---|---|
-| default | mpsc | 256 | 149,999 | 7 | 3 → 2 |  |
-| default | jdk | 256 | 149,999 | 7 | 30 → 26 |  |
-| default | jdk-pinned | 256 | 149,999 | 7 | 32 → 27 |  |
-| default | mpsc | 0 | 149,999–150,000 | 7 |  |  |
-| default | jdk | 0 | 149,999–150,000 | 7 |  |  |
+| default | mpsc | 256 | 149,999–150,000 | 7 | 0 → 2 |  |
+| default | jdk | 256 | 149,999–150,002 | 7 | 26 → 26 |  |
+| default | jdk-pinned | 256 | 149,999–150,000 | 7 | 18 → 19 |  |
+| default | mpsc | 0 | 149,999 | 7 |  |  |
+| default | jdk | 0 | 149,999–150,051 | 7 |  |  |
 | default | jdk-pinned | 0 | 149,999–150,000 | 7 |  |  |
-| big | mpsc | 256 | 149,997–150,052 | 7 | 5 → 11 |  |
-| big | jdk | 256 | 149,094–149,835 | 6 | 116 → 73 | not a measurement (r1 to r3, c2c run, stat run) |
-| big | jdk-pinned | 256 | 150,001–150,009 | 6–7 | 161 → 50 |  |
-| big | mpsc | 0 | 149,999–150,000 | 8 |  |  |
-| big | jdk | 0 | 149,999 | 8–9 |  |  |
-| big | jdk-pinned | 0 | 150,000 | 8 |  |  |
+| big | mpsc | 256 | 149,998–150,002 | 7 | 7 → 1 |  |
+| big | jdk | 256 | 148,718–149,652 | 6–7 | 57 → 27 | not a measurement (r1 to r3, c2c run, stat run) |
+| big | jdk-pinned | 256 | 149,987–150,021 | 6–7 | 25 → 25 |  |
+| big | mpsc | 0 | 149,999 | 8 |  |  |
+| big | jdk | 0 | 149,999 | 8 |  |  |
+| big | jdk-pinned | 0 | 149,999–150,000 | 8 |  |  |
 
 From the files of each run, in runs/. req/s: the line throughput of its console. GCs: the Pause
 lines of its GC log, less the full GCs of the StackChunk counts. live StackChunks: the line
@@ -105,12 +105,12 @@ Step by step: [Where the numbers come from](../campaigns.md#where-the-numbers-co
 
 | case | scheduler | instructions/req | IPC | cycles per instruction | cycles/req | instructions | cycles | requests | note |
 |---|---|---|---|---|---|---|---|---|---|
-| default | mpsc | 72,191 | 1.09 | 0.92 | 66,165 | 151,600,539,312 | 138,947,122,045 | 2,100,000 |  |
-| default | jdk | 127,715 | 0.82 | 1.22 | 156,122 | 268,201,008,636 | 327,855,764,954 | 2,100,000 |  |
-| default | jdk-pinned | 130,455 | 0.72 | 1.39 | 180,696 | 273,955,513,749 | 379,461,009,066 | 2,100,000 |  |
-| big | mpsc | 62,936 | 0.24 | 4.18 | 263,020 | 132,165,207,895 | 552,342,274,513 | 2,100,000 |  |
-| big | jdk | 50,977 | 0.17 | 5.73 | 292,203 | 107,052,008,388 | 613,626,368,803 | 2,100,000 | this run: not a measurement |
-| big | jdk-pinned | 57,141 | 0.18 | 5.68 | 324,511 | 119,995,851,905 | 681,472,226,288 | 2,100,000 |  |
+| default | mpsc | 78,494 | 1.19 | 0.84 | 66,012 | 164,837,292,060 | 138,625,332,763 | 2,100,000 |  |
+| default | jdk | 125,598 | 0.80 | 1.25 | 156,678 | 263,756,237,284 | 329,022,927,921 | 2,100,000 |  |
+| default | jdk-pinned | 123,543 | 0.68 | 1.47 | 181,505 | 259,441,343,860 | 381,159,678,426 | 2,100,000 |  |
+| big | mpsc | 64,083 | 0.24 | 4.13 | 264,351 | 134,573,881,550 | 555,138,119,210 | 2,100,000 |  |
+| big | jdk | 50,882 | 0.17 | 5.75 | 292,365 | 106,853,035,235 | 613,967,242,744 | 2,100,000 | this run: not a measurement |
+| big | jdk-pinned | 57,454 | 0.18 | 5.64 | 324,220 | 120,654,084,121 | 680,861,741,956 | 2,100,000 |  |
 
 ```
 instructions/req       = instructions / requests
@@ -128,12 +128,12 @@ Step by step: [Where the numbers come from](../campaigns.md#where-the-numbers-co
 
 | case | scheduler | migrations | other L3 | DRAM | Load Operations | Load Remote HITM | Load DRAM | note |
 |---|---|---|---|---|---|---|---|---|
-| default | mpsc | 0.0% | 0.32% | 0.02% | 21,856 | 69 | 5 |  |
-| default | jdk | 70.0% | 1.62% | 0.34% | 39,562 | 641 | 133 |  |
-| default | jdk-pinned | 64.5% | 1.92% | 0.23% | 50,560 | 969 | 118 |  |
-| big | mpsc | 0.0% | 0.43% | 4.66% | 61,532 | 267 | 2,867 |  |
-| big | jdk | 2.3% | 0.46% | 6.44% | 46,046 | 214 | 2,964 | this run: not a measurement |
-| big | jdk-pinned | 10.5% | 0.59% | 4.01% | 59,657 | 352 | 2,393 |  |
+| default | mpsc | 0.0% | 0.33% | 0.04% | 21,978 | 73 | 9 |  |
+| default | jdk | 68.5% | 1.10% | 0.33% | 38,015 | 418 | 124 |  |
+| default | jdk-pinned | 65.8% | 1.78% | 0.48% | 53,087 | 945 | 255 |  |
+| big | mpsc | 0.0% | 0.48% | 4.73% | 59,083 | 286 | 2,797 |  |
+| big | jdk | 2.3% | 0.45% | 5.78% | 57,251 | 258 | 3,308 | this run: not a measurement |
+| big | jdk-pinned | 7.9% | 0.55% | 5.20% | 65,846 | 360 | 3,427 |  |
 
 ```
 other L3 = Load Remote HITM / Load Operations
@@ -155,12 +155,12 @@ Step by step: [Where the numbers come from](../campaigns.md#where-the-numbers-co
 
 | case | scheduler | cpu µs/req G1 | cpu µs/req Epsilon | difference | heap used | note |
 |---|---|---|---|---|---|---|
-| default | mpsc | 15.68 | 16.80 | +1.12 | 6,810 MiB |  |
-| default | jdk | 36.50 | 37.48 | +0.98 | 6,874 MiB |  |
-| default | jdk-pinned | 44.31 | 43.91 | -0.40 | 6,706 MiB |  |
-| big | mpsc | 63.30 | 70.68 | +7.38 | 5,424 MiB |  |
-| big | jdk | not a measurement | not a measurement |  | 5,142 MiB | this run: not a measurement |
-| big | jdk-pinned | 75.70 | 78.68 | +2.98 | 5,336 MiB |  |
+| default | mpsc | 15.31 | 16.36 | +1.05 | 6,382 MiB |  |
+| default | jdk | 36.16 | 37.25 | +1.09 | 6,618 MiB |  |
+| default | jdk-pinned | 43.79 | 44.58 | +0.79 | 6,426 MiB |  |
+| big | mpsc | 63.20 | 70.55 | +7.35 | 5,404 MiB |  |
+| big | jdk | not a measurement | not a measurement |  | 5,375 MiB | this run: not a measurement |
+| big | jdk-pinned | 75.58 | 78.67 | +3.09 | 4,945 MiB |  |
 
 ```
 difference = cpu µs/req Epsilon - cpu µs/req G1

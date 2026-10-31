@@ -2,58 +2,58 @@ WARNING: failed to find node
 =================================================
             Trace Event Information              
 =================================================
-  Total records                     :     173201
-  Locked Load/Store Operations      :        189
-  Load Operations                   :      46046
+  Total records                     :     174908
+  Locked Load/Store Operations      :        153
+  Load Operations                   :      57251
   Loads - uncacheable               :          0
   Loads - IO                        :          0
   Loads - Miss                      :          0
-  Loads - no mapping                :      12984
+  Loads - no mapping                :      12573
   Load Fill Buffer Hit              :          0
-  Load L1D hit                      :      27820
+  Load L1D hit                      :      38978
   Load L2D hit                      :        703
-  Load LLC hit                      :       1112
-  Load Local HITM                   :        787
-  Load Remote HITM                  :        214
+  Load LLC hit                      :       1188
+  Load Local HITM                   :        797
+  Load Remote HITM                  :        258
   Load Remote HIT                   :          0
-  Load Local DRAM                   :       2964
+  Load Local DRAM                   :       3308
   Load Remote DRAM                  :          0
-  Load MESI State Exclusive         :       2964
+  Load MESI State Exclusive         :       3308
   Load MESI State Shared            :          0
-  Load LLC Misses                   :       3178
+  Load LLC Misses                   :       3566
   Load access blocked by data       :          0
   Load access blocked by address    :          0
   Load HIT Local Peer               :          0
   Load HIT Remote Peer              :          0
-  LLC Misses to Local DRAM          :       93.3%
+  LLC Misses to Local DRAM          :       92.8%
   LLC Misses to Remote DRAM         :        0.0%
   LLC Misses to Remote cache (HIT)  :        0.0%
-  LLC Misses to Remote cache (HITM) :        6.7%
-  Store Operations                  :       9893
+  LLC Misses to Remote cache (HITM) :        7.2%
+  Store Operations                  :      10346
   Store - uncacheable               :          1
-  Store - no mapping                :       1151
-  Store L1D Hit                     :       8261
+  Store - no mapping                :       1162
+  Store L1D Hit                     :       8645
   Store L1D Miss                    :          0
-  Store No available memory level   :        302
-  No Page Map Rejects               :      10400
-  Unable to parse data source       :     117262
+  Store No available memory level   :        319
+  No Page Map Rejects               :      10500
+  Unable to parse data source       :     107311
 
 =================================================
     Global Shared Cache Line Event Information   
 =================================================
-  Total Shared Cache Lines          :        969
-  Load HITs on shared lines         :       1556
+  Total Shared Cache Lines          :       1021
+  Load HITs on shared lines         :       3326
   Fill Buffer Hits on shared lines  :          0
-  L1D hits on shared lines          :        544
-  L2D hits on shared lines          :          5
-  LLC hits on shared lines          :        789
+  L1D hits on shared lines          :       2246
+  L2D hits on shared lines          :         11
+  LLC hits on shared lines          :        807
   Load hits on peer cache or nodes  :          0
-  Locked Access on shared lines     :         47
+  Locked Access on shared lines     :         43
   Blocked Access on shared lines    :          0
-  Store HITs on shared lines        :        253
-  Store L1D hits on shared lines    :        249
-  Store No available memory level   :          1
-  Total Merged records              :       1254
+  Store HITs on shared lines        :        451
+  Store L1D hits on shared lines    :        449
+  Store No available memory level   :          0
+  Total Merged records              :       1506
 
 =================================================
                  c2c details                     
@@ -70,82 +70,44 @@ WARNING: failed to find node
 # Index             Address  Node  PA cnt     Hitm    Total  LclHitm  RmtHitm  records    Loads   Stores    L1Hit   L1Miss      N/A       FB       L1       L2    LclHit  LclHitm    RmtHit  RmtHitm       Lcl       Rmt
 # .....  ..................  ....  ......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  ........  .......  ........  .......  ........  ........
 #
-      0  0xffff8a6c4e448000     0      22    2.00%       20        0       20       27       27        0        0        0        0        0        7        0         0        0         0       20         0         0
-      1          0xaf97c9c0     0       3    0.40%        4        1        3        6        6        0        0        0        0        0        2        0         0        1         0        3         0         0
-      2          0xce77b740     0       1    0.30%        3        1        2        3        3        0        0        0        0        0        0        0         0        1         0        2         0         0
-      3  0xffff8a6c4e448a80     0       2    0.20%        2        0        2        4        4        0        0        0        0        0        2        0         0        0         0        2         0         0
-      4  0xffff8a6c913acc00     0       2    0.20%        2        1        1        3        3        0        0        0        0        0        1        0         0        1         0        1         0         0
-      5  0xffff8a6c92418b80     0       1    0.20%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
-      6  0xffff8a6ef4c13100     0       1    0.20%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
-      7  0xffff8a737e59f580     0       1    0.20%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-      8          0x80b1ac80     0       3    0.20%        2        1        1        4        2        2        2        0        0        0        0        0         0        1         0        1         0         0
-      9          0xafb04b80     0       1    0.20%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     10          0xe2f412c0     0       1    0.20%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+      0  0xffff8a6c52aa3100     0      27    2.84%       30        0       30       32       32        1        0        0        0        0        2        0         0        0         0       30         0         0
+      1          0x806b0b40     0       2    0.28%        3        2        1        8        8        0        0        0        0        0        5        0         0        2         0        1         0         0
+      2  0xffff8a6c5137ea80     0       3    0.19%        2        1        1        4        4        0        0        0        0        0        2        0         0        1         0        1         0         0
+      3  0xffff8a737e0b42c0     0       3    0.19%        2        2        0        5        5        0        0        0        0        0        3        0         0        2         0        0         0         0
+      4          0x80100380     0       1    0.19%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
 
 =================================================
       Shared Cache Line Distribution Pareto      
 =================================================
 #
-#        ----- HITM -----  ------- Store Refs ------  --------- Data address ---------                      ---------- cycles ----------    Total       cpu                                            Shared                                     
-#   Num  RmtHitm  LclHitm   L1 Hit  L1 Miss      N/A              Offset  Node  PA cnt        Code address  rmt hitm  lcl hitm      load  records       cnt                         Symbol             Object                    Source:Line  Node
-# .....  .......  .......  .......  .......  .......  ..................  ....  ......  ..................  ........  ........  ........  .......  ........  .............................  .................  .............................  ....
+#        ----- HITM -----  ------- Store Refs ------  --------- Data address ---------                      ---------- cycles ----------    Total       cpu                                           Shared                                    
+#   Num  RmtHitm  LclHitm   L1 Hit  L1 Miss      N/A              Offset  Node  PA cnt        Code address  rmt hitm  lcl hitm      load  records       cnt                        Symbol             Object                   Source:Line  Node
+# .....  .......  .......  .......  .......  .......  ..................  ....  ......  ..................  ........  ........  ........  .......  ........  ............................  .................  ............................  ....
 #
   ----------------------------------------------------------------------
-      0       20        0        0        0        0  0xffff8a6c4e448000
+      0       30        0        0        0        0  0xffff8a6c52aa3100
   ----------------------------------------------------------------------
-          10.00%    0.00%    0.00%    0.00%    0.00%                0x14     0       1  0xffffffffba6a3ee6       352         0         0        2         2  [k] sched_ttwu_pending         [kernel.kallsyms]  sched_ttwu_pending+166          0
-          55.00%    0.00%    0.00%    0.00%    0.00%                0x34     0       1  0xffffffffba6a3ed4       358         0         0       11         6  [k] sched_ttwu_pending         [kernel.kallsyms]  sched_ttwu_pending+148          0
-          35.00%    0.00%    0.00%    0.00%    0.00%                0x38     0       1  0xffffffffba6a3ecd       348         0         0        8         5  [k] sched_ttwu_pending         [kernel.kallsyms]  sched_ttwu_pending+141          0
+          20.00%    0.00%    0.00%    0.00%    0.00%                0x14     0       1  0xffffffffba6a3ee6       372         0         0        6         5  [k] sched_ttwu_pending        [kernel.kallsyms]  sched_ttwu_pending+166         0
+          40.00%    0.00%    0.00%    0.00%    0.00%                0x34     0       1  0xffffffffba6a3ed4       377         0         0       12         5  [k] sched_ttwu_pending        [kernel.kallsyms]  sched_ttwu_pending+148         0
+          40.00%    0.00%    0.00%    0.00%    0.00%                0x38     0       1  0xffffffffba6a3ecd       375         0         0       12         6  [k] sched_ttwu_pending        [kernel.kallsyms]  sched_ttwu_pending+141         0
+           0.00%    0.00%    0.00%    0.00%    0.00%                0x38     0       1  0xffffffffbaee2906         0         0         0        0         1  [k] llist_reverse_order       [kernel.kallsyms]  llist_reverse_order+22         0
 
   ----------------------------------------------------------------------
-      1        3        1        0        0        0          0xaf97c9c0
+      1        1        2        0        0        0          0x806b0b40
   ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1      0x79d66ffcce03       340        52         0        5         4  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 144216  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+1923   0
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x20     0       1      0x7d1e5bf58887       336        70         0        4         3  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 156974  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+391   0
 
   ----------------------------------------------------------------------
-      2        2        1        0        0        0          0xce77b740
+      2        1        1        0        0        0  0xffff8a6c5137ea80
   ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x79d66ffcce03       618        45         0        3         3  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 144216  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+1923   0
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffffbab6f60d       358        81         0        3         3  [k] do_epoll_ctl  [kernel.kallsyms]  do_epoll_ctl+285   0
 
   ----------------------------------------------------------------------
-      3        2        0        0        0        0  0xffff8a6c4e448a80
+      3        0        2        0        0        0  0xffff8a737e0b42c0
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1  0xffffffffba6a3f02       360         0         0        2         2  [k] sched_ttwu_pending  [kernel.kallsyms]  sched_ttwu_pending+194   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffffba6a537e         0        34         0        2         1  [k] sched_tick       [kernel.kallsyms]  sched_tick+94        0
 
   ----------------------------------------------------------------------
-      4        1        1        0        0        0  0xffff8a6c913acc00
+      4        1        1        0        0        0          0x80100380
   ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffffbab6f60d       358        42         0        2         2  [k] do_epoll_ctl  [kernel.kallsyms]  do_epoll_ctl+285   0
-
-  ----------------------------------------------------------------------
-      5        0        2        0        0        0  0xffff8a6c92418b80
-  ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffffbab6f60d         0        48         0        2         2  [k] do_epoll_ctl  [kernel.kallsyms]  do_epoll_ctl+285   0
-
-  ----------------------------------------------------------------------
-      6        0        2        0        0        0  0xffff8a6ef4c13100
-  ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffffbab6f60d         0        44         0        2         2  [k] do_epoll_ctl  [kernel.kallsyms]  do_epoll_ctl+285   0
-
-  ----------------------------------------------------------------------
-      7        1        1        0        0        0  0xffff8a737e59f580
-  ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffffba77428b       440        80         0        2         1  [k] __mod_timer  [kernel.kallsyms]  __mod_timer+683   0
-
-  ----------------------------------------------------------------------
-      8        1        1        2        0        0          0x80b1ac80
-  ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x79d66ff68fff       380         0         0        1         1  [.] java.lang.Object java.util.concurrent.ArrayBlockingQueue.take()          [JIT] tid 144216  java.lang.Object java.util.concurrent.ArrayBlockingQueue.take()+511           0
-           0.00%    0.00%  100.00%    0.00%    0.00%                0x30     0       1      0x79d66ff68eb6         0         0         0        2         2  [.] java.lang.Object java.util.concurrent.ArrayBlockingQueue.take()          [JIT] tid 144216  java.lang.Object java.util.concurrent.ArrayBlockingQueue.take()+182           0
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x34     0       1      0x79d66ff4535d         0        81         0        1         1  [.] boolean java.util.concurrent.ArrayBlockingQueue.offer(java.lang.Object)  [JIT] tid 144216  boolean java.util.concurrent.ArrayBlockingQueue.offer(java.lang.Object)+477   0
-
-  ----------------------------------------------------------------------
-      9        2        0        0        0        0          0xafb04b80
-  ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x79d66ffcce03       376         0         0        2         2  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 144216  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+1923   0
-
-  ----------------------------------------------------------------------
-     10        0        2        0        0        0          0xe2f412c0
-  ----------------------------------------------------------------------
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x20     0       1      0x79d66ff3ac3c         0        93         0        1         1  [.] void io.github.pderop.looma.examples.user.FrontendServer.send(long, boolean, java.util.Random, java.util.concurrent.atomic.AtomicLong)                               [JIT] tid 144216  void io.github.pderop.looma.examples.user.FrontendServer.send(long, boolean, java.util.Random, java.util.concurrent.atomic.AtomicLong)+316                                 0
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x20     0       1      0x79d66ffcce17         0       106         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 144216  void io.github.pderop.looma.examples.user.UserGroup.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+1943   0
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x20     0       1      0x7d1e5bf6a3bf       393        87         0        2         2  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 156974  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+319   0

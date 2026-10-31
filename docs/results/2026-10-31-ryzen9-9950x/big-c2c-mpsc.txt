@@ -2,58 +2,58 @@ WARNING: failed to find node
 =================================================
             Trace Event Information              
 =================================================
-  Total records                     :     199280
-  Locked Load/Store Operations      :        257
-  Load Operations                   :      61532
+  Total records                     :     197609
+  Locked Load/Store Operations      :        238
+  Load Operations                   :      59083
   Loads - uncacheable               :          0
   Loads - IO                        :          0
   Loads - Miss                      :          0
-  Loads - no mapping                :      12661
+  Loads - no mapping                :      12833
   Load Fill Buffer Hit              :          0
-  Load L1D hit                      :      43067
-  Load L2D hit                      :       1269
-  Load LLC hit                      :       1322
-  Load Local HITM                   :       1140
-  Load Remote HITM                  :        267
+  Load L1D hit                      :      40536
+  Load L2D hit                      :       1275
+  Load LLC hit                      :       1287
+  Load Local HITM                   :       1098
+  Load Remote HITM                  :        286
   Load Remote HIT                   :          0
-  Load Local DRAM                   :       2867
+  Load Local DRAM                   :       2797
   Load Remote DRAM                  :          0
-  Load MESI State Exclusive         :       2867
+  Load MESI State Exclusive         :       2797
   Load MESI State Shared            :          0
-  Load LLC Misses                   :       3134
+  Load LLC Misses                   :       3083
   Load access blocked by data       :          0
   Load access blocked by address    :          0
   Load HIT Local Peer               :          0
   Load HIT Remote Peer              :          0
-  LLC Misses to Local DRAM          :       91.5%
+  LLC Misses to Local DRAM          :       90.7%
   LLC Misses to Remote DRAM         :        0.0%
   LLC Misses to Remote cache (HIT)  :        0.0%
-  LLC Misses to Remote cache (HITM) :        8.5%
-  Store Operations                  :      14809
-  Store - uncacheable               :          2
-  Store - no mapping                :       1333
-  Store L1D Hit                     :      12709
+  LLC Misses to Remote cache (HITM) :        9.3%
+  Store Operations                  :      14760
+  Store - uncacheable               :          3
+  Store - no mapping                :       1308
+  Store L1D Hit                     :      12536
   Store L1D Miss                    :          0
-  Store No available memory level   :        348
-  No Page Map Rejects               :      18169
-  Unable to parse data source       :     122939
+  Store No available memory level   :        488
+  No Page Map Rejects               :      18518
+  Unable to parse data source       :     123766
 
 =================================================
     Global Shared Cache Line Event Information   
 =================================================
-  Total Shared Cache Lines          :       1352
-  Load HITs on shared lines         :       1834
+  Total Shared Cache Lines          :       1328
+  Load HITs on shared lines         :       1654
   Fill Buffer Hits on shared lines  :          0
-  L1D hits on shared lines          :        390
-  L2D hits on shared lines          :         21
-  LLC hits on shared lines          :       1142
+  L1D hits on shared lines          :        236
+  L2D hits on shared lines          :         17
+  LLC hits on shared lines          :       1106
   Load hits on peer cache or nodes  :          0
-  Locked Access on shared lines     :         78
+  Locked Access on shared lines     :         65
   Blocked Access on shared lines    :          0
-  Store HITs on shared lines        :        113
-  Store L1D hits on shared lines    :        104
-  Store No available memory level   :          4
-  Total Merged records              :       1520
+  Store HITs on shared lines        :         73
+  Store L1D hits on shared lines    :         65
+  Store No available memory level   :          1
+  Total Merged records              :       1457
 
 =================================================
                  c2c details                     
@@ -70,179 +70,237 @@ WARNING: failed to find node
 # Index             Address  Node  PA cnt     Hitm    Total  LclHitm  RmtHitm  records    Loads   Stores    L1Hit   L1Miss      N/A       FB       L1       L2    LclHit  LclHitm    RmtHit  RmtHitm       Lcl       Rmt
 # .....  ..................  ....  ......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  ........  .......  ........  .......  ........  ........
 #
-      0          0xe5328200     0       1    1.00%       14        9        5       16       16        0        0        0        0        0        2        0         0        9         0        5         0         0
-      1          0x80110840     0       1    0.43%        6        3        3       11       11        0        0        0        0        0        5        0         0        3         0        3         0         0
-      2  0xffff8a737e09f580     0       6    0.36%        5        0        5        7        7        0        0        0        0        0        2        0         0        0         0        5         0         0
-      3  0xffff8a737e11f580     0       3    0.36%        5        2        3        6        5        1        1        0        0        0        0        0         0        2         0        3         0         0
-      4  0xffff8a737e19f580     0       4    0.36%        5        2        3        7        6        1        1        0        0        0        1        0         0        2         0        3         0         0
-      5  0xffff8a737df9f580     0       6    0.28%        4        0        4        7        7        0        0        0        0        0        3        0         0        0         0        4         0         0
-      6  0xffff8a737e01f580     0       4    0.28%        4        1        3        6        6        0        0        0        0        0        2        0         0        1         0        3         0         0
-      7  0xffff8a737e2b3500     0       1    0.21%        3        0        3        4        4        0        0        0        0        0        1        0         0        0         0        3         0         0
-      8      0x79d220426a00     0      20    0.21%        3        3        0       30       28        3        2        0        0        0       25        0         0        3         0        0         0         0
-      9  0xffff8a6c40fb3100     0       1    0.14%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     10  0xffff8a6c44bce740     0       4    0.14%        2        1        1        4        4        0        0        0        0        0        2        0         0        1         0        1         0         0
-     11  0xffff8a6c49e71740     0       2    0.14%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     12  0xffff8a6c4df22d40     0       1    0.14%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     13  0xffff8a737df1f580     0       4    0.14%        2        1        1        4        3        1        1        0        0        0        1        0         0        1         0        1         0         0
-     14  0xffff8a737e0a1a80     0       2    0.14%        2        2        0        4        3        1        1        0        0        0        0        1         0        2         0        0         0         0
-     15  0xffff8a737e233500     0       4    0.14%        2        2        0        4        4        0        0        0        0        0        2        0         0        2         0        0         0         0
-     16  0xffff8a737e31f580     0       2    0.14%        2        0        2        3        3        0        0        0        0        0        1        0         0        0         0        2         0         0
-     17  0xffff8a737e49f580     0       1    0.14%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
-     18  0xffff8a737e51f580     0       4    0.14%        2        1        1        5        5        0        0        0        0        0        3        0         0        1         0        1         0         0
-     19  0xffff8a737eab3500     0       2    0.14%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     20  0xffff8a737eabd7c0     0       1    0.14%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     21          0x805eb080     0       5    0.14%        2        0        2        5        4        1        1        0        0        0        2        0         0        0         0        2         0         0
-     22          0xe5240b00     0       1    0.14%        2        1        1        3        3        0        0        0        0        0        1        0         0        1         0        1         0         0
-     23          0xe5380a80     0       1    0.14%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+      0          0x80711fc0     0       1    0.43%        6        4        2       14       14        0        0        0        0        0        4        0         2        4         0        2         2         0
+      1  0xffff8a737df1f580     0       8    0.36%        5        0        5        8        6        3        2        0        0        0        1        0         0        0         0        5         0         0
+      2  0xffff8a6c40fdb100     0       1    0.29%        4        0        4        4        4        0        0        0        0        0        0        0         0        0         0        4         0         0
+      3  0xffff8a6ef4e60380     0       1    0.29%        4        4        0        4        4        0        0        0        0        0        0        0         0        4         0        0         0         0
+      4  0xffff8a737e11f580     0       4    0.29%        4        1        3        6        5        1        1        0        0        0        1        0         0        1         0        3         0         0
+      5  0xffff8a737e19f580     0       3    0.29%        4        1        3        6        6        0        0        0        0        0        2        0         0        1         0        3         0         0
+      6  0xffff8a737e31f580     0       4    0.29%        4        1        3        5        5        0        0        0        0        0        0        1         0        1         0        3         0         0
+      7          0x80130480     0      11    0.29%        4        3        1       21       21        0        0        0        0        0       15        0         1        3         0        1         1         0
+      8  0xffff8a737df9f580     0       7    0.22%        3        1        2        7        6        2        1        0        0        0        3        0         0        1         0        2         0         0
+      9  0xffff8a737e39f580     0       1    0.22%        3        0        3        3        3        0        0        0        0        0        0        0         0        0         0        3         0         0
+     10  0xffff8a737e51f580     0       3    0.22%        3        1        2        4        4        0        0        0        0        0        1        0         0        1         0        2         0         0
+     11  0xffff8a737e59f580     0       5    0.22%        3        2        1        5        4        1        1        0        0        0        1        0         0        2         0        1         0         0
+     12          0x807131c0     0       3    0.22%        3        0        3        4        4        0        0        0        0        0        1        0         0        0         0        3         0         0
+     13  0xffff8a6c41058000     0       1    0.14%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     14  0xffff8a6c44021340     0      13    0.14%        2        0        2       19       16        4        3        0        0        0       14        0         0        0         0        2         0         0
+     15  0xffff8a6c44b25700     0       2    0.14%        2        1        1        4        4        0        0        0        0        0        2        0         0        1         0        1         0         0
+     16  0xffff8a6c57f83140     0       1    0.14%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     17  0xffff8a6c9f154740     0       2    0.14%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     18  0xffff8a737e09f580     0       2    0.14%        2        0        2        4        4        0        0        0        0        0        2        0         0        0         0        2         0         0
+     19  0xffff8a737e233500     0       4    0.14%        2        0        2        5        5        0        0        0        0        0        3        0         0        0         0        2         0         0
+     20  0xffff8a737e41f580     0       3    0.14%        2        2        0        3        3        0        0        0        0        0        1        0         0        2         0        0         0         0
+     21      0x760fe1536e40     0       1    0.14%        2        1        1        4        4        0        0        0        0        0        2        0         0        1         0        1         0         0
+     22          0x80130500     0       1    0.14%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     23          0x80130840     0       2    0.14%        2        1        1        3        3        0        0        0        0        0        1        0         0        1         0        1         0         0
+     24          0x8062f200     0       3    0.14%        2        1        1        3        3        0        0        0        0        0        1        0         0        1         0        1         0         0
+     25          0x808eb340     0       1    0.14%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     26          0x83e52c00     0       1    0.14%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     27          0x8b7f8e00     0       1    0.14%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     28          0xe6880d00     0       1    0.14%        2        1        1        2        2        1        0        0        0        0        0        0         0        1         0        1         0         0
+     29          0xe68b5240     0       2    0.14%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     30          0xe69c0e00     0      12    0.14%        2        1        1       14       14        0        0        0        0        0        9        1         2        1         0        1         0         0
+     31          0xe69c1500     0       1    0.14%        2        1        1        3        2        1        0        0        1        0        0        0         0        1         0        1         0         0
 
 =================================================
       Shared Cache Line Distribution Pareto      
 =================================================
 #
-#        ----- HITM -----  ------- Store Refs ------  --------- Data address ---------                      ---------- cycles ----------    Total       cpu                                                                                                              Shared                                                                                                         
-#   Num  RmtHitm  LclHitm   L1 Hit  L1 Miss      N/A              Offset  Node  PA cnt        Code address  rmt hitm  lcl hitm      load  records       cnt                                                                                            Symbol            Object                                                                                        Source:Line  Node
-# .....  .......  .......  .......  .......  .......  ..................  ....  ......  ..................  ........  ........  ........  .......  ........  ................................................................................................  ................  .................................................................................................  ....
+#        ----- HITM -----  ------- Store Refs ------  --------- Data address ---------                      ---------- cycles ----------    Total       cpu                                                                                                       Shared                                                                                                 
+#   Num  RmtHitm  LclHitm   L1 Hit  L1 Miss      N/A              Offset  Node  PA cnt        Code address  rmt hitm  lcl hitm      load  records       cnt                                                                                     Symbol            Object                                                                                Source:Line  Node
+# .....  .......  .......  .......  .......  .......  ..................  ....  ......  ..................  ........  ........  ........  .......  ........  .........................................................................................  ................  .........................................................................................  ....
 #
   ----------------------------------------------------------------------
-      0        5        9        0        0        0          0xe5328200
+      0        2        4        0        0        0          0x80711fc0
   ----------------------------------------------------------------------
-          40.00%   44.44%    0.00%    0.00%    0.00%                 0x0     0       1      0x79d20ffceb19       374        94       377        6         6  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                                             [JIT] tid 144022  void java.lang.MpscCarrierThread.eventLoopSteal()+409                                               0
-          20.00%   33.33%    0.00%    0.00%    0.00%                 0x0     0       1      0x79d20ffcf114       375        94        10        4         5  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                                             [JIT] tid 144022  void java.lang.MpscCarrierThread.eventLoopSteal()+1940                                              0
-           0.00%   22.22%    0.00%    0.00%    0.00%                 0x0     0       1      0x79d20ffcf124         0       162         0        3         3  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                                             [JIT] tid 144022  void java.lang.MpscCarrierThread.eventLoopSteal()+1956                                              0
-          20.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x79d20ff4e5ec       459         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 144022  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2924   0
-          20.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x79d20ffceb27       398         0         0        2         2  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                                             [JIT] tid 144022  void java.lang.MpscCarrierThread.eventLoopSteal()+423                                               0
+          50.00%   25.00%    0.00%    0.00%    0.00%                0x10     0       1      0x760fc7fb9bad       428       134       233        7         6  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                                      [JIT] tid 156776  void java.lang.MpscCarrierThread.eventLoopSteal()+429                                       0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x760fc7fae399       368         0         0        1         1  [.] boolean java.lang.MpscCarrierThread.workBeforeBlocking()                               [JIT] tid 156776  boolean java.lang.MpscCarrierThread.workBeforeBlocking()+1305                               0
+           0.00%   25.00%    0.00%    0.00%    0.00%                0x10     0       1      0x760fc7fae3a7         0       211         0        1         1  [.] boolean java.lang.MpscCarrierThread.workBeforeBlocking()                               [JIT] tid 156776  boolean java.lang.MpscCarrierThread.workBeforeBlocking()+1319                               0
+           0.00%   25.00%    0.00%    0.00%    0.00%                0x10     0       1      0x760fc7fb9c5b         0        92       238        2         2  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                                      [JIT] tid 156776  void java.lang.MpscCarrierThread.eventLoopSteal()+603                                       0
+           0.00%   25.00%    0.00%    0.00%    0.00%                0x10     0       1      0x760fc7fb9c69         0        79         0        1         1  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                                      [JIT] tid 156776  void java.lang.MpscCarrierThread.eventLoopSteal()+617                                       0
 
   ----------------------------------------------------------------------
-      1        3        3        0        0        0          0x80110840
+      1        5        0        2        0        0  0xffff8a737df1f580
   ----------------------------------------------------------------------
-          66.67%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x79d20ff4dc28       336        62         0        8         6  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 144022  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+424   0
-          33.33%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x79d20ff85c46       402         0         0        2         1  [.] void io.github.pderop.looma.impl.ActorRuntime.workFinished()                                  [JIT] tid 144022  void io.github.pderop.looma.impl.ActorRuntime.workFinished()+70                                    0
+           0.00%    0.00%  100.00%    0.00%    0.00%                 0x0     0       1  0xffffffffbb93b37c         0         0         0        2         1  [k] _raw_spin_unlock_irqrestore  [kernel.kallsyms]  _raw_spin_unlock_irqrestore+12   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9       368         0         0        5         4  [k] __mod_timer                  [kernel.kallsyms]  __mod_timer+489                  0
 
   ----------------------------------------------------------------------
-      2        5        0        0        0        0  0xffff8a737e09f580
+      2        4        0        0        0        0  0xffff8a6c40fdb100
   ----------------------------------------------------------------------
-          20.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffffbb93bdea       617         0         0        1         1  [k] native_queued_spin_lock_slowpath  [kernel.kallsyms]  native_queued_spin_lock_slowpath+122   0
-          60.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9       391         0         0        4         3  [k] __mod_timer                       [kernel.kallsyms]  __mod_timer+489                        0
-          20.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffffba77422f       304         0         0        1         1  [k] __mod_timer                       [kernel.kallsyms]  __mod_timer+591                        0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffffba6a4014       443         0         0        4         3  [k] call_function_single_prep_ipi  [kernel.kallsyms]  call_function_single_prep_ipi+52   0
 
   ----------------------------------------------------------------------
-      3        3        2        1        0        0  0xffff8a737e11f580
+      3        0        4        0        0        0  0xffff8a6ef4e60380
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffffbab6f60d         0        48         0        4         1  [k] do_epoll_ctl  [kernel.kallsyms]  do_epoll_ctl+285   0
+
+  ----------------------------------------------------------------------
+      4        3        1        1        0        0  0xffff8a737e11f580
   ----------------------------------------------------------------------
            0.00%    0.00%  100.00%    0.00%    0.00%                 0x0     0       1  0xffffffffbb93b37c         0         0         0        1         1  [k] _raw_spin_unlock_irqrestore  [kernel.kallsyms]  _raw_spin_unlock_irqrestore+12   0
-         100.00%   50.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9       419        56         0        4         4  [k] __mod_timer                  [kernel.kallsyms]  __mod_timer+489                  0
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffffba773170         0        56         0        1         1  [k] enqueue_timer                [kernel.kallsyms]  enqueue_timer+48                 0
+         100.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9       348        33         0        4         4  [k] __mod_timer                  [kernel.kallsyms]  __mod_timer+489                  0
 
   ----------------------------------------------------------------------
-      4        3        2        1        0        0  0xffff8a737e19f580
+      5        3        1        0        0        0  0xffff8a737e19f580
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9       446        59         0        4         4  [k] __mod_timer  [kernel.kallsyms]  __mod_timer+489   0
+
+  ----------------------------------------------------------------------
+      6        3        1        0        0        0  0xffff8a737e31f580
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9       395         0         0        3         2  [k] __mod_timer     [kernel.kallsyms]  __mod_timer+489     0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffffba77407d         0        75         0        1         1  [k] __mod_timer     [kernel.kallsyms]  __mod_timer+157     0
+
+  ----------------------------------------------------------------------
+      7        1        3        0        0        0          0x80130480
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x760fc7f60f41       538         0       248        3         3  [.] void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)     [JIT] tid 156776  void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)+321       0
+           0.00%   33.33%    0.00%    0.00%    0.00%                 0x8     0       1      0x760fc7f8d0ee         0        91         0        2         2  [.] void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()                  [JIT] tid 156776  void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()+2542                   0
+           0.00%   66.67%    0.00%    0.00%    0.00%                0x18     0       1      0x760fc7f8d0f8         0        80         0       14         8  [.] void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()                  [JIT] tid 156776  void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()+2552                   0
+
+  ----------------------------------------------------------------------
+      8        2        1        1        0        0  0xffff8a737df9f580
   ----------------------------------------------------------------------
            0.00%    0.00%  100.00%    0.00%    0.00%                 0x0     0       1  0xffffffffbb93b37c         0         0         0        1         1  [k] _raw_spin_unlock_irqrestore  [kernel.kallsyms]  _raw_spin_unlock_irqrestore+12   0
-         100.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9       365        54         0        5         4  [k] __mod_timer                  [kernel.kallsyms]  __mod_timer+489                  0
+           0.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffffbb93bc49         0         0         0        0         1  [k] _raw_spin_unlock             [kernel.kallsyms]  _raw_spin_unlock+9               0
+          50.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9       374        61         0        2         2  [k] __mod_timer                  [kernel.kallsyms]  __mod_timer+489                  0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffffba77422f       355         0         0        2         1  [k] __mod_timer                  [kernel.kallsyms]  __mod_timer+591                  0
 
   ----------------------------------------------------------------------
-      5        4        0        0        0        0  0xffff8a737df9f580
+      9        3        0        0        0        0  0xffff8a737e39f580
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9       365         0         0        4         2  [k] __mod_timer                       [kernel.kallsyms]  __mod_timer+489                       0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9       422         0         0        3         2  [k] __mod_timer  [kernel.kallsyms]  __mod_timer+489   0
 
   ----------------------------------------------------------------------
-      6        3        1        0        0        0  0xffff8a737e01f580
+     10        2        1        0        0        0  0xffff8a737e51f580
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9       452         0         0        4         4  [k] __mod_timer    [kernel.kallsyms]  __mod_timer+489    0
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffffba77407d         0        82         0        1         1  [k] __mod_timer    [kernel.kallsyms]  __mod_timer+157    0
+          50.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9       374        57         0        2         2  [k] __mod_timer  [kernel.kallsyms]  __mod_timer+489   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffffba77428b       464         0         0        1         1  [k] __mod_timer  [kernel.kallsyms]  __mod_timer+683   0
 
   ----------------------------------------------------------------------
-      7        3        0        0        0        0  0xffff8a737e2b3500
+     11        1        2        1        0        0  0xffff8a737e59f580
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffffba6a400f        67         0         0        4         2  [k] call_function_single_prep_ipi  [kernel.kallsyms]  call_function_single_prep_ipi+47   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffffba701ee7         0        93         0        1         1  [k] __raw_spin_lock_irqsave           [kernel.kallsyms]  __raw_spin_lock_irqsave+39             0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffffbb93bdea       501         0         0        1         1  [k] native_queued_spin_lock_slowpath  [kernel.kallsyms]  native_queued_spin_lock_slowpath+122   0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x10     0       1  0xffffffffba7742f8         0         0         0        1         1  [k] __mod_timer                       [kernel.kallsyms]  __mod_timer+792                        0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffffba7741f5         0        59         0        1         1  [k] __mod_timer                       [kernel.kallsyms]  __mod_timer+533                        0
 
   ----------------------------------------------------------------------
-      8        0        3        2        0        0      0x79d220426a00
+     12        3        0        0        0        0          0x807131c0
   ----------------------------------------------------------------------
-           0.00%   66.67%    0.00%    0.00%    0.00%                 0x0     0       1      0x79d20ff5f361         0        99         0        2         1  [.] void jdk.internal.vm.Continuation.run()                                                                     [JIT] tid 144022  void jdk.internal.vm.Continuation.run()+481                                                                       0
-           0.00%    0.00%   50.00%    0.00%    0.00%                 0x0     0       1      0x79d20ff5f1ec         0         0         0        1         1  [.] void jdk.internal.vm.Continuation.run()                                                                     [JIT] tid 144022  void jdk.internal.vm.Continuation.run()+108                                                                       0
-           0.00%    0.00%   50.00%    0.00%    0.00%                 0x0     0       1      0x79d20ff5f364         0         0         0        1         1  [.] void jdk.internal.vm.Continuation.run()                                                                     [JIT] tid 144022  void jdk.internal.vm.Continuation.run()+484                                                                       0
-           0.00%   33.33%    0.00%    0.00%    0.00%                0x30     0       1      0x79d20ff8a121         0        93         0        1         1  [.] void jdk.internal.vm.StackableScope.popAll()                                                                [JIT] tid 144022  void jdk.internal.vm.StackableScope.popAll()+33                                                                   0
+          66.67%    0.00%    0.00%    0.00%    0.00%                0x34     0       1      0x760fc7f8c99a       394         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()  [JIT] tid 156776  void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()+666    0
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x34     0       1      0x760fc7f8cc29       353         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()  [JIT] tid 156776  void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()+1321   0
 
   ----------------------------------------------------------------------
-      9        2        0        0        0        0  0xffff8a6c40fb3100
+     13        2        0        0        0        0  0xffff8a6c41058000
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffffba6a4014       446         0         0        2         2  [k] call_function_single_prep_ipi  [kernel.kallsyms]  call_function_single_prep_ipi+52   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffffba6a4014       401         0         0        2         2  [k] call_function_single_prep_ipi  [kernel.kallsyms]  call_function_single_prep_ipi+52   0
 
   ----------------------------------------------------------------------
-     10        1        1        0        0        0  0xffff8a6c44bce740
+     14        2        0        3        0        0  0xffff8a6c44021340
   ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffffbab6e324         0       161         0        1         1  [k] ep_poll                           [kernel.kallsyms]  ep_poll+148                            0
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffffbb93bdea       462         0         0        1         1  [k] native_queued_spin_lock_slowpath  [kernel.kallsyms]  native_queued_spin_lock_slowpath+122   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffffbab6c0c2       374         0         0        1         1  [k] ep_start_scan                     [kernel.kallsyms]  ep_start_scan+50                       0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffffbab6e3c1       381         0         0        2         1  [k] ep_poll                           [kernel.kallsyms]  ep_poll+305                            0
+           0.00%    0.00%   33.33%    0.00%    0.00%                0x20     0       1  0xffffffffbb93b37c         0         0         0        1         1  [k] _raw_spin_unlock_irqrestore       [kernel.kallsyms]  _raw_spin_unlock_irqrestore+12         0
+           0.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffffbb93bc99         0         0         0        0         1  [k] _raw_spin_unlock_irq              [kernel.kallsyms]  _raw_spin_unlock_irq+9                 0
+           0.00%    0.00%   66.67%    0.00%    0.00%                0x20     0       1  0xffffffffbb93bdf6         0         0         0        2         1  [k] native_queued_spin_lock_slowpath  [kernel.kallsyms]  native_queued_spin_lock_slowpath+134   0
 
   ----------------------------------------------------------------------
-     11        1        1        0        0        0  0xffff8a6c49e71740
+     15        1        1        0        0        0  0xffff8a6c44b25700
   ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x18     0       1  0xffffffffbb7148c5         0        89         0        1         1  [k] tcp_recvmsg_locked  [kernel.kallsyms]  tcp_recvmsg_locked+309   0
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x26     0       1  0xffffffffbb5e7376       436         0         0        1         1  [k] kfree_skbmem        [kernel.kallsyms]  kfree_skbmem+6           0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffffbb93441c       413         0         0        2         1  [k] mutex_lock        [kernel.kallsyms]  mutex_lock+28          0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x28     0       1  0xffffffffbab6dddc         0        92         0        1         1  [k] ep_poll_callback  [kernel.kallsyms]  ep_poll_callback+204   0
 
   ----------------------------------------------------------------------
-     12        1        1        0        0        0  0xffff8a6c4df22d40
+     16        1        1        0        0        0  0xffff8a6c57f83140
   ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                0x26     0       1  0xffffffffbb5e7376       379        95         0        2         2  [k] kfree_skbmem  [kernel.kallsyms]  kfree_skbmem+6   0
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x18     0       1  0xffffffffbb7148c5       383        96         0        2         2  [k] tcp_recvmsg_locked  [kernel.kallsyms]  tcp_recvmsg_locked+309   0
 
   ----------------------------------------------------------------------
-     13        1        1        1        0        0  0xffff8a737df1f580
+     17        1        1        0        0        0  0xffff8a6c9f154740
   ----------------------------------------------------------------------
-           0.00%    0.00%  100.00%    0.00%    0.00%                 0x0     0       1  0xffffffffbb93b37c         0         0         0        1         1  [k] _raw_spin_unlock_irqrestore  [kernel.kallsyms]  _raw_spin_unlock_irqrestore+12   0
-         100.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9       357         8         0        2         2  [k] __mod_timer                  [kernel.kallsyms]  __mod_timer+489                  0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1  0xffffffffbb7148c5       365         0         0        1         1  [k] tcp_recvmsg_locked  [kernel.kallsyms]  tcp_recvmsg_locked+309   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x26     0       1  0xffffffffbb5eba9f         0       148         0        1         1  [k] skb_release_data    [kernel.kallsyms]  skb_release_data+383     0
 
   ----------------------------------------------------------------------
-     14        0        2        1        0        0  0xffff8a737e0a1a80
+     18        2        0        0        0        0  0xffff8a737e09f580
   ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffffba776f1d         0        49        12        3         1  [k] hrtimer_interrupt          [kernel.kallsyms]  hrtimer_interrupt+13            0
-           0.00%    0.00%  100.00%    0.00%    0.00%                0x28     0       1  0xffffffffba775d79         0         0         0        1         1  [k] __hrtimer_next_event_base  [kernel.kallsyms]  __hrtimer_next_event_base+217   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9       403         0         0        3         2  [k] __mod_timer  [kernel.kallsyms]  __mod_timer+489   0
 
   ----------------------------------------------------------------------
-     15        0        2        0        0        0  0xffff8a737e233500
+     19        2        0        0        0        0  0xffff8a737e233500
   ----------------------------------------------------------------------
-           0.00%   50.00%    0.00%    0.00%    0.00%                 0xc     0       1  0xffffffffba6b5a9f         0        98         0        1         1  [k] select_idle_sibling            [kernel.kallsyms]  select_idle_sibling+735            0
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffffba6a400f         0        32         0        1         1  [k] call_function_single_prep_ipi  [kernel.kallsyms]  call_function_single_prep_ipi+47   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffffba6a400f        62         0         0        2         2  [k] call_function_single_prep_ipi  [kernel.kallsyms]  call_function_single_prep_ipi+47   0
 
   ----------------------------------------------------------------------
-     16        2        0        0        0        0  0xffff8a737e31f580
+     20        0        2        0        0        0  0xffff8a737e41f580
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9       371         0         0        2         2  [k] __mod_timer  [kernel.kallsyms]  __mod_timer+489   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9         0        63         0        1         1  [k] __mod_timer  [kernel.kallsyms]  __mod_timer+489   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffffba77407d         0        75         0        1         1  [k] __mod_timer  [kernel.kallsyms]  __mod_timer+157   0
 
   ----------------------------------------------------------------------
-     17        0        2        0        0        0  0xffff8a737e49f580
+     21        1        1        0        0        0      0x760fe1536e40
   ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9         0        57         0        2         2  [k] __mod_timer  [kernel.kallsyms]  __mod_timer+489   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x760fc7f61123       738         0         0        3         3  [.] void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)  [JIT] tid 156776  void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)+803   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x18     0       1      0x760fc7faffac         0        95         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.startBurst()                                      [JIT] tid 156776  void io.github.pderop.looma.impl.ActorCell.startBurst()+684                                       0
 
   ----------------------------------------------------------------------
-     18        1        1        0        0        0  0xffff8a737e51f580
+     22        0        2        0        0        0          0x80130500
   ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffffba7741c9       454        54         0        2         2  [k] __mod_timer    [kernel.kallsyms]  __mod_timer+489    0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x24     0       1      0x760fc7f8cf54         0        85         0        2         2  [.] void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()  [JIT] tid 156776  void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()+2132   0
 
   ----------------------------------------------------------------------
-     19        2        0        0        0        0  0xffff8a737eab3500
+     23        1        1        0        0        0          0x80130840
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                 0xc     0       1  0xffffffffba6b5a9f       473         0         0        1         1  [k] select_idle_sibling            [kernel.kallsyms]  select_idle_sibling+735            0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffffba6a400f       102         0         0        1         1  [k] call_function_single_prep_ipi  [kernel.kallsyms]  call_function_single_prep_ipi+47   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x24     0       1      0x760fc7f8c99a       361         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()  [JIT] tid 156776  void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()+666    0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x24     0       1      0x760fc7f8cc29         0        81         0        1         1  [.] void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()  [JIT] tid 156776  void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()+1321   0
 
   ----------------------------------------------------------------------
-     20        1        1        0        0        0  0xffff8a737eabd7c0
+     24        1        1        0        0        0          0x8062f200
   ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffffbb5f5b20       407        95         0        2         2  [k] skb_attempt_defer_free  [kernel.kallsyms]  skb_attempt_defer_free+160   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x760fc7f8c99a       406         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()  [JIT] tid 156776  void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()+666    0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x760fc7f8ca83         0       100         0        1         1  [.] void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()  [JIT] tid 156776  void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()+899    0
 
   ----------------------------------------------------------------------
-     21        2        0        1        0        0          0x805eb080
+     25        2        0        0        0        0          0x808eb340
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x79d20ff67277       383         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 144022  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+631    0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x79d20ff67153       359         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 144022  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+339    0
-           0.00%    0.00%  100.00%    0.00%    0.00%                0x38     0       1      0x79d20ff687a8         0         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 144022  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+6056   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x3c     0       1      0x760fc7f8ca83       373         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()  [JIT] tid 156776  void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()+899   0
 
   ----------------------------------------------------------------------
-     22        1        1        0        0        0          0xe5240b00
+     26        0        2        0        0        0          0x83e52c00
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x79d20ff3bb47       376         0         0        1         1  [.] void io.github.pderop.looma.examples.user.FrontendServer.send(long, boolean, java.util.Random, java.util.concurrent.atomic.AtomicLong)  [JIT] tid 144022  void io.github.pderop.looma.examples.user.FrontendServer.send(long, boolean, java.util.Random, java.util.concurrent.atomic.AtomicLong)+327   0
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1      0x79d20ff4ef36         0        59         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)                                            [JIT] tid 144022  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+5302                                            0
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x760fc7f61d37         0        53         0        2         1  [.] void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)  [JIT] tid 156776  void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)+3895   0
 
   ----------------------------------------------------------------------
-     23        1        1        0        0        0          0xe5380a80
+     27        1        1        0        0        0          0x8b7f8e00
   ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x79d20ff95534         0        92         0        1         1  [.] void java.lang.SearchGate.signal(java.lang.MpscCarrierThread)  [JIT] tid 144022  void java.lang.SearchGate.signal(java.lang.MpscCarrierThread)+564   0
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x79d20ffcf0a7       370         0         0        1         1  [.] void java.lang.MpscCarrierThread.eventLoopSteal()              [JIT] tid 144022  void java.lang.MpscCarrierThread.eventLoopSteal()+1831              0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x24     0       1      0x760fc7f8c99a         0       102         0        1         1  [.] void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()  [JIT] tid 156776  void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()+666    0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x24     0       1      0x760fc7f8cc29       384         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()  [JIT] tid 156776  void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()+1321   0
+
+  ----------------------------------------------------------------------
+     28        1        1        0        0        0          0xe6880d00
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x3c     0       1      0x760fc7f6257c       387         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)  [JIT] tid 156776  void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)+6012   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x3c     0       1      0x760fc7fb9c17         0        85         0        1         1  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                                            [JIT] tid 156776  void java.lang.MpscCarrierThread.eventLoopSteal()+535                                              0
+           0.00%    0.00%    0.00%    0.00%    0.00%                0x3c     0       1      0x760fc7fb9b4c         0         0         0        0         1  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                                            [JIT] tid 156776  void java.lang.MpscCarrierThread.eventLoopSteal()+332                                              0
+
+  ----------------------------------------------------------------------
+     29        1        1        0        0        0          0xe68b5240
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x760fc7f8c9af         0        98         0        1         1  [.] void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()  [JIT] tid 156776  void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()+687   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x760fc7f8cae3       353         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()  [JIT] tid 156776  void io.github.pderop.looma.impl.ActorRuntime$$Lambda/0x000000002b0ce400.run()+995   0
+
+  ----------------------------------------------------------------------
+     30        1        1        0        0        0          0xe69c0e00
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x760fc7fae1b8       368         0        32        4         3  [.] boolean java.lang.MpscCarrierThread.workBeforeBlocking()                                     [JIT] tid 156776  boolean java.lang.MpscCarrierThread.workBeforeBlocking()+824                                       0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x28     0       1      0x760fc7fba8b4         0        92        11        2         2  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                                            [JIT] tid 156776  void java.lang.MpscCarrierThread.eventLoopSteal()+3764                                             0
+
+  ----------------------------------------------------------------------
+     31        1        1        0        0        1          0xe69c1500
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x28     0       1      0x760fc7fb9d20         0        94         0        1         1  [.] void java.lang.MpscCarrierThread.eventLoopSteal()  [JIT] tid 156776  void java.lang.MpscCarrierThread.eventLoopSteal()+800    0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x760fc7fbaa56       437         0         0        1         1  [.] void java.lang.MpscCarrierThread.eventLoopSteal()  [JIT] tid 156776  void java.lang.MpscCarrierThread.eventLoopSteal()+4182   0
+           0.00%    0.00%    0.00%    0.00%  100.00%                0x28     0       1      0x760fc7fba502         0         0         0        1         1  [.] void java.lang.MpscCarrierThread.eventLoopSteal()  [JIT] tid 156776  void java.lang.MpscCarrierThread.eventLoopSteal()+2818   0
