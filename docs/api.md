@@ -354,6 +354,25 @@ completion, as above — is exactly what it is for. What the forked thread must 
 actor's fields: take what it needs by value and hand the outcome back as a message, or the
 "one message at a time" guarantee that makes those fields safe is gone.
 
+### Platform threads started from an actor
+
+On Linux, a new thread runs only on the CPUs of the thread that starts it, and under `affine` and
+`mpsc` a carrier runs on one CPU. A platform thread started from an actor would keep that one CPU.
+Under `mpsc`, Looma gives every CPU back to the threads the JDK starts: its timers, and the
+common pool behind `parallelStream` and `supplyAsync`. Your own threads and executors need a
+factory that does the same. Take it from the system, and give the executor to the actors that
+use it:
+
+```java
+ThreadFactory platform = system.scheduler().platformThreadFactory();
+ExecutorService workers = Executors.newFixedThreadPool(4, platform);
+```
+
+An executor starts its threads at its first tasks, so this matters even for one created in
+`main`, if an actor gives it its first tasks. Under the builtin scheduler and `affine`, the factory
+is `Thread.ofPlatform().factory()`. [`schedulers.md`](schedulers.md#threads-started-from-an-actor)
+lists each case.
+
 ### Pinning is the case that is genuinely bad
 
 A **native frame** on the stack — a JNI call, or a foreign-function downcall — cannot unmount the
@@ -633,6 +652,8 @@ Stated plainly, so nothing is inferred from silence:
 - **No mailbox bounds or priorities.** One `ConcurrentLinkedQueue` per actor by default;
   `Builder.mailboxQueueFactory` replaces it with anything MPSC and non-blocking.
 - **No scheduler/timer service.** Use a `ScheduledExecutorService` and `tell` yourself a message.
+  Create it with `platformThreadFactory()`, so that its thread does not stay on the CPU of the
+  actor that schedules first ([§6](#platform-threads-started-from-an-actor)).
 - **No dead-letter queue.** A `tell` to a stopped actor is dropped, not diverted.
 
 ## See also

@@ -51,6 +51,11 @@ final class MpscPool {
 	 * starts that thread from the carrier, at its first timed park. Started here,
 	 * the timer threads keep every CPU.
 	 *
+	 * <p>
+	 * This is a workaround, until the JDK solves it. It relies on two details of
+	 * the JDK: the timer thread is chosen by the id of the carrier, and it never
+	 * ends. If one of them changes, {@code MpscInstallTest} fails.
+	 *
 	 * @throws IllegalStateException
 	 *             if the scheduler in force is not the MPSC one, or has another
 	 *             number of carriers
