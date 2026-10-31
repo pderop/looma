@@ -269,15 +269,15 @@ public interface ActorContext {
 	 *
 	 * <p>
 	 * The affinity guarantee depends on which
-	 * {@code io.github.pderop.looma.spi.ActorScheduler} placed this actor: a
-	 * carrier-affine scheduler pins a thread created here to this actor's home
+	 * {@code io.github.pderop.looma.spi.ActorScheduler} placed this actor: under a
+	 * carrier-affine scheduler, a thread created here starts on this actor's home
 	 * carrier, so it shares its locality and can complete work back into the actor
-	 * (e.g. {@code self().tell(result, self())}) without a cross-carrier hop; the
-	 * JDK builtin scheduler hands out a plain, unpinned virtual thread on the JDK's
-	 * default scheduler instead. Either way, blocking directly inside
-	 * {@link Actor#onReceive} instead of offloading here occupies this actor's own
-	 * burst and stalls its own mailbox — that never changes. Neighbours have bursts
-	 * of their own.
+	 * (e.g. {@code self().tell(result, self())}) without a cross-carrier hop, but
+	 * an idle carrier may steal it; the JDK builtin scheduler hands out a plain
+	 * virtual thread on the JDK's default scheduler instead. Either way, blocking
+	 * directly inside {@link Actor#onReceive} instead of offloading here occupies
+	 * this actor's own burst and stalls its own mailbox — that never changes.
+	 * Neighbours have bursts of their own.
 	 *
 	 * <p>
 	 * The engine counts every thread created through this factory as in-flight

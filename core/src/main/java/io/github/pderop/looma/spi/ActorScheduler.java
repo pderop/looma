@@ -45,16 +45,10 @@ import java.util.concurrent.TimeUnit;
  * genuinely different questions.
  *
  * <p>
- * <b>Both {@link #pinnedCpu()} and {@link #clusterOf(int)} exist purely as a
- * compile-time firewall, not because the dispatch path needs them.</b> They let
- * {@code benchmarks}' {@code CarrierPinning} and {@code examples}'
- * {@code HttpBenchMain.reportCarrierPinning} keep their "refuse to publish
- * numbers from an unpinned fork" and "warn on a single-LLC host" guards while
- * talking only to this interface — neither module ever imports anything from
- * the scheduler module itself. That is precisely what lets {@code benchmarks}
- * and {@code examples} stay compiled at {@code release=25}, without
- * {@code --enable-preview}, on a stock JDK: the topology questions those two
- * guards ask are answerable through the SPI alone.
+ * <b>{@link #pinnedCpu()} and {@link #clusterOf(int)} are diagnostics.</b> The
+ * dispatch path never reads them. They let a test or a startup banner ask
+ * whether the carriers are pinned, and how they share caches, through this
+ * interface alone, without naming the scheduler module.
  *
  * <p>
  * <b>An implementation never touches in-flight accounting.</b>

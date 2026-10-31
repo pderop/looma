@@ -70,9 +70,9 @@ public interface Actor {
 
 	/**
 	 * Called once, before this actor processes its first message, with the context
-	 * it will keep for its whole lifetime (or, after a {@link Directive#RESTART},
-	 * the context of the fresh instance created by the
-	 * {@link java.util.function.Supplier} passed at spawn time).
+	 * it will keep for its whole lifetime. After a {@link Directive#RESTART}, the
+	 * fresh instance from the {@link java.util.function.Supplier} passed at spawn
+	 * time gets the same context.
 	 *
 	 * <p>
 	 * Runs in the actor's first burst, through the same mailbox as
@@ -154,10 +154,11 @@ public interface Actor {
 	 * next message.
 	 *
 	 * <p>
-	 * A <em>pin</em> ({@code synchronized} around a blocking call, JNI) is the case
-	 * that is genuinely costly: it cannot unmount the virtual thread at all, so it
-	 * holds the carrier itself — one pool worker under the JDK builtin scheduler,
-	 * but every actor sharing that home carrier under a carrier-affine one.
+	 * A <em>pin</em> (a JNI or foreign-function call on the stack) is the case that
+	 * is genuinely costly. {@code synchronized} no longer pins since JDK 24 (JEP
+	 * 491). A pin cannot unmount the virtual thread at all, so it holds the carrier
+	 * itself — one pool worker under the JDK builtin scheduler, but every actor
+	 * sharing that home carrier under a carrier-affine one.
 	 *
 	 * @param message
 	 *            the message to handle

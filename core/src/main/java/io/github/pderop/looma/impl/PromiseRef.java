@@ -16,7 +16,6 @@ package io.github.pderop.looma.impl;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicLong;
 
 import io.github.pderop.looma.ActorRef;
 import io.github.pderop.looma.Message;
@@ -58,10 +57,6 @@ final class PromiseRef<R extends Message> implements ActorRef {
 
 	private static final Logger LOG = System.getLogger(PromiseRef.class.getName());
 
-	private static final AtomicLong NEXT_ID = new AtomicLong();
-
-	private final long id = NEXT_ID.getAndIncrement();
-
 	/**
 	 * The path of the actor this promise was created to {@code ask} — kept only for
 	 * the debug log and the {@link ClassCastException} message below, never
@@ -93,9 +88,13 @@ final class PromiseRef<R extends Message> implements ActorRef {
 		this.future = future;
 	}
 
+	/**
+	 * A name for logs only, made when asked for. Not unique: a counter shared by
+	 * every {@code ask} would cost a contended write per request.
+	 */
 	@Override
 	public String name() {
-		return "ask-" + id;
+		return "ask-" + Integer.toHexString(System.identityHashCode(this));
 	}
 
 	@Override

@@ -46,7 +46,7 @@ import io.github.pderop.looma.spi.MailboxQueueFactory;
  * cannot span without a {@code module-info.java}.
  *
  * <p>
- * The actor engine itself — mailboxes, one virtual thread per actor, hierarchy,
+ * The actor engine itself — mailboxes, one virtual thread per burst, hierarchy,
  * supervision, {@code ask}, the graceful cascading stop — lives in
  * {@link ActorRuntime} and {@link ActorCell} and never differs between the two
  * schedulers. This class contributes only placement: which carrier an actor

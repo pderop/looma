@@ -234,6 +234,10 @@ receiving actor replies exactly as it would to anyone else:
 case AccountMessage.GetBalance ignored -> sender.tell(new Balance(balance), context.self());
 ```
 
+The reply completes the future on the thread of the actor that replies, inside its burst. A stage
+chained with `thenApply` or `thenAccept` runs there too, and that actor handles nothing else
+meanwhile: chain slow work with `thenApplyAsync`.
+
 The returned future completes **at most once**: a second reply is silently dropped. There is no
 timeout on `ask` itself — an actor that never replies leaves the future open. Bound it with
 `CompletableFuture.orTimeout` (or `get` with a timeout) when you need one:
@@ -286,7 +290,7 @@ When there is no useful common supertype at all, the one-argument
 | Situation | `tell` | `ask` |
 | --- | --- | --- |
 | target already stopped, or unknown | silently dropped (dead letter) | future fails synchronously with `IllegalStateException` |
-| system shutting down | silently dropped | fails synchronously with `IllegalStateException` |
+| system shutting down | dropped once that actor is stopping: a root at once, a descendant when the cascade reaches it | fails synchronously with `IllegalStateException` |
 | target accepted the request, then stopped without replying | — | future stays open — bound it with `orTimeout` |
 | no reply | — | future stays open — bound it with `orTimeout` |
 
@@ -628,8 +632,9 @@ if (!system.awaitTermination(5, TimeUnit.SECONDS)) {
 ```
 
 `shutdown()` stops every root actor, each mailbox drains, the cascade descends, `postStop` unwinds
-back up to the roots. Once it has begun, `tell` is silently dropped, and `ask` and `spawn` throw
-`IllegalStateException`.
+back up to the roots. Once it has begun, `ask` fails at once with `IllegalStateException`, and
+`spawn` throws it. A `tell` is silently dropped once its actor is stopping: a root at once, a
+descendant when the cascade reaches it, after its parent's mailbox has drained.
 
 `awaitTermination` returns `true` once every actor is unregistered **and** every unit of in-flight
 work has finished — the actors' bursts *and* every thread created through `vThreadFactory()`. That is what

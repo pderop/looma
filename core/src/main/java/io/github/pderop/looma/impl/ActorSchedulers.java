@@ -103,9 +103,9 @@ final class ActorSchedulers {
 	 * because {@link ServiceLoader}'s iterator has already consumed the offending
 	 * entry by the time it throws — the next {@code hasNext()} resumes at the
 	 * following one. This bound is what keeps a hypothetical iterator that does
-	 * <em>not</em> advance from spinning forever inside
-	 * {@code VirtualThread.<clinit>}-adjacent initialisation, where an infinite
-	 * loop would be close to undiagnosable. No real classpath comes near it.
+	 * <em>not</em> advance from spinning forever inside {@code build()}, where an
+	 * infinite loop would be close to undiagnosable. No real classpath comes near
+	 * it.
 	 */
 	private static final int MAX_PROVIDER_FAILURES = 64;
 

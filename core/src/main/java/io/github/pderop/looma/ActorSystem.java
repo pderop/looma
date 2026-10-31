@@ -132,10 +132,10 @@ public interface ActorSystem {
 	 * banners and pinning probes need.
 	 *
 	 * <p>
-	 * On the contract rather than on an implementation type because the two
-	 * consumers of it — an example's startup banner and the benchmark harness'
-	 * "refuse to publish numbers from an unpinned fork" guard — must keep working
-	 * whichever scheduler is installed, without naming one.
+	 * On the contract rather than on an implementation type because its users — the
+	 * startup banner of the benchmark, the tests that check the pinning, and the
+	 * {@link ActorScheduler#platformThreadFactory()} of an application — must keep
+	 * working whichever scheduler is installed, without naming one.
 	 */
 	ActorScheduler scheduler();
 
@@ -333,10 +333,13 @@ public interface ActorSystem {
 	 * pool shared by every virtual thread in the process.
 	 *
 	 * <p>
-	 * Once shutdown has begun, {@link ActorRef#tell} to any actor in this system is
-	 * silently dropped (dead-letter semantics) and {@link ActorRef#ask} fails
-	 * immediately with {@link IllegalStateException}; a new {@link #spawn} throws
-	 * {@link IllegalStateException} for the same reason.
+	 * Once shutdown has begun, {@link ActorRef#ask} to any actor of this system
+	 * fails immediately with {@link IllegalStateException}, and a new
+	 * {@link #spawn} throws {@link IllegalStateException} for the same reason. A
+	 * {@link ActorRef#tell} is silently dropped (dead-letter semantics) once its
+	 * actor is stopping: a root at once, a descendant when the cascade reaches it,
+	 * after its parent's mailbox has drained. Until then, a descendant still takes
+	 * messages, so that its parent can finish its work.
 	 */
 	void shutdown();
 

@@ -544,14 +544,28 @@ final class ActorRuntime {
 	public ThreadFactory countedThreadFactory(ThreadFactory raw) {
 		return runnable -> {
 			inFlight.incrementAndGet();
-			return raw.newThread(() -> {
-				try {
-					runnable.run();
-				} finally {
-					workFinished();
-				}
-			});
+			try {
+				return raw.newThread(() -> {
+					try {
+						runnable.run();
+					} finally {
+						workFinished();
+					}
+				});
+			} catch (Throwable error) {
+				// No thread: nothing will ever count it down.
+				workFinished();
+				throw error;
+			}
 		};
+	}
+
+	/**
+	 * Counts down a thread from {@link #countedThreadFactory(ThreadFactory)} that
+	 * could not be started: its body will never run, so it never would.
+	 */
+	void notStarted() {
+		workFinished();
 	}
 
 	private void workFinished() {

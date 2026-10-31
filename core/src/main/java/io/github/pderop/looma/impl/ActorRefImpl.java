@@ -58,6 +58,7 @@ final class ActorRefImpl implements ActorRef {
 
 	@Override
 	public void tell(Message message, ActorRef sender) {
+		Objects.requireNonNull(message, "message");
 		cell.enqueue(Envelope.message(message, sender));
 	}
 
@@ -76,8 +77,9 @@ final class ActorRefImpl implements ActorRef {
 	 * {@link IllegalStateException} rather than being queued to a mailbox that will
 	 * simply never deliver a reply. A request that passes this check but whose
 	 * target then stops before replying is a different, unavoidable case — the
-	 * future stays open, since by then the message has already been handed to the
-	 * mailbox.
+	 * future stays open, since by then the message is in the mailbox. If the target
+	 * starts stopping between this check and the mailbox, the message is refused
+	 * there, and the future fails the same way.
 	 *
 	 * <p>
 	 * {@code replyType} is carried by the {@link PromiseRef} and checked there, on
@@ -86,16 +88,22 @@ final class ActorRefImpl implements ActorRef {
 	 */
 	@Override
 	public <R extends Message> CompletableFuture<R> ask(Message message, Class<R> replyType) {
+		Objects.requireNonNull(message, "message");
 		Objects.requireNonNull(replyType, "replyType");
 		ActorRuntime runtime = cell.runtime();
 		if (runtime.isShuttingDown() || cell.isTerminatingOrStopped()) {
-			return CompletableFuture
-					.failedFuture(new IllegalStateException("cannot ask a stopped or shutting-down actor: " + path()));
+			return CompletableFuture.failedFuture(refused());
 		}
 		CompletableFuture<R> future = new CompletableFuture<>();
 		PromiseRef<R> promise = new PromiseRef<>(path(), replyType, future);
-		cell.enqueue(Envelope.message(message, promise));
+		if (!cell.enqueue(Envelope.message(message, promise))) {
+			future.completeExceptionally(refused());
+		}
 		return future;
+	}
+
+	private IllegalStateException refused() {
+		return new IllegalStateException("cannot ask a stopped or shutting-down actor: " + path());
 	}
 
 	@Override

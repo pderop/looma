@@ -40,8 +40,8 @@ import io.github.pderop.looma.spi.MailboxQueue;
  * One actor's whole state: its POJO instance, its mailbox, its place in the
  * hierarchy, and the {@link ActorContext} it sees itself through — this class
  * implements {@link ActorContext} directly, since every piece of state that
- * interface exposes ({@link #self()}, its children, its dispatcher) is already
- * state this class owns.
+ * interface exposes ({@link #self()}, its children, its thread factory) is
+ * already state this class owns.
  *
  * <p>
  * An actor has a virtual thread only while it has envelopes to run.
@@ -55,12 +55,13 @@ import io.github.pderop.looma.spi.MailboxQueue;
  * empties holds its carrier for as long as it keeps receiving.
  *
  * <p>
- * Every lifecycle transition — the first {@code preStart}, a restart's
- * before/after hooks, the final {@code postStop} — is threaded through this
- * exact same mailbox as a {@link Envelope#lifecycle(Runnable) lifecycle
- * envelope}: this is what guarantees {@code preStart} always completes before
- * the first message and that a graceful stop can never run concurrently with a
- * message being delivered.
+ * The first {@code preStart} and the final {@code postStop} are threaded
+ * through this exact same mailbox as {@link Envelope#lifecycle(Runnable)
+ * lifecycle envelopes}: this is what guarantees {@code preStart} always
+ * completes before the first message and that a graceful stop can never run
+ * concurrently with a message being delivered. A restart's hooks need no
+ * envelope: they run in the burst that caught the failure, between two
+ * messages.
  */
 final class ActorCell implements ActorContext {
 
@@ -148,6 +149,15 @@ final class ActorCell implements ActorContext {
 
 	private final ActorRefImpl self;
 
+	/** The name of this actor's bursts, built once rather than at every burst. */
+	private final String burstName;
+
+	/**
+	 * The factory of this actor's bursts, counted as in-flight work, built once
+	 * rather than at every burst.
+	 */
+	private final ThreadFactory burstFactory;
+
 	/**
 	 * The envelopes offered and not yet counted down by a burst. A {@code tell}
 	 * that takes it from 0 to 1 starts a burst; the burst ends when it counts it
@@ -187,8 +197,14 @@ final class ActorCell implements ActorContext {
 		this.dispatcher = dispatcher;
 		this.runtime = runtime;
 		this.mailbox = runtime.mailboxQueueFactory().create();
-		this.actor = factory.get();
+		Actor first = factory.get();
+		if (first == null) {
+			throw new IllegalStateException("actor factory returned null for " + path);
+		}
+		this.actor = first;
 		this.self = new ActorRefImpl(this);
+		this.burstName = "looma-" + path;
+		this.burstFactory = runtime.countedThreadFactory(dispatcher.loopThreadFactory());
 	}
 
 	// ================================================================
@@ -322,10 +338,11 @@ final class ActorCell implements ActorContext {
 	 * @throws IllegalArgumentException
 	 *             if {@code name} is blank or contains {@code '/'}
 	 * @throws IllegalStateException
-	 *             if a sibling already occupies the composed path, or if
-	 *             {@code parent} is itself terminating or stopped — spawning under
-	 *             a terminating parent would make its own stop condition ("mailbox
-	 *             drained, children known and themselves stopped") unreachable
+	 *             if {@code factory} returns {@code null}, if a sibling already
+	 *             occupies the composed path, or if {@code parent} is itself
+	 *             terminating or stopped — spawning under a terminating parent
+	 *             would make its own stop condition ("mailbox drained, children
+	 *             known and themselves stopped") unreachable
 	 * @return the new cell, not yet running: the caller finishes registering it and
 	 *         then calls {@link #start()}
 	 */
@@ -386,9 +403,22 @@ final class ActorCell implements ActorContext {
 	 * Starts a burst, from this actor's burst factory, so on its home carrier. Each
 	 * burst is counted as in-flight work through
 	 * {@link ActorRuntime#countedThreadFactory(ThreadFactory)}.
+	 *
+	 * <p>
+	 * If the JVM cannot start the thread, out of memory for instance, the burst is
+	 * no longer counted, and the error goes to the caller. This actor then runs
+	 * nothing more: its count stays above zero, so no later {@code tell} starts a
+	 * burst.
 	 */
 	private void startBurst() {
-		runtime.countedThreadFactory(dispatcher.loopThreadFactory()).newThread(this::runBurst).start();
+		Thread burst = burstFactory.newThread(this::runBurst);
+		try {
+			burst.start();
+		} catch (Throwable error) {
+			runtime.notStarted();
+			LOG.log(Level.ERROR, () -> "actor " + path + " could not start a burst; it runs nothing more", error);
+			throw error;
+		}
 	}
 
 	/**
@@ -486,18 +516,22 @@ final class ActorCell implements ActorContext {
 	 * The envelope is offered before it is counted, so a burst that counts it
 	 * always finds it. A {@code tell} that lands while a burst runs only adds to
 	 * the count, and that burst runs it before it ends.
+	 *
+	 * @return whether the envelope was accepted: {@code false} for a message this
+	 *         cell no longer accepts
 	 */
-	void enqueue(Envelope envelope) {
+	boolean enqueue(Envelope envelope) {
 		if (!envelope.isLifecycle()) {
 			State current = state.get();
 			if (current == State.TERMINATING || current == State.STOPPED) {
-				return;
+				return false;
 			}
 		}
 		mailbox.offer(envelope);
 		if (pending.getAndIncrement() == 0) {
 			startBurst();
 		}
+		return true;
 	}
 
 	/**
@@ -515,7 +549,7 @@ final class ActorCell implements ActorContext {
 	 * cascade when it ends, after its envelopes, as a single thread would.
 	 */
 	private void runBurst() {
-		Thread.currentThread().setName("looma-" + path);
+		Thread.currentThread().setName(burstName);
 		do {
 			if (state.get() != State.STOPPED) {
 				Envelope envelope = mailbox.poll();
@@ -548,9 +582,9 @@ final class ActorCell implements ActorContext {
 		} catch (Throwable error) {
 			/*
 			 * Safety net only: every lifecycle step this engine itself schedules
-			 * (runPreStart, restart(), runFinalStop) already applies its own documented
-			 * failure policy internally. Reaching here would mean one of them let something
-			 * escape it should not have.
+			 * (runPreStart, runFinalStop, the no-op of beginStop) already applies its own
+			 * documented failure policy internally. Reaching here would mean one of them
+			 * let something escape it should not have.
 			 */
 			LOG.log(Level.WARNING, () -> "actor " + path + " lifecycle step failed unexpectedly", error);
 		}

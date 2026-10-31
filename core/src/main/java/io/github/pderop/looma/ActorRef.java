@@ -77,6 +77,8 @@ public interface ActorRef {
 	 *            the actor to attribute the message to, visible to the receiver as
 	 *            {@code onReceive}'s {@code sender} parameter; {@code null} if
 	 *            there is no actor to reply to (e.g. sent from a plain thread)
+	 * @throws NullPointerException
+	 *             if {@code message} is {@code null}
 	 */
 	void tell(Message message, ActorRef sender);
 
@@ -125,6 +127,13 @@ public interface ActorRef {
 	 * {@link CompletableFuture#orTimeout(long, java.util.concurrent.TimeUnit)
 	 * orTimeout} (or {@code get} with a timeout) if you need one.
 	 *
+	 * <p>
+	 * <b>The reply completes the future on the thread of the actor that
+	 * replies</b>, inside its burst. A stage chained with {@code thenApply} or
+	 * {@code thenAccept} runs there too, and the replying actor handles nothing
+	 * else meanwhile. Chain slow work with {@code thenApplyAsync} or
+	 * {@code thenAcceptAsync} instead.
+	 *
 	 * @param <R>
 	 *            the reply type, inferred from {@code replyType} — so the caller
 	 *            never casts
@@ -141,7 +150,7 @@ public interface ActorRef {
 	 *         arrive because the target stops <em>after</em> accepting the request
 	 *         leaves the future open — bound it with {@code orTimeout})
 	 * @throws NullPointerException
-	 *             if {@code replyType} is {@code null}
+	 *             if {@code message} or {@code replyType} is {@code null}
 	 */
 	<R extends Message> CompletableFuture<R> ask(Message message, Class<R> replyType);
 
