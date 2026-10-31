@@ -38,8 +38,8 @@ import io.github.pderop.looma.spi.ActorSchedulerProvider;
  *
  * <p>
  * <b>A provider that fails to even load is caught and skipped, not just one
- * that reports unavailable.</b> A scheduler module compiled with
- * {@code --enable-preview} loaded on a stock JDK throws
+ * that reports unavailable.</b> A scheduler module compiled for a newer JDK
+ * ({@code release=28}) loaded on a stock JDK 25 throws
  * {@link UnsupportedClassVersionError} — a {@link LinkageError} — the moment
  * {@link ServiceLoader} tries to resolve its provider class.
  * {@code ServiceLoader} only ever wraps {@link ClassNotFoundException} into

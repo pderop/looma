@@ -545,7 +545,7 @@ run() {
 	local heap=(-Xms2g -Xmx2g -Xlog:gc:file="$RUNS/$name.gc.log")
 	[ "$mode" != epsilon ] ||
 		heap=(-XX:+UnlockExperimentalVMOptions -XX:+UseEpsilonGC -Xms12g -Xmx12g -Xlog:gc*:file="$RUNS/$name.gc.log")
-	local args=(--enable-preview --enable-native-access=ALL-UNNAMED "${heap[@]}" -XX:+AlwaysPreTouch
+	local args=(--enable-native-access=ALL-UNNAMED "${heap[@]}" -XX:+AlwaysPreTouch
 		-Dbench.scheduler="${s%-pinned}" -Dbench.carriers="${#CARRIER_CPUS[@]}"
 		-Dbench.rate="$RATE" -Dbench.clientCpus="$CLIENT_LIST" -Dbench.depth="$depth"
 		-Dbench.usersPerGroup="$CASE_USERS" -Dbench.warmupSeconds="$WARMUP" -Dbench.measureSeconds="$MEASURE")

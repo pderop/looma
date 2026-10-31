@@ -15,7 +15,10 @@ scheduler cannot keep up with the rate. With its workers pinned, it keeps up, bu
 [`results/2026-10-31-ryzen9-9950x/summary.md`](results/2026-10-31-ryzen9-9950x/summary.md).
 
 In those results, `affine` is Looma's copy of the Netty-VirtualThread-Scheduler, no longer built
-since. `mpsc` is the scheduler that `Carriers.affine(n)` runs today.
+since. `mpsc` is the scheduler that `Carriers.affine(n)` runs today. Every run up to 2026-10-31
+had `--enable-preview`, which the Netty copy needed. On the JDK of openjdk/loom pull request 227,
+that flag also turns on Valhalla: `Integer` becomes a value class. The runs since have no
+preview flag.
 
 - Code: [`examples/…/examples/user`](../examples/src/main/java/io/github/pderop/looma/examples/user)
 - Scripts: [`scripts/bench.sh`](../scripts/bench.sh) runs it, and
