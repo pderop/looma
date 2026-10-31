@@ -33,13 +33,14 @@ Looma is a lab, not a production framework.
 ## Quickstart
 
 ```sh
-# 1. A Loom JDK 28 (needed for the carrier-affine scheduler; see Prerequisites)
-curl -fsSL -o loom-jdk.tar.xz \
-  https://builds.shipilev.net/openjdk-jdk-loom/openjdk-jdk-loom-linux-x86_64-server.tar.xz
-mkdir -p "$HOME/.local/jdk-loom"
-tar -xJf loom-jdk.tar.xz -C "$HOME/.local/jdk-loom" --strip-components=1
-sdk install java 28-loom "$HOME/.local/jdk-loom"   # or: export JAVA_HOME=$HOME/.local/jdk-loom
-sdk env                                            # reads .sdkmanrc, picks 28-loom
+# 1. The Loom JDK of openjdk/loom pull request 227 (see Prerequisites), built from source
+#    with a JDK 27 or 28 as boot JDK. About 15 minutes on 16 cores.
+mkdir -p "$HOME/openjdk-loom-pr227" && cd "$HOME/openjdk-loom-pr227"
+curl -fsSL https://github.com/franz1981/loom/archive/731930db54a052cc4549db7361816f16a0119835.tar.gz \
+  | tar -xz --strip-components=1
+bash configure --with-boot-jdk=<a JDK 27 or 28> --disable-warnings-as-errors && make images
+sdk install java 28-loom-pr227 "$PWD/build/linux-x86_64-server-release/images/jdk"
+cd - && sdk env                                    # reads .sdkmanrc, picks 28-loom-pr227
 
 # 2. Build, and run every test under every scheduler configuration
 mvn clean install
@@ -47,8 +48,8 @@ mvn clean install
 # 3. Carrier affinity in one trace: an actor, its child and its offloaded work, all on one carrier
 scripts/run-hello.sh
 
-# 4. The benchmark: carrier-affine against the JDK builtin, same binary. One repetition of both
-#    cases, about 21 minutes; the results go to bench/<date>-<time>/summary.md. The default CPUs are those of
+# 4. The benchmark: the carrier-affine schedulers against the JDK builtin, same binary. One
+#    repetition of both cases, about 21 minutes; the results go to bench/<date>-<time>/summary.md. The default CPUs are those of
 #    an AMD Ryzen 9 9950X. On another machine, give yours: --cpus-carriers, --cpus-client and
 #    --cpus-backend (docs/benchmark.md, "Where things run").
 scripts/bench.sh --reps 1
@@ -102,6 +103,8 @@ code instead — before the JVM's first virtual thread:
 ActorSystem system = ActorSystem.builder()
         .carriers(Carriers.affine(8).pinned())      // carrier-affine, 8 carriers, one per CPU
         .build();
+// or the JDK's MPSC scheduler, each actor on one carrier for life:
+//      .carriers(Carriers.mpsc(8).pinned().workStealing(true))
 ```
 
 The carrier-affine scheduler also needs `looma-netty-scheduler` on the classpath and
@@ -113,7 +116,7 @@ The carrier-affine scheduler also needs `looma-netty-scheduler` on the classpath
 | | |
 | --- | --- |
 | [`docs/api.md`](docs/api.md) | The API: actors, messages, `tell`/`ask`, hierarchy, supervision, placement, pools, offloading, shutdown. |
-| [`docs/schedulers.md`](docs/schedulers.md) | The two schedulers: choosing one in code or by flags, placement, work stealing (`GLOBAL`, `CLUSTER_LOCAL`, `actorsStayHome()`), the engine and the SPI, and why carrier affinity. |
+| [`docs/schedulers.md`](docs/schedulers.md) | The three schedulers: choosing one in code or by flags, placement, work stealing (`GLOBAL`, `CLUSTER_LOCAL`, `actorsStayHome()`), the engine and the SPI, and why carrier affinity. |
 | [`docs/benchmark.md`](docs/benchmark.md) | The benchmark: the question and the answer, the program, the schedulers it compares, running it, reading `summary.md`, and the results per machine. |
 | [`netty-loom-scheduler/README.md`](netty-loom-scheduler/README.md) | The copy of the Netty scheduler: upstream commit, Looma's two patches, refresh procedure. |
 
@@ -122,7 +125,7 @@ The carrier-affine scheduler also needs `looma-netty-scheduler` on the classpath
 | Directory | Artifact | Java | Contents |
 | --- | --- | --- | --- |
 | `core` | `looma-core` | 25 | The API (`io.github.pderop.looma`), the engine (`….impl`), the scheduler and mailbox SPIs (`….spi`). |
-| `netty-loom-scheduler` | `looma-netty-scheduler` | 28 + `--enable-preview` | A copy of the upstream scheduler under `io.netty.loom.*` (two documented patches), and the adapter `….scheduler.netty` that exposes it through Looma's SPI. |
+| `netty-loom-scheduler` | `looma-netty-scheduler` | 28 + `--enable-preview` | A copy of the upstream scheduler under `io.netty.loom.*` (two documented patches), the adapter `….scheduler.netty` that exposes it through Looma's SPI, and `….scheduler.mpsc`, the adapter of the JDK's MPSC scheduler. |
 | `examples` | `looma-examples` | 25 | `….examples.hello` (the affinity trace) and `….examples.user` (the benchmark). |
 
 Everything depends on `looma-core`, never the reverse, and `looma-core` never names a scheduler
@@ -134,19 +137,21 @@ class. Inside `core`, everything under `impl` but `DefaultActorSystem` is packag
 `examples`, the carrier-affine module is not even in the reactor, and every `ActorSystem` runs on
 the JDK's builtin scheduler: a complete actor runtime, without carrier affinity.
 
-**The carrier-affine scheduler needs a Loom JDK 28.** A stock 28 does not have the preview SPI
-(`Thread.VirtualThreadScheduler`) that `-Djdk.virtualThreadScheduler.implClass` plugs into; Maven
-then fails with `cannot find symbol`, and a JVM launched by hand silently ignores the flag. The SPI
-lives on the [`fibers` branch of `openjdk/loom`](https://github.com/openjdk/loom/tree/fibers).
+**The carrier-affine schedulers need the Loom JDK of
+[openjdk/loom pull request 227](https://github.com/openjdk/loom/pull/227)**, at commit `731930db54`.
+It has two things a stock JDK 28 does not:
 
-Binaries, rebuilt continuously, are at [builds.shipilev.net](https://builds.shipilev.net/openjdk-jdk-loom/)
-(the commands in the Quickstart; other architectures sit next to the x86_64 tarball). Check one
-with `"$HOME/.local/jdk-loom/bin/javap" 'java.lang.Thread$VirtualThreadScheduler'`. The tarball is
-overwritten in place; CI asserts its major version still matches `<java.version>` in
-`netty-loom-scheduler/pom.xml`. Alternatives: build `openjdk/loom` (`fibers`), or
-`docker pull shipilev/openjdk:loom`.
+- the preview SPI (`Thread.VirtualThreadScheduler`) that
+  `-Djdk.virtualThreadScheduler.implClass` plugs into, for the Netty scheduler; it lives on the
+  [`fibers` branch of `openjdk/loom`](https://github.com/openjdk/loom/tree/fibers);
+- the MPSC scheduler and `Thread.Affinity`, which the pull request adds.
 
-`.sdkmanrc` names `28-loom`, a local SDKMAN identifier for that image. Without SDKMAN, export
+On another JDK, Maven fails with `cannot find symbol`. There is no binary: build it from source
+(the commands in the Quickstart). On macOS without the Metal toolchain, `configure` also needs
+`METAL` and `METALLIB` set to stub scripts. Check a build with
+`javap 'java.lang.Thread$Affinity'`.
+
+`.sdkmanrc` names `28-loom-pr227`, a local SDKMAN identifier for that build. Without SDKMAN, export
 `JAVA_HOME`; Maven runs on that JDK itself, no toolchain. `LOOM_JDK_HOME` overrides it for the
 scripts, which all check for a Loom build before launching anything.
 

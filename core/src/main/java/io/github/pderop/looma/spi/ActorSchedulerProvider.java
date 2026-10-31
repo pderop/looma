@@ -80,4 +80,28 @@ public interface ActorSchedulerProvider {
 	default ActorScheduler create(Carriers.Affine carriers) {
 		return create();
 	}
+
+	/**
+	 * Installs this provider's scheduler in this JVM as the MPSC pool
+	 * {@code carriers} describes. The same contract as
+	 * {@link #install(Carriers.Affine)}.
+	 *
+	 * @return {@code false} when this provider offers no MPSC scheduler; the
+	 *         default
+	 * @throws IllegalStateException
+	 *             when this provider is the right one but cannot be installed as
+	 *             asked
+	 */
+	default boolean install(Carriers.Mpsc carriers) {
+		return false;
+	}
+
+	/**
+	 * Creates a new {@link ActorScheduler} for a system built with
+	 * {@code carriers}, after {@link #install(Carriers.Mpsc)} accepted them. The
+	 * default calls {@link #create()}.
+	 */
+	default ActorScheduler create(Carriers.Mpsc carriers) {
+		return create();
+	}
 }

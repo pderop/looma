@@ -3,15 +3,16 @@
 **The question:** an actor owns private data, and only that actor reads it. If the scheduler
 keeps the actor on one core, the data stays in that core's cache. Does that save CPU?
 
-**How it answers:** the same program runs under four schedulers, at the same request rate. Each
+**How it answers:** the same program runs under several schedulers, at the same request rate. Each
 request makes an actor read a few hundred of its objects. The benchmark compares the CPU each
 scheduler spends per request, the latency, and how often actors moved to another core.
 
 **The answer**, on an AMD Ryzen 9 9950X: when an actor's data fits in its core's L2 cache, the
-schedulers that keep actors on their core spend 33.4% to 42.8% less CPU per request than the
-JDK's scheduler. When the data fits in no cache, the JDK's scheduler cannot keep up with the rate.
-With its workers pinned, it keeps up, but spends 15% to 18% more CPU per request. The numbers:
-[`results/2026-10-24-ryzen9-9950x/summary.md`](results/2026-10-24-ryzen9-9950x/summary.md).
+schedulers that keep actors on their core spend less CPU per request than the JDK's scheduler:
+41.6% less for `stealing-local-home`, 55.5% less for `mpsc-home`. When the data fits in no cache,
+the JDK's scheduler cannot keep up with the rate. With its workers pinned, it keeps up, but spends
+18% to 20% more CPU per request than those two. The numbers:
+[`results/2026-10-31-ryzen9-9950x/summary.md`](results/2026-10-31-ryzen9-9950x/summary.md).
 
 - Code: [`examples/…/examples/user`](../examples/src/main/java/io/github/pderop/looma/examples/user)
 - Scripts: [`scripts/bench.sh`](../scripts/bench.sh) runs it, and
@@ -25,7 +26,7 @@ With its workers pinned, it keeps up, but spends 15% to 18% more CPU per request
 - **Park**: a virtual thread that waits (for a socket, for a lock) gives its carrier back.
   When it is woken up, the scheduler picks a carrier for it again, maybe another one.
 - **Carrier-affine scheduler**: each virtual thread has a home carrier, and resumes on it. In
-  this benchmark, `stealing-local` and `stealing-local-home` are carrier-affine.
+  this benchmark, the `stealing-*` and `mpsc-*` schedulers are carrier-affine.
 - **Work stealing**: an idle carrier takes work queued on another carrier.
 - **Pinned**: an OS thread that may run on one CPU only.
 - **CPU, core**: Linux shows two CPUs per core when the core runs two threads at once (SMT). The
@@ -72,8 +73,8 @@ for a random user.
 2. The actor gets `Recommend`. It starts a virtual thread for the GET, and goes on with its next
    message: it does not wait. A group can have many GETs in flight.
 3. The virtual thread takes a free connection, sends `GET /user`, and parks on the response.
-   When the response arrives, the JDK's Master-Poller thread wakes it up, and the scheduler runs
-   it on a carrier. It gives the connection back, and sends `UpstreamAnswered` to the actor.
+   When the response arrives, the JDK's poller wakes it up (see [the poller modes](#the-schedulers)),
+   and the scheduler runs it on a carrier. It gives the connection back, and sends `UpstreamAnswered` to the actor.
 4. The actor gets `UpstreamAnswered`. It walks `--depth` users: it starts at the user asked for,
    then follows the friends. It writes in each one (visits, score, time). Then it answers the
    client.
@@ -97,15 +98,25 @@ rate.
 
 All runs use the same jar and the same JVM flags. Only `-Dbench.scheduler` changes.
 
-| Scheduler | What it is |
-| --- | --- |
-| `stealing-local` | The Netty carrier-affine scheduler. One carrier per CPU, each pinned to its CPU. An idle carrier can steal work, but only from carriers that share its L3 cache. |
-| `stealing-local-home` | `stealing-local` with `actorsStayHome()`, a Looma patch: an idle carrier can steal work only from carriers that share its L3 cache, and never an actor. Only the GET threads can move. |
-| `jdk` | The JDK's default scheduler, with as many carriers as the others. Its carriers are not pinned. |
-| `jdk-pinned` | The JDK's default scheduler, with each carrier pinned to one CPU (Linux only). |
+| Scheduler | Default | What it is |
+| --- | --- | --- |
+| `stealing-local-home` | yes | The Netty carrier-affine scheduler with `actorsStayHome()`, a Looma patch. One carrier per CPU, each pinned to its CPU. An idle carrier can steal work only from carriers that share its L3 cache, and never an actor. Only the GET threads can move. |
+| `stealing-global-home` | no | `stealing-local-home`, but an idle carrier can steal from any carrier. |
+| `mpsc-home` | yes | The JDK's MPSC scheduler (openjdk/loom pull request 227). One carrier per CPU, each pinned to its CPU. Each actor has a `Thread.Affinity`: it never leaves its carrier. An idle carrier can steal the GET threads, from any carrier. |
+| `jdk` | yes | The JDK's default scheduler, with as many carriers as the others. Its carriers are not pinned. |
+| `jdk-pinned` | yes | The JDK's default scheduler, with each carrier pinned to one CPU (Linux only). |
+| `mpsc-home-poller3` | no | `mpsc-home` with `jdk.pollerMode=3`, the poller mode of the `stealing-*` schedulers. |
+| `stealing-local` | no | `stealing-local-home` without `actorsStayHome()`: an idle carrier can also steal an actor. |
 
-The carrier-affine schedulers also set `jdk.pollerMode=3`, so that each carrier has its own
-read poller. `jdk` keeps the JDK's default mode.
+`--schedulers` picks the ones to run, for example `--schedulers mpsc-home,mpsc-home-poller3`.
+
+The poller modes:
+
+- The `stealing-*` schedulers set `jdk.pollerMode=3`. Each carrier has its own read poller, a
+  virtual thread. The JDK's Master-Poller wakes it when a socket has data.
+- `mpsc-home` uses mode 4. Each carrier has its own epoll, and looks at it between two rounds of
+  its queue. There is no read poller and no Master-Poller.
+- `jdk` and `jdk-pinned` keep the JDK's default mode.
 
 ### Where things run
 
@@ -125,11 +136,12 @@ Who pins what:
 
 - The script starts the benchmark JVM with `taskset` on the carrier CPUs, and the backend with
   `taskset` on the backend CPUs.
-- The carriers of `stealing-local` and `stealing-local-home` pin themselves. Each one takes one
+- The carriers of the `stealing-*` and `mpsc-*` schedulers pin themselves. Each one takes one
   CPU of the JVM's list.
 - The client threads pin themselves too, to the client CPUs.
 - The JDK's Master-Poller, the thread that wakes the virtual threads whose socket has data,
-  runs on the carrier CPUs, like the other threads of the JVM.
+  runs on the carrier CPUs, like the other threads of the JVM. So do the Write-Poller and, in
+  mode 4, the JDK's own Read-Poller.
 - In `jdk-pinned`, the script pins each JDK carrier to one carrier CPU, during the warm-up.
 - In `jdk`, nothing pins the carriers. They can move between the carrier CPUs.
 
@@ -148,7 +160,7 @@ group fits in no cache.
 
 ## Running it
 
-You need Linux, a Loom JDK 28 and the project built (the [README](../README.md#quickstart)
+You need Linux, the Loom JDK of openjdk/loom pull request 227 and the project built (the [README](../README.md#quickstart)
 shows both), and `perf` for the `perf c2c` and `perf stat` runs.
 
 The script first runs [`scripts/prepare-linux-bench.sh`](../scripts/prepare-linux-bench.sh),
@@ -160,6 +172,7 @@ with sudo: turbo off, the `performance` governor, and perf allowed. It saves wha
 scripts/bench.sh                                     # on the AMD machine
 scripts/bench.sh --cpus-carriers <list> --cpus-client <list> --cpus-backend <list>   # elsewhere
 scripts/bench.sh --users-per-group 8000              # the default case only
+scripts/bench.sh --schedulers mpsc-home,jdk --reps 1 # two schedulers, one repetition
 ```
 
 What the script does:
@@ -183,7 +196,7 @@ What the script does:
    allocates about 5 GiB.
 7. It writes `summary.md`, with both cases.
 
-That is 72 runs, about 37 minutes; 36 runs for one case. `--help` lists the options.
+With the 4 default schedulers, that is 72 runs, about 37 minutes; 36 runs for one case. `--help` lists the options.
 
 ## What it writes
 
@@ -236,7 +249,7 @@ empties that folder first, so a second campaign of the same day replaces the fir
 `perf c2c` data files are not copied.
 
 ```sh
-scripts/publish.sh bench/<date>-<time>       # e.g. docs/results/2026-10-24-ryzen9-9950x/summary.md
+scripts/publish.sh bench/<date>-<time>       # e.g. docs/results/2026-10-31-ryzen9-9950x/summary.md
 scripts/publish.sh -n bench/<date>-<time>    # -n: show what it would copy, copy nothing
 ```
 
@@ -347,8 +360,11 @@ One section per machine. Each campaign has its own folder in `docs/results/`, wi
 
 The results:
 
+- [`results/2026-10-31-ryzen9-9950x/summary.md`](results/2026-10-31-ryzen9-9950x/summary.md):
+  the latest. The JDK of openjdk/loom pull request 227, and its MPSC scheduler, `mpsc-home`.
+  `stealing-local` is no longer run by default.
 - [`results/2026-10-24-ryzen9-9950x/summary.md`](results/2026-10-24-ryzen9-9950x/summary.md):
-  the latest, after [#9](https://github.com/pderop/looma/pull/9).
+  after [#9](https://github.com/pderop/looma/pull/9), on the Loom JDK of builds.shipilev.net.
 - [`results/2026-10-22-ryzen9-9950x/summary.md`](results/2026-10-22-ryzen9-9950x/summary.md):
   before #9. The scheduler then started its scan for an idle carrier at a random one, instead of
   the first one.

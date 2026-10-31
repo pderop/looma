@@ -31,6 +31,9 @@ as taskset writes them:
   --users-per-group <list> The cases: users per actor group, ~82 bytes each, comma-separated.
                            8000 is named default, 200000 big. Default: 8000,200000.
   --reps <n>               Repetitions. Default: 3.
+  --schedulers <list>      The schedulers to run, comma-separated. Default:
+                           stealing-local-home,mpsc-home,jdk,jdk-pinned.
+                           Also: stealing-global-home, mpsc-home-poller3, stealing-local.
   --out <dir>              Default: bench/<date>-<time>, in the project.
 USAGE
 }
@@ -50,7 +53,8 @@ REPS=3
 OUT=
 WARMUP=5
 MEASURE=20
-SCHEDULERS="stealing-local stealing-local-home jdk jdk-pinned"
+SCHEDULERS="stealing-local-home mpsc-home jdk jdk-pinned"
+KNOWN_SCHEDULERS="stealing-local stealing-local-home stealing-global-home mpsc-home mpsc-home-poller3 jdk jdk-pinned"
 COMMAND_LINE="$0 $*"
 
 while [ $# -gt 0 ]; do
@@ -64,12 +68,17 @@ while [ $# -gt 0 ]; do
 		--depth) DEPTH=$2 ;;
 		--users-per-group) USERS_PER_GROUP=$2 ;;
 		--reps) REPS=$2 ;;
+		--schedulers) SCHEDULERS=${2//,/ } ;;
 		--out) OUT=$2 ;;
 		*) die "unknown option '$1' (try --help)" ;;
 	esac
 	shift 2
 done
 
+[ -n "${SCHEDULERS// /}" ] || die "--schedulers is empty"
+for s in $SCHEDULERS; do
+	[[ " $KNOWN_SCHEDULERS " == *" $s "* ]] || die "unknown scheduler '$s' (try --help)"
+done
 for n in "$RATE" "$DEPTH" "$REPS" ${USERS_PER_GROUP//,/ }; do
 	[[ $n =~ ^[0-9]+$ ]] || die "not a number: '$n'"
 done
@@ -525,7 +534,8 @@ run() {
 	echo "  $name done"
 }
 
-N=$(((REPS * 2 * 4 + C2C * 8 + 4) * ${#CASES[@]}))
+S=$(wc -w <<<"$SCHEDULERS")
+N=$(((REPS * 2 + C2C * 2 + 1) * S * ${#CASES[@]}))
 echo "about $((N * (WARMUP + MEASURE + 5) / 60 + 1)) minutes: $N runs"
 : >"$OUT/rows.md"
 for c in "${CASES[@]}"; do
@@ -581,8 +591,11 @@ done
 	echo "- Open loop: the clients send at a fixed rate. A latency is from the planned send time of a"
 	echo "  request to its answer. cpu µs/req is the server's: the process minus the clients."
 	echo "- Each carrier has a core to itself: the script refuses two carrier CPUs on one core."
+	echo "- The schedulers: ${SCHEDULERS// /, }."
 	echo "- jdk-pinned is jdk with each of its workers pinned to one carrier CPU. The clients are pinned to"
 	echo "  their own CPUs."
+	echo "- mpsc-home and mpsc-home-poller3: the MPSC scheduler of the JDK (openjdk/loom pull request 227)."
+	echo "  mpsc-home-poller3 runs it with jdk.pollerMode=3, the poller mode of the stealing-* schedulers."
 	echo "- Heap: -Xms2g -Xmx2g -XX:+AlwaysPreTouch, G1, and a GC log per run. The epsilon run:"
 	echo "  -XX:+UseEpsilonGC -Xms12g -Xmx12g -XX:+AlwaysPreTouch. Epsilon frees nothing, so no GC runs:"
 	echo "  each allocation takes new memory."

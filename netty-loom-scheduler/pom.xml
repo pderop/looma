@@ -182,6 +182,24 @@
                             <reuseForks>false</reuseForks>
                             <includes>
                                 <include>**/scheduler/netty/install/*Test.java</include>
+                                <include>**/scheduler/mpsc/install/*Test.java</include>
+                            </includes>
+                        </configuration>
+                    </execution>
+                    <!--
+                        The actor suites over the JDK's MPSC scheduler (openjdk/loom pull request 227):
+                        four carriers, stealing on, chosen by the flags and found by discovery.
+                    -->
+                    <execution>
+                        <id>mpsc-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <argLine>--enable-preview --enable-native-access=ALL-UNNAMED -Djdk.virtualThreadScheduler.useMpsc=true -Djdk.virtualThreadScheduler.mpscSteal=true -Djdk.virtualThreadScheduler.parallelism=4</argLine>
+                            <includes>
+                                <include>**/scheduler/mpsc/*Test.java</include>
                             </includes>
                         </configuration>
                     </execution>

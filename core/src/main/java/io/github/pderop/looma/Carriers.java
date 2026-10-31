@@ -24,6 +24,8 @@ package io.github.pderop.looma;
  * classpath (in this project, {@code looma-netty-scheduler} on a Loom JDK
  * started with {@code --enable-preview}); {@code build()} throws when there is
  * none rather than falling back.
+ * <li>{@link #mpsc(int)} — the JDK's MPSC scheduler (openjdk/loom pull request
+ * 227), each actor on one carrier for life.
  * <li>{@link #builtin(int)} — the JDK's own scheduler, with its parallelism
  * fixed: the control an affine run is compared against.
  * </ul>
@@ -57,6 +59,19 @@ public sealed interface Carriers {
 	 */
 	static Affine affine(int count) {
 		return new Affine(count, false, WorkStealing.OFF, true);
+	}
+
+	/**
+	 * The JDK's MPSC scheduler with {@code count} carriers, not pinned to CPUs and
+	 * without work stealing. Refine with {@link Mpsc#pinned()} and
+	 * {@link Mpsc#workStealing(boolean)}. Needs a JDK that has it (openjdk/loom
+	 * pull request 227) and a provider of it on the classpath.
+	 *
+	 * @throws IllegalArgumentException
+	 *             if {@code count} is less than 1
+	 */
+	static Mpsc mpsc(int count) {
+		return new Mpsc(count, false, false);
 	}
 
 	/**
@@ -145,6 +160,38 @@ public sealed interface Carriers {
 		 */
 		public Affine actorsStayHome() {
 			return new Affine(count, pinnedToCpus, workStealing, false);
+		}
+	}
+
+	/**
+	 * The JDK's MPSC scheduler: one queue per carrier. Each actor stays on one
+	 * carrier for life, and is never stolen. With stealing, an idle carrier takes
+	 * only the other virtual threads, from any carrier.
+	 *
+	 * @param count
+	 *            carriers in the pool
+	 * @param pinnedToCpus
+	 *            whether each carrier is pinned to a CPU, as for
+	 *            {@link Affine#pinnedToCpus()}
+	 * @param workStealing
+	 *            whether idle carriers steal
+	 */
+	record Mpsc(int count, boolean pinnedToCpus, boolean workStealing) implements Carriers {
+
+		public Mpsc {
+			if (count < 1) {
+				throw new IllegalArgumentException("carrier count must be at least 1, not " + count);
+			}
+		}
+
+		/** The same pool, each carrier pinned to one CPU. */
+		public Mpsc pinned() {
+			return new Mpsc(count, true, workStealing);
+		}
+
+		/** The same pool, with or without stealing. */
+		public Mpsc workStealing(boolean workStealing) {
+			return new Mpsc(count, pinnedToCpus, workStealing);
 		}
 	}
 

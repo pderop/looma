@@ -3,12 +3,13 @@
 There is one actor engine and one `ActorSystem` implementation, `DefaultActorSystem`, which no
 caller names: `ActorSystem.builder()` hands it out. An actor runs on a virtual thread only while
 it has messages: one per burst. What varies is which `ActorScheduler` supplies the factory that
-starts those threads, and two ship with Looma:
+starts those threads, and three ship with Looma:
 
 | | Where | Carriers | Home carrier per actor |
 | --- | --- | --- | --- |
 | JDK builtin (`JdkActorScheduler`) | `core`, `io.github.pderop.looma.impl` | 1 (the JDK's `ForkJoinPool`) | no |
 | carrier-affine (`NettyActorScheduler`) | `netty-loom-scheduler`, `io.github.pderop.looma.scheduler.netty` | one per carrier thread | yes, for life |
+| MPSC (`MpscActorScheduler`) | `netty-loom-scheduler`, `io.github.pderop.looma.scheduler.mpsc` | one per carrier thread | yes, for life, never stolen |
 
 The carrier-affine scheduler is a copy of the
 [Netty-VirtualThread-Scheduler](https://github.com/franz1981/Netty-VirtualThread-Scheduler) of
@@ -45,7 +46,10 @@ ActorSystem control = ActorSystem.builder().carriers(Carriers.builtin(8)).build(
 | `.workStealing(OFF)` | no stealing (the default) | `io.netty.loom.workstealing.enabled=false`; `scope` required absent |
 | `.workStealing(GLOBAL / CLUSTER_LOCAL)` | stealing between any carriers / only within an L3 | `io.netty.loom.workstealing.enabled=true`, `io.netty.loom.workstealing.scope=…` |
 | `.actorsStayHome()` | stealing never takes an actor loop, only the threads actors offload | none: Looma's adapter creates the actor loops on each carrier's home queue |
-| `builtin(n)` | the JDK builtin, sized | `jdk.virtualThreadScheduler.parallelism=n`; `implClass` required absent |
+| `mpsc(n)` | the JDK's MPSC scheduler, `n` carriers | `jdk.virtualThreadScheduler.useMpsc=true`, `jdk.virtualThreadScheduler.parallelism=n`; `implClass` required absent |
+| `mpsc(n).pinned()` | each carrier pinned to one CPU, as `affine(n).pinned()` | none: Looma's adapter pins each carrier from a virtual thread mounted on it |
+| `mpsc(n).workStealing(b)` | stealing between any carriers, never an actor | `jdk.virtualThreadScheduler.mpscSteal=b` |
+| `builtin(n)` | the JDK builtin, sized | `jdk.virtualThreadScheduler.parallelism=n`; `implClass` and `useMpsc` required absent |
 
 `build()` sets the properties, then checks that they took. That only works **before the JVM's first
 virtual thread**: the JDK resolves its scheduler once, while initialising virtual threads. So
@@ -108,6 +112,24 @@ Boot fat jar, Quarkus) it is not.
 
 A provider that fails to link — a preview-compiled class on a stock JDK — is caught and skipped by
 discovery, which keeps looking.
+
+## The MPSC scheduler
+
+The MPSC scheduler comes with the JDK of openjdk/loom pull request 227. It replaces the JDK's
+builtin scheduler when `jdk.virtualThreadScheduler.useMpsc=true`. Each carrier, `mpsc-carrier-<id>`,
+has its own queue.
+
+- An actor's loop gets the `Thread.Affinity` of its carrier. A thread with an affinity runs on
+  that carrier for life: stealing never takes it.
+- The threads an actor offloads have no affinity. They start on the actor's carrier, and with
+  `workStealing(true)` an idle carrier may take them, from any carrier.
+- An affinity does not say which carrier it lands on. At install, the adapter starts one thread
+  per affinity, and reads the carrier from the thread's name.
+- With `.pinned()`, the adapter runs one thread on each carrier, which pins its carrier with
+  `sched_setaffinity`. Before that, it starts the JDK's poller threads, so that they keep all
+  the CPUs of the JVM.
+- On Linux, the JDK uses poller mode 4 by default with this scheduler: each carrier has its own
+  epoll. `-Djdk.pollerMode=3` gives the mode of the carrier-affine scheduler instead.
 
 ## The engine
 
@@ -260,7 +282,8 @@ scheduler is configured once per JVM:
 | `default-test` | 2 carriers | upstream's own tests |
 | `carrier-test` | 2 carriers, no stealing | the adapter's tests, `CarriersCommandLineTest` |
 | `workstealing-test` | 4 carriers, stealing, `FakeClusterTopology` | the adapter's tests again, `EventLoopSchedulerWorkStealingTest`, `HomeVirtualThreadTest` |
-| `install-test` | no scheduler flag, one JVM per class | `carriers(...)` installing the scheduler, and refusing to once a virtual thread has run |
+| `install-test` | no scheduler flag, one JVM per class | `carriers(...)` installing the scheduler, and refusing to once a virtual thread has run, for `affine` and `mpsc` |
+| `mpsc-test` | MPSC, 4 carriers, stealing | the actor suites over the MPSC scheduler, and `MpscAffinityTest`: an actor never leaves its carrier, an offloaded thread can be stolen |
 | `replaceBuiltinScheduler-test` | upstream's | `ReplaceBuiltinSchedulerTest` |
 
 The executions carry upstream's `-Djdk.traceVirtualThreadLocals=false` and

@@ -62,9 +62,12 @@ final class ActorSchedulers {
 
 	/**
 	 * What {@link #install(Carriers)} installed in this JVM, or {@code null}. The
-	 * scheduler belongs to the JVM, so it can be affine or builtin, not both.
+	 * scheduler belongs to the JVM, so it is one kind of pool only.
 	 */
 	private static Carriers installed;
+
+	/** The JDK property that makes the MPSC scheduler the builtin one. */
+	private static final String USE_MPSC = "jdk.virtualThreadScheduler.useMpsc";
 
 	private ActorSchedulers() {
 	}
@@ -143,11 +146,23 @@ final class ActorSchedulers {
 				discovered = Optional.of(provider);
 				yield provider.create(affine);
 			}
+			case Carriers.Mpsc mpsc -> {
+				ActorSchedulerProvider provider = firstProvider(p -> p.install(mpsc), true)
+						.orElseThrow(() -> new IllegalStateException("no ActorSchedulerProvider could install " + mpsc
+								+ ": the MPSC scheduler needs looma-netty-scheduler on the classpath of a JDK built"
+								+ " from openjdk/loom pull request 227"));
+				discovered = Optional.of(provider);
+				yield provider.create(mpsc);
+			}
 			case Carriers.Builtin builtin -> {
 				String implClass = System.getProperty("jdk.virtualThreadScheduler.implClass");
 				if (implClass != null) {
 					throw new IllegalStateException("-Djdk.virtualThreadScheduler.implClass=" + implClass
 							+ " is set, so this JVM does not run the builtin scheduler: cannot build with " + builtin);
+				}
+				if (Boolean.getBoolean(USE_MPSC)) {
+					throw new IllegalStateException("-D" + USE_MPSC
+							+ "=true is set, so this JVM runs the MPSC scheduler: cannot build with " + builtin);
 				}
 				SystemProperties.setOnce("jdk.virtualThreadScheduler.parallelism",
 						Integer.toString(builtin.parallelism()));

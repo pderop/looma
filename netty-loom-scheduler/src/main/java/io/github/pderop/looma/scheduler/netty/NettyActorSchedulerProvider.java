@@ -142,6 +142,10 @@ public final class NettyActorSchedulerProvider implements ActorSchedulerProvider
 						+ " so the scheduler is configured there: cannot also configure it as " + carriers
 						+ ". Drop the -D flags or the carriers(...) call");
 			}
+			if (Boolean.getBoolean("jdk.virtualThreadScheduler.useMpsc")) {
+				throw new IllegalStateException("-Djdk.virtualThreadScheduler.useMpsc=true is set, so this JVM runs the"
+						+ " MPSC scheduler: cannot also install " + carriers);
+			}
 			List<String> added = NettyCarrierProperties.set(carriers);
 			boolean available;
 			try {
