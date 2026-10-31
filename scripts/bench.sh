@@ -31,8 +31,8 @@ with commas and ranges only (2-7,10-15), and no CPU in two lists:
   --users-per-group <list> The cases: users per actor group, ~82 bytes each, comma-separated.
                            8000 is named default, 200000 big. Default: 8000,200000.
   --reps <n>               Repetitions. Default: 3.
-  --schedulers <list>      The schedulers to run, comma-separated, among affine, mpsc, jdk
-                           and jdk-pinned. Default: all four.
+  --schedulers <list>      The schedulers to run, comma-separated, among mpsc, jdk and
+                           jdk-pinned. Default: all three.
   --out <dir>              Default: bench/<date>-<time>, in the project.
 USAGE
 }
@@ -52,7 +52,7 @@ REPS=3
 OUT=
 WARMUP=5
 MEASURE=20
-SCHEDULERS="affine mpsc jdk jdk-pinned"
+SCHEDULERS="mpsc jdk jdk-pinned"
 KNOWN_SCHEDULERS=$SCHEDULERS
 COMMAND_LINE="$0 $*"
 
@@ -633,9 +633,8 @@ done
 	echo "- The schedulers: ${SCHEDULERS// /, }."
 	echo "- jdk-pinned is jdk with each of its workers pinned to one carrier CPU. The clients are pinned to"
 	echo "  their own CPUs."
-	echo "- affine: Looma's copy of the Netty-VirtualThread-Scheduler. mpsc: the MPSC scheduler of the JDK"
-	echo "  (openjdk/loom pull request 227). In both, each carrier is pinned to one CPU, and an actor never"
-	echo "  moves to another carrier."
+	echo "- mpsc: the MPSC scheduler of the JDK (openjdk/loom pull request 227), behind Carriers.affine."
+	echo "  Each carrier is pinned to one CPU, and an actor never moves to another carrier."
 	echo "- Heap: -Xms2g -Xmx2g -XX:+AlwaysPreTouch, G1, and a GC log per run. The epsilon run:"
 	echo "  -XX:+UseEpsilonGC -Xms12g -Xmx12g -XX:+AlwaysPreTouch. Epsilon frees nothing, so no GC runs:"
 	echo "  each allocation takes new memory."

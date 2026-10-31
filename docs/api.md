@@ -159,15 +159,15 @@ ActorSystem system = ActorSystem.builder()
 ActorSystem.builder().scheduler(someScheduler);    // bypasses everything — tests only
 ```
 
-`carriers(...)` is the code form of the scheduler's JVM flags: `Carriers.affine(n)` for Looma's copy
-of the Netty-VirtualThread-Scheduler, `Carriers.mpsc(n)` for the JDK's MPSC scheduler,
-`Carriers.builtin(n)` for the JDK's default one with its parallelism fixed. They have no options.
+`carriers(...)` is the code form of the scheduler's JVM flags: `Carriers.affine(n)` for a
+carrier-affine pool, today the JDK's MPSC scheduler, `Carriers.builtin(n)` for the JDK's default
+one with its parallelism fixed. They have no options.
 Without it, the system takes whatever the flags installed. Because the JDK resolves its scheduler
 once per process, `build()` must run **before the JVM's first virtual thread**, and throws rather
 than run on the wrong scheduler — see [`schedulers.md`](schedulers.md#in-code) for every case it
 refuses.
 
-With `affine` and `mpsc`, an actor never leaves its home carrier, so its state stays in that
+With `affine`, an actor never leaves its home carrier, so its state stays in that
 core's cache. An idle carrier may steal only the threads actors create through
 `ActorContext.vThreadFactory()`.
 
@@ -339,7 +339,7 @@ public void onReceive(Message message, ActorRef sender, ActorContext context) {
 `vThreadFactory()` is the only offload mechanism, and it is the one that carries the actor's
 affinity to the work:
 
-- under **`affine`** and **`mpsc`**, the new virtual thread starts on this actor's home carrier,
+- under **`affine`**, the new virtual thread starts on this actor's home carrier,
   so it runs on the same core the actor does, unless an idle carrier steals it;
 - under the **JDK builtin** scheduler, it is a plain virtual thread on the JDK's default scheduler.
 
@@ -356,9 +356,9 @@ actor's fields: take what it needs by value and hand the outcome back as a messa
 
 ### Platform threads started from an actor
 
-On Linux, a new thread runs only on the CPUs of the thread that starts it, and under `affine` and
-`mpsc` a carrier runs on one CPU. A platform thread started from an actor would keep that one CPU.
-Under `mpsc`, Looma gives every CPU back to the threads the JDK starts: its timers, and the
+On Linux, a new thread runs only on the CPUs of the thread that starts it, and under `affine` a
+carrier runs on one CPU. A platform thread started from an actor would keep that one CPU. Under
+`affine`, Looma gives every CPU back to the threads the JDK starts: its timers, and the
 common pool behind `parallelStream` and `supplyAsync`. Your own threads and executors need a
 factory that does the same. Take it from the system, and give the executor to the actors that
 use it:
@@ -369,8 +369,8 @@ ExecutorService workers = Executors.newFixedThreadPool(4, platform);
 ```
 
 An executor starts its threads at its first tasks, so this matters even for one created in
-`main`, if an actor gives it its first tasks. Under the builtin scheduler and `affine`, the factory
-is `Thread.ofPlatform().factory()`. [`schedulers.md`](schedulers.md#threads-started-from-an-actor)
+`main`, if an actor gives it its first tasks. Under the builtin scheduler, the factory is
+`Thread.ofPlatform().factory()`. [`schedulers.md`](schedulers.md#threads-started-from-an-actor)
 lists each case.
 
 ### Pinning is the case that is genuinely bad
@@ -378,7 +378,7 @@ lists each case.
 A **native frame** on the stack — a JNI call, or a foreign-function downcall — cannot unmount the
 virtual thread at all, so it holds its **carrier** rather than merely its own burst. Under the JDK
 builtin scheduler that costs one `ForkJoinPool` worker and the pool compensates by growing; under
-`affine` and `mpsc` the pool is fixed and there is nothing to grow, so every actor that calls that
+`affine` the pool is fixed and there is nothing to grow, so every actor that calls that
 carrier home stops until the pin is released. Keep native calls out of an actor's bursts and out of
 anything forked from them.
 
@@ -596,7 +596,7 @@ sound basis for an affinity assertion:
 assertEquals(system.homeCarrierIdOf(parent), system.homeCarrierIdOf(child));
 ```
 
-The home carrier is the only *deterministic* thing about placement. Under `affine` and `mpsc` an
+The home carrier is the only *deterministic* thing about placement. Under `affine` an
 actor always runs there, but a thread it offloads may be stolen, and under the builtin anything may
 run anywhere — asserting against the running carrier is a flaky test, not a bug in the
 scheduler. It throws `IllegalArgumentException`
@@ -636,7 +636,7 @@ work has finished — the actors' bursts *and* every thread created through `vTh
 keeps a caller from observing termination while user-spawned blocking work is still running.
 
 Every scheduler drains identically. None owns a pool to stop: the JDK builtin owns nothing, and the
-carriers of `affine` and `mpsc` are a permanent JVM-wide pool created during
+carriers of `affine` are a permanent JVM-wide pool created during
 `VirtualThread.<clinit>` that outlives any single `ActorSystem`.
 
 ## 10. What Looma does not do

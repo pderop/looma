@@ -14,6 +14,9 @@ scheduler cannot keep up with the rate. With its workers pinned, it keeps up, bu
 19% more CPU per request than those two. The numbers:
 [`results/2026-10-31-ryzen9-9950x/summary.md`](results/2026-10-31-ryzen9-9950x/summary.md).
 
+In those results, `affine` is Looma's copy of the Netty-VirtualThread-Scheduler, no longer built
+since. `mpsc` is the scheduler that `Carriers.affine(n)` runs today.
+
 - Code: [`examples/…/examples/user`](../examples/src/main/java/io/github/pderop/looma/examples/user)
 - Scripts: [`scripts/bench.sh`](../scripts/bench.sh) runs it, and
   [`scripts/publish.sh`](../scripts/publish.sh) copies a result to the docs
@@ -26,8 +29,8 @@ scheduler cannot keep up with the rate. With its workers pinned, it keeps up, bu
 - **Park**: a virtual thread that waits (for a socket, for a lock) gives its carrier back.
   When it is woken up, the scheduler picks a carrier for it again, maybe another one.
 - **Carrier-affine scheduler**: each actor has a home carrier, and always runs on it. The threads
-  it offloads start there, but an idle carrier may steal them. In this benchmark, `affine` and
-  `mpsc` are carrier-affine.
+  it offloads start there, but an idle carrier may steal them. In this benchmark, `mpsc` is
+  carrier-affine.
 - **Work stealing**: an idle carrier takes work queued on another carrier.
 - **Pinned**: an OS thread that may run on one CPU only.
 - **CPU, core**: Linux shows two CPUs per core when the core runs two threads at once (SMT). The
@@ -102,18 +105,15 @@ All runs use the same jar and the same JVM flags. Only `-Dbench.scheduler` chang
 
 | Scheduler | What it is |
 | --- | --- |
-| `affine` | `Carriers.affine(n)`: Looma's copy of the Netty-VirtualThread-Scheduler. One carrier per CPU, each pinned to its CPU. An actor never leaves its carrier. An idle carrier steals only the GET threads, from the carriers that share its L3 cache. |
-| `mpsc` | `Carriers.mpsc(n)`: the JDK's MPSC scheduler (openjdk/loom pull request 227). One carrier per CPU, each pinned to its CPU. Each actor has a `Thread.Affinity`: it never leaves its carrier. An idle carrier steals only the GET threads, from any carrier. |
+| `mpsc` | `Carriers.affine(n)`: the JDK's MPSC scheduler (openjdk/loom pull request 227). One carrier per CPU, each pinned to its CPU. Each actor has a `Thread.Affinity`: it never leaves its carrier. An idle carrier steals only the GET threads, from any carrier. |
 | `jdk` | `Carriers.builtin(n)`: the JDK's default scheduler, with as many carriers as the others. Its carriers are not pinned. |
 | `jdk-pinned` | `jdk`, with each carrier pinned to one CPU by the script (Linux only). |
 
-`--schedulers` picks the ones to run, for example `--schedulers affine,mpsc`. By default, all four.
+`--schedulers` picks the ones to run, for example `--schedulers mpsc,jdk`. By default, all three.
 [`schedulers.md`](schedulers.md) explains each scheduler.
 
 The poller modes:
 
-- `affine` sets `jdk.pollerMode=3`. Each carrier has its own read poller, a virtual thread. The
-  JDK's Master-Poller wakes it when a socket has data.
 - `mpsc` uses mode 4. Each carrier has its own epoll, and looks at it between two rounds of its
   queue. The JDK still starts one Read-Poller thread, for the virtual threads that run on no MPSC
   carrier, and a Write-Poller. There is no Master-Poller.
@@ -137,8 +137,7 @@ Who pins what:
 
 - The script starts the benchmark JVM with `taskset` on the carrier CPUs, and the backend with
   `taskset` on the backend CPUs.
-- The carriers of `affine` and `mpsc` pin themselves. Each one takes one
-  CPU of the JVM's list.
+- The carriers of `mpsc` pin themselves. Each one takes one CPU of the JVM's list.
 - The client threads pin themselves too, to the client CPUs.
 - The JDK's Master-Poller, the thread that wakes the virtual threads whose socket has data,
   runs on the carrier CPUs, like the other threads of the JVM. So do the Write-Poller and, in
@@ -289,8 +288,8 @@ backend      CPUs 8,9,24,25     the backend: cores 8 and 9 (CCD1)
 ```
 
 - Each carrier has a core to itself: its SMT twin stays idle.
-- The carriers are on both CCDs, 6 on each. `affine` steals only within one CCD; `mpsc` steals
-  across both. Neither moves an actor.
+- The carriers are on both CCDs, 6 on each. `mpsc` steals across both. It never moves an
+  actor.
 - The sizes: one group is about 640 KiB, which fits in a 1 MiB L2. The 12 groups take about
   7.5 MiB, several times one L2. But the 6 groups of a CCD (3.8 MiB) fit in its 32 MiB L3: an
   actor that moves within a CCD finds its data in the L3. So this layout measures the L2 against
@@ -328,13 +327,14 @@ do not compete with the carriers.
 **Why one carrier per core.** The two CPUs of a core share its L2. Two carriers there would share
 the cache each one is meant to keep to itself.
 
-**Why the JVM runs under `taskset`.** It gives `affine` and `mpsc` their CPU list. It
+**Why the JVM runs under `taskset`.** It gives `mpsc` its CPU list. It
 also keeps the JVM's other threads, like the GC and the JIT, on the carrier CPUs, away from the
 clients and the backend.
 
 **Why `jdk-pinned`.** It tells whether pinning alone makes the difference.
 
-**Why only these four.** Earlier campaigns also ran other setups of the same schedulers: see
+**Why only these three.** Earlier campaigns also ran other setups of the same schedulers, and,
+until 2026-10-31, `affine`, Looma's copy of the Netty-VirtualThread-Scheduler: see
 [Older campaigns](results/README.md#older-campaigns). Letting an idle carrier steal an actor cost
 CPU, in the published campaigns. Short runs, not published, also found stealing within an L3
 faster than from any carrier, and the MPSC scheduler faster with poller mode 4 than with mode 3.

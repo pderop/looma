@@ -48,8 +48,7 @@
  * here, package-private and reached only from {@code DefaultActorSystem}'s own
  * {@code Builder} when discovery finds nothing: {@code JdkActorScheduler},
  * whose factories create plain virtual threads on the JDK's default scheduler.
- * The two others live in {@code netty-loom-scheduler} and
- * {@code mpsc-scheduler}, and are reached through {@code ServiceLoader}, never
- * by name.
+ * The other one lives in {@code mpsc-scheduler}, and is reached through
+ * {@code ServiceLoader}, never by name.
  */
 package io.github.pderop.looma.impl;

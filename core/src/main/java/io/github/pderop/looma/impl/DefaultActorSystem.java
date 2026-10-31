@@ -33,7 +33,7 @@ import io.github.pderop.looma.spi.MailboxQueueFactory;
 /**
  * The one {@link ActorSystem} implementation this project ships: an actor
  * system whose placement comes entirely from an {@link ActorScheduler}, with
- * two possible providers behind that seam — the carrier-affine one
+ * two possible schedulers behind that seam — the carrier-affine one
  * (discovered), and {@link JdkActorScheduler} when discovery finds nothing.
  *
  * <p>

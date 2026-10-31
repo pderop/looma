@@ -46,8 +46,8 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 
 	static final String COMMON_FACTORY = "java.util.concurrent.ForkJoinPool.common.threadFactory";
 
-	/** What {@link #install(Carriers.Mpsc)} installed in this JVM, or null. */
-	private static Carriers.Mpsc installed;
+	/** What {@link #install(Carriers.Affine)} installed in this JVM, or null. */
+	private static Carriers.Affine installed;
 
 	/** The carriers, once found. Static because the scheduler is. */
 	private static MpscPool pool;
@@ -84,7 +84,7 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 	}
 
 	@Override
-	public ActorScheduler create(Carriers.Mpsc carriers) {
+	public ActorScheduler create(Carriers.Affine carriers) {
 		synchronized (MpscActorSchedulerProvider.class) {
 			return new MpscActorScheduler(pool);
 		}
@@ -107,7 +107,7 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 	 * factory gives them back every CPU.
 	 */
 	@Override
-	public boolean install(Carriers.Mpsc carriers) {
+	public boolean install(Carriers.Affine carriers) {
 		synchronized (MpscActorSchedulerProvider.class) {
 			if (installed != null) {
 				if (!installed.equals(carriers)) {
@@ -153,7 +153,7 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 	 * Sets the properties {@code carriers} stands for, after checking that none is
 	 * set to another value. Returns those it added.
 	 */
-	private static List<String> set(Carriers.Mpsc carriers) {
+	private static List<String> set(Carriers.Affine carriers) {
 		Map<String, String> properties = new LinkedHashMap<>();
 		properties.put(PARALLELISM, Integer.toString(carriers.count()));
 		properties.put(STEAL, "true");

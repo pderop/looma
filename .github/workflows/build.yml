@@ -18,8 +18,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Everything, on the Loom JDK: core, examples, netty-loom-scheduler AND mpsc-scheduler,
-  # which the root pom's loom-jdk profile only adds to the reactor on JDK 28+.
+  # Everything, on the Loom JDK: core, examples AND mpsc-scheduler, which the root pom's
+  # loom-jdk profile only adds to the reactor on JDK 28+.
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -75,23 +75,22 @@ jobs:
           "$LOOM_JDK/bin/java" -version
           "$LOOM_JDK/bin/javap" 'java.lang.Thread$Affinity' >/dev/null
 
-      # The Loom JDK's major version must be netty-loom-scheduler's <java.version>. Without this
+      # The Loom JDK's major version must be mpsc-scheduler's <java.version>. Without this
       # check a mismatch surfaces as an opaque compiler error.
       #
       # That module's java.version is the one to compare, NOT the root pom's: the root sets 25
       # (core and examples compile at release=25 and run on a stock JDK), and only
-      # the scheduler module -- the one built with --enable-preview against the virtual thread
-      # scheduler SPI -- follows the Loom JDK's own major version.
-      - name: Assert the Loom JDK major version matches netty-loom-scheduler
+      # the scheduler module follows the Loom JDK's own major version.
+      - name: Assert the Loom JDK major version matches mpsc-scheduler
         run: |
           set -euo pipefail
           # "|| true" on each pipeline is deliberate: under `set -e -o pipefail` a grep that
           # matches nothing would abort here with no message -- these are meant to end up empty
           # so the "-z" checks below can report something actionable instead.
-          expected=$(grep -oE '<java\.version>[0-9]+</java\.version>' netty-loom-scheduler/pom.xml \
+          expected=$(grep -oE '<java\.version>[0-9]+</java\.version>' mpsc-scheduler/pom.xml \
             | grep -oE '[0-9]+' || true)
           if [ -z "$expected" ]; then
-            echo "::error::Could not find <java.version> in netty-loom-scheduler/pom.xml"
+            echo "::error::Could not find <java.version> in mpsc-scheduler/pom.xml"
             exit 1
           fi
           actual=$("$LOOM_JDK/bin/java" -XshowSettings:properties -version 2>&1 \
@@ -100,11 +99,11 @@ jobs:
             echo "::error::Could not determine the Loom JDK's major version"
             exit 1
           fi
-          echo "netty-loom-scheduler java.version: $expected"
-          echo "Loom JDK major version:            $actual"
+          echo "mpsc-scheduler java.version: $expected"
+          echo "Loom JDK major version:      $actual"
           if [ "$expected" != "$actual" ]; then
             echo "::error::Loom JDK major version ($actual) does not match <java.version>" \
-              "($expected) in netty-loom-scheduler/pom.xml."
+              "($expected) in mpsc-scheduler/pom.xml."
             exit 1
           fi
 
@@ -118,9 +117,8 @@ jobs:
 
       # CI must CHECK formatting, not rewrite it: "-P '!dev'" disables the profile that applies
       # Spotless at compile time, leaving only the spotless:check bound to verify. "verify" also
-      # runs core's single Surefire execution (the JDK builtin), all of netty-loom-scheduler's
-      # -- the vendored scheduler's own tests, carrier, work stealing, install,
-      # replaceBuiltinScheduler -- and mpsc-scheduler's: the suites and install.
+      # runs core's single Surefire execution (the JDK builtin) and mpsc-scheduler's: the
+      # suites and install.
       - name: Build with Maven
         env:
           JAVA_HOME: ${{ env.LOOM_JDK }}

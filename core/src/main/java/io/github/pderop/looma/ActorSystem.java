@@ -32,16 +32,15 @@ import io.github.pderop.looma.spi.MailboxQueueFactory;
  * hierarchy, one virtual thread per burst of messages, supervision,
  * {@code ask}, graceful stop). What varies is which
  * {@code io.github.pderop.looma.spi.ActorScheduler} supplies the factories that
- * start those threads — three ship in this project: two carrier-affine ones,
- * {@link Carriers#affine(int)} and {@link Carriers#mpsc(int)}, discovered
- * through the SPI and backed by a JVM-wide pool of carrier threads installed
- * once per process — by {@link Builder#carriers(Carriers)} or by JVM flags —
- * and outliving any single {@code ActorSystem}; or, when none is installed, the
- * JDK builtin scheduler, whose factories create plain virtual threads on the
- * JDK's default virtual thread scheduler. Both are directly comparable for
- * exactly this reason; see {@link #shutdown()} and
- * {@link #awaitTermination(long, TimeUnit)} for the one place the difference
- * still shows up, at process teardown.
+ * start those threads — two ship in this project: a carrier-affine one,
+ * {@link Carriers#affine(int)}, discovered through the SPI and backed by a
+ * JVM-wide pool of carrier threads installed once per process — by
+ * {@link Builder#carriers(Carriers)} or by JVM flags — and outliving any single
+ * {@code ActorSystem}; or, when none is installed, the JDK builtin scheduler,
+ * whose factories create plain virtual threads on the JDK's default virtual
+ * thread scheduler. Both are directly comparable for exactly this reason; see
+ * {@link #shutdown()} and {@link #awaitTermination(long, TimeUnit)} for the one
+ * place the difference still shows up, at process teardown.
  */
 public interface ActorSystem {
 
@@ -83,9 +82,8 @@ public interface ActorSystem {
 
 		/**
 		 * Chooses and sizes this JVM's virtual-thread scheduler in code — what the
-		 * {@code -Djdk.virtualThreadScheduler.*} and {@code -Dio.netty.loom.*} flags
-		 * otherwise do. {@link #build()} sets the properties those flags would have
-		 * set, then checks that they took.
+		 * {@code -Djdk.virtualThreadScheduler.*} flags otherwise do. {@link #build()}
+		 * sets the properties those flags would have set, then checks that they took.
 		 *
 		 * <p>
 		 * <b>{@link #build()} must run before this JVM's first virtual thread.</b> The
@@ -93,12 +91,10 @@ public interface ActorSystem {
 		 * threads, and cannot be changed afterwards. So {@link #build()} throws
 		 * {@link IllegalStateException}:
 		 * <ul>
-		 * <li>for {@link Carriers#affine(int)} and {@link Carriers#mpsc(int)}, when no
-		 * provider on the classpath can install it: no scheduler module, a JVM started
-		 * without {@code --enable-preview} for {@code affine}, or a JDK without the
-		 * MPSC scheduler;
-		 * <li>for either of them, when a virtual thread already ran under another
-		 * scheduler;
+		 * <li>for {@link Carriers#affine(int)}, when no provider on the classpath can
+		 * install it: no scheduler module, or a JDK without the MPSC scheduler;
+		 * <li>for {@link Carriers#affine(int)}, when a virtual thread already ran under
+		 * another scheduler;
 		 * <li>when {@code -Djdk.virtualThreadScheduler.implClass} or
 		 * {@code -Djdk.virtualThreadScheduler.useMpsc} is set: the pool is configured
 		 * by the flags or by the code, not by both;
@@ -111,8 +107,8 @@ public interface ActorSystem {
 		 * parallelism is then silently the JDK's default.
 		 *
 		 * <p>
-		 * {@code --enable-preview} and {@code --enable-native-access} are not
-		 * properties and stay on the command line.
+		 * {@code --enable-native-access} is not a property and stays on the command
+		 * line.
 		 *
 		 * @throws NullPointerException
 		 *             if {@code carriers} is {@code null}

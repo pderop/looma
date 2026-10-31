@@ -21,9 +21,8 @@ import io.github.pderop.looma.Carriers;
  * A {@link ServiceLoader}-discoverable factory for one {@link ActorScheduler}.
  *
  * <p>
- * {@code core} ships no implementation of this interface: the two in this
- * project live in the {@code netty-loom-scheduler} and {@code mpsc-scheduler}
- * modules, each registered under
+ * {@code core} ships no implementation of this interface: the one in this
+ * project lives in the {@code mpsc-scheduler} module, registered under
  * {@code META-INF/services/io.github.pderop.looma.spi.ActorSchedulerProvider}.
  * A third-party scheduler is added to a process the same way — implement both
  * SPI interfaces and register the provider — without {@code core} ever
@@ -48,8 +47,8 @@ public interface ActorSchedulerProvider {
 	ActorScheduler create();
 
 	/**
-	 * Installs this provider's scheduler in this JVM as a carrier-affine pool
-	 * shaped by {@code carriers}, as {@code ActorSystem.Builder.carriers(...)}
+	 * Installs this provider's scheduler in this JVM as the carrier-affine pool
+	 * {@code carriers} describes, as {@code ActorSystem.Builder.carriers(...)}
 	 * asks. On success {@link #isAvailable()} reports {@code true} and
 	 * {@link #create(Carriers.Affine)} is called next.
 	 *
@@ -80,27 +79,4 @@ public interface ActorSchedulerProvider {
 		return create();
 	}
 
-	/**
-	 * Installs this provider's scheduler in this JVM as the MPSC pool
-	 * {@code carriers} describes. The same contract as
-	 * {@link #install(Carriers.Affine)}.
-	 *
-	 * @return {@code false} when this provider offers no MPSC scheduler; the
-	 *         default
-	 * @throws IllegalStateException
-	 *             when this provider is the right one but cannot be installed as
-	 *             asked
-	 */
-	default boolean install(Carriers.Mpsc carriers) {
-		return false;
-	}
-
-	/**
-	 * Creates a new {@link ActorScheduler} for a system built with
-	 * {@code carriers}, after {@link #install(Carriers.Mpsc)} accepted them. The
-	 * default calls {@link #create()}.
-	 */
-	default ActorScheduler create(Carriers.Mpsc carriers) {
-		return create();
-	}
 }

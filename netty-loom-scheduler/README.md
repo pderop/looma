@@ -1,5 +1,14 @@
 # `netty-loom-scheduler`
 
+**This module is no longer built, since 2026-10-31.** It stays in the repository for a possible
+patch upstream. Looma's `Carriers.affine(n)` now runs the JDK's MPSC scheduler, in
+[`mpsc-scheduler`](../mpsc-scheduler/README.md). The tag `last-affine` is the last commit where
+this module builds and passes its tests, with the root `pom.xml` that lists it and the Spotless
+exclude described below. Build it, or run `netty-loom-scheduler/scripts/run-wake-jmh.sh`, from
+that tag.
+
+What follows describes the module as it was at that tag.
+
 This module holds:
 
 - a copy of the upstream carrier-affine virtual thread scheduler, **byte-for-byte except for two
@@ -65,7 +74,7 @@ is kept **diffable against upstream**:
   carrying the plain Apache-2.0 header rather than the upstream project's copyright line,
   never mixed into a copied file.
 - The JMH benchmarks are Looma's own too, under `src/test/java/io/github/pderop/looma/scheduler/netty/jmh/`.
-  `scripts/run-wake-jmh.sh` runs them.
+  `netty-loom-scheduler/scripts/run-wake-jmh.sh` runs them.
 
 ## Refreshing from upstream
 

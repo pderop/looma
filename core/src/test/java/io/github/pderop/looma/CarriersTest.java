@@ -24,15 +24,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * {@link ActorSystem.Builder#build()} makes before installing anything. Nothing
  * here installs a scheduler: this JVM is the builtin control, and a property
  * set here would leak into every other test in it. Installing is tested where a
- * scheduler can be, in the {@code install-test} of {@code netty-loom-scheduler}
- * and {@code mpsc-scheduler}.
+ * scheduler can be, in the {@code install-test} of {@code mpsc-scheduler}.
  */
 class CarriersTest {
 
 	@Test
 	void eachKindIsItsCount() {
 		assertEquals(4, Carriers.affine(4).count());
-		assertEquals(4, Carriers.mpsc(4).count());
 		assertEquals(4, Carriers.builtin(4).parallelism());
 		assertEquals(Carriers.affine(4), Carriers.affine(4));
 	}
@@ -40,7 +38,6 @@ class CarriersTest {
 	@Test
 	void rejectsAnEmptyPool() {
 		assertThrows(IllegalArgumentException.class, () -> Carriers.affine(0));
-		assertThrows(IllegalArgumentException.class, () -> Carriers.mpsc(0));
 		assertThrows(IllegalArgumentException.class, () -> Carriers.builtin(0));
 	}
 

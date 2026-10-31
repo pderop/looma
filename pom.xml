@@ -11,14 +11,15 @@
     <name>looma</name>
 
     <!--
-        Two JDKs, on purpose: core and examples compile at release=25, without the
-        preview compiler flag, and run on a stock JDK 25. netty-loom-scheduler needs a
-        Loom-enabled JDK 28+ and that preview flag, for the JDK's preview virtual thread
-        scheduler SPI (Thread.VirtualThreadScheduler). mpsc-scheduler needs the JDK of
-        openjdk/loom pull request 227, for Thread.Affinity, but no preview flag. Both join the
-        reactor only under the loom-jdk profile below, activated automatically when the build
-        JDK is 28 or newer (see .sdkmanrc). A stock JDK fails at compile time only inside
-        those two modules.
+        Two JDKs, on purpose: core and examples compile at release=25 and run on a stock
+        JDK 25. mpsc-scheduler needs the JDK of openjdk/loom pull request 227, for
+        Thread.Affinity. It joins the reactor only under the loom-jdk profile below, activated
+        automatically when the build JDK is 28 or newer (see .sdkmanrc). A stock JDK fails at
+        compile time only inside that module.
+
+        netty-loom-scheduler, Looma's copy of the Netty-VirtualThread-Scheduler, is no longer
+        built: it stays in the repository for a possible patch upstream. The tag last-affine is
+        the last commit where it builds.
     -->
     <modules>
         <module>core</module>
@@ -67,18 +68,6 @@
                 <version>3.10.2</version>
                 <configuration>
                     <java>
-                        <!--
-                            netty-loom-scheduler/src/**/io/netty/loom/** is a byte-for-byte copy
-                            of upstream franz1981/Netty-VirtualThread-Scheduler: formatting it
-                            would reformat ~1900 lines kept diffable against upstream and stamp
-                            this project's Apache-2.0 header over its own. This exclude also covers
-                            EventLoopSchedulerWorkStealingTest, which is this project's own test but
-                            must live in that same io.netty.loom.scheduler package to reach a
-                            package-private field.
-                        -->
-                        <excludes>
-                            <exclude>**/io/netty/loom/**</exclude>
-                        </excludes>
                         <eclipse/>
                         <licenseHeader>
                             <content>/*
@@ -139,7 +128,7 @@
         </profile>
         <!--
             Additive: profile <modules> add to the base <modules>, they do not replace them, so
-            netty-loom-scheduler and mpsc-scheduler must not also be listed there. Activated by the JDK the build
+            mpsc-scheduler must not also be listed there. Activated by the JDK the build
             itself runs on (not by an explicit -P), so `mvn verify` on a stock JDK 25 simply does
             not see this module, and `mvn verify` on JDK 28-loom (or newer) does.
         -->
@@ -147,7 +136,6 @@
             <id>loom-jdk</id>
             <activation><jdk>[28,)</jdk></activation>
             <modules>
-                <module>netty-loom-scheduler</module>
                 <module>mpsc-scheduler</module>
             </modules>
         </profile>

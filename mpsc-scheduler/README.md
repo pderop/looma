@@ -1,8 +1,8 @@
 # `mpsc-scheduler`
 
 This module holds the adapter of the JDK's MPSC scheduler, `io.github.pderop.looma.scheduler.mpsc`,
-for `Carriers.mpsc(n)`. It reaches Looma through the SPI declared in `core`
-(`io.github.pderop.looma.spi`). [`docs/schedulers.md`](../docs/schedulers.md#mpsc-the-jdks-mpsc-scheduler)
+for `Carriers.affine(n)`. It reaches Looma through the SPI declared in `core`
+(`io.github.pderop.looma.spi`). [`docs/schedulers.md`](../docs/schedulers.md#affine-the-jdks-mpsc-scheduler)
 says what the scheduler does.
 
 - `MpscActorSchedulerProvider`: sets the properties, starts the JDK's pollers and timers, finds
@@ -42,7 +42,7 @@ preview API, so this module compiles at `release=28` without `--enable-preview`.
 
 - `default-test`: the actor suites of `core`, and `MpscAffinityTest`, on four MPSC carriers
   chosen by flags;
-- `install-test`: `Carriers.mpsc(n)` installing the scheduler, with no flag, one JVM per class.
+- `install-test`: `Carriers.affine(n)` installing the scheduler, with no flag, one JVM per class.
   On Linux, it also checks that each carrier has its own CPU, and that these threads keep every
   CPU when an actor starts them or uses them: the JDK's pollers, its timers, the common pool and
   `platformThreadFactory()`. Elsewhere, it checks that the carriers have no cluster, since

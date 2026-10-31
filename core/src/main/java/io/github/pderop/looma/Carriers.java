@@ -19,17 +19,16 @@ package io.github.pderop.looma;
  * instead of JVM flags.
  *
  * <ul>
- * <li>{@link #affine(int)}: Looma's copy of the Netty-VirtualThread-Scheduler.
- * <li>{@link #mpsc(int)}: the JDK's MPSC scheduler (openjdk/loom pull request
- * 227).
+ * <li>{@link #affine(int)}: each actor stays on one carrier. Today the JDK's
+ * MPSC scheduler (openjdk/loom pull request 227).
  * <li>{@link #builtin(int)}: the JDK's default scheduler, today a ForkJoinPool.
  * </ul>
  *
  * <p>
- * With {@code affine} and {@code mpsc}, each actor stays on one carrier for
- * life, each carrier is pinned to one CPU (on Linux), and an idle carrier may
- * steal only the threads that actors offload. There are no options: this is the
- * setup the benchmark found the fastest.
+ * With {@code affine}, each actor stays on one carrier for life, each carrier
+ * is pinned to one CPU (on Linux), and an idle carrier may steal only the
+ * threads that actors offload. There are no options: this is the setup the
+ * benchmark found the fastest.
  *
  * <p>
  * <b>A scheduler is chosen once per JVM, before its first virtual thread.</b>
@@ -46,29 +45,17 @@ package io.github.pderop.looma;
 public sealed interface Carriers {
 
 	/**
-	 * Looma's copy of the Netty-VirtualThread-Scheduler, with {@code count}
-	 * carriers. Each carrier is pinned to one CPU and grouped with the carriers
-	 * that share its L3 cache. An idle carrier may steal work from the carriers of
-	 * its group, but never an actor.
+	 * A pool of {@code count} carriers where each actor stays on one carrier. Today
+	 * the JDK's MPSC scheduler: each carrier is pinned to one CPU, each actor has
+	 * the {@code Thread.Affinity} of its carrier, so it never moves, and an idle
+	 * carrier may steal the other threads, from any carrier. Needs the JDK of
+	 * openjdk/loom pull request 227.
 	 *
 	 * @throws IllegalArgumentException
 	 *             if {@code count} is less than 1
 	 */
 	static Affine affine(int count) {
 		return new Affine(count);
-	}
-
-	/**
-	 * The JDK's MPSC scheduler, with {@code count} carriers. Each carrier is pinned
-	 * to one CPU. Each actor has the {@code Thread.Affinity} of its carrier, so it
-	 * never moves. An idle carrier may steal the other threads, from any carrier.
-	 * Needs the JDK of openjdk/loom pull request 227.
-	 *
-	 * @throws IllegalArgumentException
-	 *             if {@code count} is less than 1
-	 */
-	static Mpsc mpsc(int count) {
-		return new Mpsc(count);
 	}
 
 	/**
@@ -84,7 +71,7 @@ public sealed interface Carriers {
 	}
 
 	/**
-	 * Looma's copy of the Netty-VirtualThread-Scheduler: see {@link #affine(int)}.
+	 * A pool where each actor stays on one carrier: see {@link #affine(int)}.
 	 *
 	 * @param count
 	 *            carriers in the pool
@@ -92,21 +79,6 @@ public sealed interface Carriers {
 	record Affine(int count) implements Carriers {
 
 		public Affine {
-			if (count < 1) {
-				throw new IllegalArgumentException("carrier count must be at least 1, not " + count);
-			}
-		}
-	}
-
-	/**
-	 * The JDK's MPSC scheduler: see {@link #mpsc(int)}.
-	 *
-	 * @param count
-	 *            carriers in the pool
-	 */
-	record Mpsc(int count) implements Carriers {
-
-		public Mpsc {
 			if (count < 1) {
 				throw new IllegalArgumentException("carrier count must be at least 1, not " + count);
 			}

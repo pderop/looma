@@ -29,8 +29,8 @@ import io.github.pderop.looma.spi.ActorSchedulerProvider;
  * <p>
  * Discovery uses {@link ServiceLoader#load(Class, ClassLoader)} with this
  * class's own defining classloader — deliberately <b>not</b> the thread context
- * classloader overload. The JDK itself resolves
- * {@code io.netty.loom.scheduler.NettyScheduler} through the <i>system</i>
+ * classloader overload. The JDK itself resolves a scheduler named by
+ * {@code -Djdk.virtualThreadScheduler.implClass} through the <i>system</i>
  * classloader while running {@code VirtualThread.<clinit>}, and every
  * deployment recipe this project documents is a flat-classpath one; the TCCL
  * overload would silently miss a provider on setups where the two classloaders
@@ -138,18 +138,10 @@ final class ActorSchedulers {
 			case Carriers.Affine affine -> {
 				ActorSchedulerProvider provider = firstProvider(p -> p.install(affine), true)
 						.orElseThrow(() -> new IllegalStateException("no ActorSchedulerProvider could install " + affine
-								+ ": a carrier-affine scheduler needs looma-netty-scheduler on the classpath of a"
-								+ " Loom JDK started with --enable-preview"));
+								+ ": it needs looma-mpsc-scheduler on the classpath of a JDK built from openjdk/loom"
+								+ " pull request 227"));
 				discovered = Optional.of(provider);
 				yield provider.create(affine);
-			}
-			case Carriers.Mpsc mpsc -> {
-				ActorSchedulerProvider provider = firstProvider(p -> p.install(mpsc), true)
-						.orElseThrow(() -> new IllegalStateException("no ActorSchedulerProvider could install " + mpsc
-								+ ": the MPSC scheduler needs looma-mpsc-scheduler on the classpath of a JDK built"
-								+ " from openjdk/loom pull request 227"));
-				discovered = Optional.of(provider);
-				yield provider.create(mpsc);
 			}
 			case Carriers.Builtin builtin -> {
 				String implClass = System.getProperty("jdk.virtualThreadScheduler.implClass");

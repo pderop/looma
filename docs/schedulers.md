@@ -2,19 +2,27 @@
 
 There is one actor engine. An actor runs on a virtual thread only while it has messages: one
 virtual thread per burst of messages. The scheduler decides which carrier runs those threads.
-Looma ships three:
+Looma ships two:
 
 | In code | What it is | Carriers pinned | An actor moves | An idle carrier steals |
 | --- | --- | --- | --- | --- |
-| `Carriers.affine(n)` | Looma's copy of the [Netty-VirtualThread-Scheduler](https://github.com/franz1981/Netty-VirtualThread-Scheduler) of Francesco Nigro | yes, one CPU each | never | the other threads, from the carriers of its L3 |
-| `Carriers.mpsc(n)` | the JDK's MPSC scheduler, from [openjdk/loom pull request 227](https://github.com/openjdk/loom/pull/227) | yes, one CPU each | never | the other threads, from any carrier |
+| `Carriers.affine(n)` | the JDK's MPSC scheduler, from [openjdk/loom pull request 227](https://github.com/openjdk/loom/pull/227) | yes, one CPU each | never | the other threads, from any carrier |
 | `Carriers.builtin(n)` | the JDK's default scheduler, today a `ForkJoinPool` | no | at every burst | anything |
 
 "The other threads" are the ones an actor offloads through `ActorContext.vThreadFactory()`: an
 I/O call, for example. Pinning works on Linux only; elsewhere the carriers float.
 
-`affine` and `mpsc` have no options. Each one is the setup the [benchmark](benchmark.md) found the
-fastest for it. `builtin` is the control they are compared with.
+`affine` has no options. It is the setup the [benchmark](benchmark.md) found the fastest.
+`builtin` is the control it is compared with.
+
+`affine` names what Looma guarantees: an actor stays on one carrier. The MPSC scheduler is how the
+JDK does it today, in the module `mpsc-scheduler`. The benchmark names the runs `mpsc`, after the
+scheduler that ran.
+
+Until 2026-10-31, `affine` was Looma's copy of the
+[Netty-VirtualThread-Scheduler](https://github.com/franz1981/Netty-VirtualThread-Scheduler) of
+Francesco Nigro, and the MPSC scheduler was `Carriers.mpsc(n)`. That copy, `netty-loom-scheduler`,
+is no longer built. In the results up to that date, `affine` is that copy.
 
 ## Choosing one
 
@@ -22,7 +30,7 @@ fastest for it. `builtin` is the control they are compared with.
 
 ```java
 ActorSystem system = ActorSystem.builder()
-        .carriers(Carriers.affine(8))       // or Carriers.mpsc(8), or Carriers.builtin(8)
+        .carriers(Carriers.affine(8))       // or Carriers.builtin(8)
         .build();
 ```
 
@@ -30,8 +38,7 @@ ActorSystem system = ActorSystem.builder()
 
 | `Carriers` | Properties it sets |
 | --- | --- |
-| `affine(n)` | `jdk.virtualThreadScheduler.implClass=io.netty.loom.scheduler.NettyScheduler`, `io.netty.loom.schedulers=n`, `io.netty.loom.topology=io.netty.loom.topology.LinuxCarrierTopology`, `io.netty.loom.workstealing.enabled=true`, `io.netty.loom.workstealing.scope=CLUSTER_LOCAL`, `jdk.pollerMode=3` |
-| `mpsc(n)` | `jdk.virtualThreadScheduler.useMpsc=true`, `jdk.virtualThreadScheduler.mpscSteal=true`, `jdk.virtualThreadScheduler.parallelism=n` |
+| `affine(n)` | `jdk.virtualThreadScheduler.useMpsc=true`, `jdk.virtualThreadScheduler.mpscSteal=true`, `jdk.virtualThreadScheduler.parallelism=n`, and `java.util.concurrent.ForkJoinPool.common.threadFactory` unless already set: see [Threads started from an actor](#threads-started-from-an-actor) |
 | `builtin(n)` | `jdk.virtualThreadScheduler.parallelism=n` |
 
 The JDK reads these properties once, while it initialises virtual threads. So `build()` must run
@@ -42,53 +49,31 @@ another scheduler when:
 - a property it sets already holds another value, from a `-D` flag;
 - the command line already chooses a scheduler, with `-Djdk.virtualThreadScheduler.implClass` or
   `-Djdk.virtualThreadScheduler.useMpsc`;
-- no provider can install it: no `looma-netty-scheduler` on the classpath for `affine`, or no
-  `--enable-preview`; no `looma-mpsc-scheduler` on the classpath for `mpsc`; or a JDK without the
-  MPSC scheduler;
+- no provider can install it: no `looma-mpsc-scheduler` on the classpath for `affine`, or a JDK
+  without the MPSC scheduler;
 - an earlier system in this JVM was built with another pool. A second system on the same pool is
   fine.
 
 One case goes undetected: `builtin(n)` after a virtual thread already ran. The JDK has sized its
 pool, and `n` is silently not what is in force.
 
-`--enable-preview` and `--enable-native-access=ALL-UNNAMED` are launch flags, not properties: they
-stay on the command line.
+`--enable-native-access=ALL-UNNAMED` is a launch flag, not a property: it stays on the command
+line.
 
 ### As JVM flags
 
 Without `carriers(...)`, the scheduler comes from the flags, and `build()` finds it. The flags are
-those of the table above, plus the options of the copied scheduler, which `affine(n)` fixes:
-
-| Property | Default | Meaning |
-| --- | --- | --- |
-| `io.netty.loom.topology` | none | `io.netty.loom.topology.LinuxCarrierTopology` pins the carriers and groups them by L3. With none, the carriers are not pinned |
-| `io.netty.loom.workstealing.enabled` | `false` | work stealing |
-| `io.netty.loom.workstealing.scope` | `GLOBAL` | `CLUSTER_LOCAL`: steal only within an L3 |
-| `io.netty.loom.yield.us` | `50` | how long a carrier drains its queues before it checks for I/O and stealing, in µs |
-| `io.netty.loom.resumed.continuations` | `1024` | initial run-queue capacity per carrier |
-| `io.netty.loom.replaceBuiltinScheduler` | `false` | run every virtual thread of the JVM on the carriers; not used by Looma |
-
-With the flags, the actors of `affine` still never move: that is in Looma's adapter, not in a
-property. The MPSC carriers are not pinned: only `mpsc(n)` pins them.
-
-The copied scheduler logs one line at start-up, for instance `topology=LinuxCarrierTopology
-carriers=8 clusters=2 stealScope=CLUSTER_LOCAL workStealing=true`.
+those of the table above. With the flags, the actors still never move: that is in Looma's adapter,
+not in a property. But the carriers are not pinned: only `affine(n)` pins them.
 
 Looma reads no system property of its own.
 
 ### On the classpath
 
-Each scheduler has its module, which must be on the classpath, or there is no provider: discovery
-falls back to the builtin, and `carriers(...)` throws.
+`affine` needs its module on the classpath, or there is no provider: discovery falls back to the
+builtin, and `carriers(Carriers.affine(n))` throws.
 
 ```xml
-<!-- affine -->
-<dependency>
-    <groupId>io.github.pderop</groupId>
-    <artifactId>looma-netty-scheduler</artifactId>
-    <version>1.0-SNAPSHOT</version>
-</dependency>
-<!-- mpsc -->
 <dependency>
     <groupId>io.github.pderop</groupId>
     <artifactId>looma-mpsc-scheduler</artifactId>
@@ -96,32 +81,10 @@ falls back to the builtin, and `carriers(...)` throws.
 </dependency>
 ```
 
-For `affine`, the jar must be visible to the **system** classloader: the JDK loads `implClass` with
-`Class.forName(cn, true, ClassLoader.getSystemClassLoader())`. Under a plain `-cp` launch (Surefire,
-the `scripts/`) that is automatic; under a container that interposes its own classloader (a Spring
-Boot fat jar, Quarkus) it is not.
-
-A provider that fails to link — a preview-compiled class on a stock JDK — is caught and skipped by
+A provider that fails to link — a class compiled for a newer JDK — is caught and skipped by
 discovery, which keeps looking.
 
-## `affine`: Looma's copy of the Netty-VirtualThread-Scheduler
-
-- Each carrier is pinned to one CPU of the JVM's list, and grouped with the carriers that share
-  its L3 cache.
-- Every actor has one **home carrier** for life, chosen at spawn.
-- Each carrier has two queues. The **home queue** holds the actors' bursts, and only that carrier
-  reads it. The **usual queue** holds the other threads.
-- An idle carrier steals from the usual queue of a carrier of its own L3. It never reads a home
-  queue, so it never takes an actor.
-- A stolen thread runs once on the thief, then goes back to its home carrier.
-- `jdk.pollerMode=3`: each carrier has its own read poller, a virtual thread.
-
-The home queue is one of the two changes Looma makes to its copy of the scheduler. The other one
-starts the JDK's poller threads before the carriers pin themselves. A new thread runs only on the
-CPUs of the thread that starts it, so a poller started later from a pinned carrier would stay on
-that carrier's CPU. See [`netty-loom-scheduler/README.md`](../netty-loom-scheduler/README.md).
-
-## `mpsc`: the JDK's MPSC scheduler
+## `affine`: the JDK's MPSC scheduler
 
 The MPSC scheduler comes with the JDK of openjdk/loom pull request 227, a draft on Loom's
 `fibers` branch. It replaces the JDK's default scheduler when
@@ -153,7 +116,7 @@ any `i > 0` throws at spawn.
 
 ## Placement
 
-With `affine` and `mpsc`, each actor has a home carrier, chosen at spawn. Two defaults, each
+With `affine`, each actor has a home carrier, chosen at spawn. Two defaults, each
 overridable per spawn with `SpawnOptions.placedOn(Placement)`:
 
 - a **root** actor is placed round-robin over the carriers (`Placement.roundRobin()`);
@@ -175,7 +138,7 @@ both are the same, since an actor never moves.
 
 ## The engine
 
-The engine is in `io.github.pderop.looma.impl`, once, for all three schedulers:
+The engine is in `io.github.pderop.looma.impl`, once, for both schedulers:
 
 - **`ActorRuntime`** — what one system shares: the path registry, the roots, in-flight accounting,
   shutdown and termination, the mailbox-queue factory.
@@ -227,7 +190,7 @@ daemon threads, created on first use and never torn down.
 
 ```java
 public interface ActorScheduler extends AutoCloseable {
-    int carrierCount();                          // builtin: 1 | affine, mpsc: one per carrier
+    int carrierCount();                          // builtin: 1 | affine: one per carrier
     ThreadFactory vThreadFactory(int i);         // the threads an actor offloads
     default ThreadFactory actorLoopFactory(int i) { return vThreadFactory(i); }   // its bursts
     int currentCarrierId();                      // the calling thread's carrier; builtin: -1
@@ -239,7 +202,7 @@ public interface ActorScheduler extends AutoCloseable {
 ```
 
 `ActorSchedulerProvider` creates one, says whether it `isAvailable()`, and can install itself for
-`Carriers.Affine` or `Carriers.Mpsc`. A third-party scheduler plugs in the same way as Looma's own:
+`Carriers.Affine`. A third-party scheduler plugs in the same way as Looma's own:
 implement both, register the provider under
 `META-INF/services/io.github.pderop.looma.spi.ActorSchedulerProvider`, and `core` never learns its
 name.
@@ -253,27 +216,13 @@ counts as in-flight work; a scheduler never counts its own.
 
 ## Tests
 
-The two scheduler modules run their tests in several Surefire executions, because the scheduler
-is configured once per JVM. In `netty-loom-scheduler`:
+The scheduler module runs its tests in several Surefire executions, because the scheduler is
+configured once per JVM. In `mpsc-scheduler`:
 
 | Execution | Flags | Runs |
 | --- | --- | --- |
-| `default-test` | 2 carriers | the copied scheduler's own tests |
-| `carrier-test` | `affine`, 2 carriers, no stealing | the actor suites, `CarriersCommandLineTest` |
-| `workstealing-test` | `affine`, 4 carriers, stealing, `FakeClusterTopology` | the actor suites again, `EventLoopSchedulerWorkStealingTest`, `HomeVirtualThreadTest` |
-| `install-test` | no scheduler flag, one JVM per class | `carriers(...)` installing `affine`, and refusing to once a virtual thread has run |
-| `replaceBuiltinScheduler-test` | upstream's | `ReplaceBuiltinSchedulerTest` |
-
-In `mpsc-scheduler`:
-
-| Execution | Flags | Runs |
-| --- | --- | --- |
-| `default-test` | `mpsc`, 4 carriers, stealing | the actor suites, and `MpscAffinityTest`: an actor never leaves its carrier, an offloaded thread can be stolen |
-| `install-test` | no scheduler flag, one JVM per class | `carriers(...)` installing `mpsc`, and refusing to once a virtual thread has run. On Linux: each carrier on its own CPU, and the threads an actor makes start on every CPU: the JDK's pollers and timers, the common pool, `platformThreadFactory()` |
-
-The executions of `netty-loom-scheduler` carry upstream's
-`-Djdk.traceVirtualThreadLocals=false` and `--add-opens=java.base/java.lang=ALL-UNNAMED`, so that a
-failing upstream test can be reproduced upstream under the same command line.
+| `default-test` | the MPSC scheduler, 4 carriers, stealing | the actor suites, and `MpscAffinityTest`: an actor never leaves its carrier, an offloaded thread can be stolen |
+| `install-test` | no scheduler flag, one JVM per class | `carriers(...)` installing `affine`, and refusing to once a virtual thread has run. On Linux: each carrier on its own CPU, and the threads an actor makes start on every CPU: the JDK's pollers and timers, the common pool, `platformThreadFactory()` |
 
 ## Blocking and pinning
 
@@ -282,18 +231,18 @@ belongs on `ActorContext.vThreadFactory()`, because a blocked burst stalls this 
 
 A *pin* — a native frame on the stack, a JNI or foreign-function call — cannot unmount at all and
 holds its carrier. Under the builtin that costs one `ForkJoinPool` worker, which the pool can
-compensate for; under `affine` and `mpsc` it stalls every virtual thread that calls that carrier
+compensate for; under `affine` it stalls every virtual thread that calls that carrier
 home. `synchronized` no longer pins ([JEP 491](https://openjdk.org/jeps/491), JDK 24).
 
 ## Threads started from an actor
 
-On Linux, a new thread runs only on the CPUs of the thread that starts it. Under `affine` and
-`mpsc`, each carrier is pinned to one CPU. So a platform thread started from an actor keeps that
+On Linux, a new thread runs only on the CPUs of the thread that starts it. Under `affine`, each
+carrier is pinned to one CPU. So a platform thread started from an actor keeps that
 one CPU. On the AMD box, a parallel stream run from an actor ran on one CPU only.
 
 The JDK starts some threads from the thread that first needs them:
 
-| Thread | Started by | Under `mpsc` |
+| Thread | Started by | Under `affine` |
 | --- | --- | --- |
 | `Read-Poller`, `Write-Poller` | the first socket read or write | started at install |
 | `VirtualThread-unparker` | the first sleep or timed wait on a carrier | started at install, on each carrier |
@@ -310,9 +259,7 @@ The application's own threads and executors are not covered: `new Thread`,
 `Thread.ofPlatform()`, `Executors.newFixedThreadPool`, `ScheduledThreadPoolExecutor`. An executor
 starts its threads at its first tasks, from the thread that gives them, even when `main` created
 it. Started from an actor, they should come from `ActorScheduler.platformThreadFactory()`. Under
-`mpsc`, its threads run on every CPU.
-
-`affine` does none of this, except for the pollers.
+`affine`, its threads run on every CPU.
 
 ## Why it is built this way
 
@@ -397,22 +344,14 @@ when the mailbox is empty, so an idle actor holds no stack.
 
 A yield is a second way for a scheduler to move a virtual thread. Under the builtin, the yielded
 continuation is submitted externally when the worker's local queue is empty, and pushed on that
-queue otherwise; either way another worker can run it. Under `affine` and `mpsc` it goes back to
+queue otherwise; either way another worker can run it. Under `affine` it goes back to
 its home carrier. A yielding burst would therefore give `jdk` runs a migration path the other
 runs do not have. The price is the one stated above: a busy actor holds its carrier.
 
 ### Why separate modules, reached through an SPI
 
-`jdk.virtualThreadScheduler.implClass` is a single, process-wide, **preview** hook of a Loom JDK 28,
-and the MPSC scheduler exists only in the JDK of openjdk/loom pull request 227.
-`netty-loom-scheduler` is compiled with `--enable-preview` at `release=28`. `mpsc-scheduler` is
-compiled at `release=28` without it: `Thread.Affinity` is not a preview API. Both only exist in the
-reactor on a Loom JDK (the root pom's `loom-jdk` profile). `core` and `examples` compile at
-`release=25` and run on a stock JDK; neither names a scheduler class. Each scheduler has its own
-module, so one can be dropped without touching the other.
-
-The copied code under `io/netty/loom/**` keeps upstream's packages, class names, properties and
-JFR events, so it stays diffable against upstream; Spotless leaves it alone for the same reason.
-Looma's own code beside it is the adapter, in `io.github.pderop.looma.scheduler.netty`, and the
-tests that need package-private access. The MPSC adapter does not use the copy: it pins its
-carriers with its own `LinuxCpus`.
+The MPSC scheduler exists only in the JDK of openjdk/loom pull request 227. `mpsc-scheduler` is
+compiled at `release=28`, and only exists in the reactor on that JDK (the root pom's `loom-jdk`
+profile). `core` and `examples` compile at `release=25` and run on a stock JDK; neither names a
+scheduler class. Each scheduler has its own module, so one can be dropped without touching the
+rest: that is how `netty-loom-scheduler` left the build.

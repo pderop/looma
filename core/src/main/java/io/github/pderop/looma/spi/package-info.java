@@ -23,9 +23,8 @@
  * {@code ServiceLoader} discovers on the classpath;
  * {@link io.github.pderop.looma.spi.ActorScheduler} is the small placement view
  * of the scheduler it hands back. {@code core} declares both interfaces and
- * ships no implementation of either — the two in this project live in the
- * {@code netty-loom-scheduler} and {@code mpsc-scheduler} modules, each
- * registered under
+ * ships no implementation of either — the one in this project lives in the
+ * {@code mpsc-scheduler} module, registered under
  * {@code META-INF/services/io.github.pderop.looma.spi.ActorSchedulerProvider}.
  * When none is found, or the JVM it is found on has not actually installed the
  * scheduler it wraps, {@code core}'s own JDK builtin scheduler is used instead.

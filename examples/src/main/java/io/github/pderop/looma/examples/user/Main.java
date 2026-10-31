@@ -162,13 +162,13 @@ public final class Main {
 	 * carriers.
 	 */
 	private static Carriers carriers(int count) {
-		String name = System.getProperty("bench.scheduler", "affine");
+		String name = System.getProperty("bench.scheduler", "mpsc");
 		return switch (name) {
-			case "affine" -> Carriers.affine(count);
-			case "mpsc" -> Carriers.mpsc(count);
+			// The benchmark names the scheduler that runs: the MPSC one, behind
+			// Carriers.affine.
+			case "mpsc" -> Carriers.affine(count);
 			case "jdk" -> Carriers.builtin(count);
-			default ->
-				throw new IllegalArgumentException("bench.scheduler must be affine, mpsc or jdk, not '" + name + "'");
+			default -> throw new IllegalArgumentException("bench.scheduler must be mpsc or jdk, not '" + name + "'");
 		};
 	}
 
