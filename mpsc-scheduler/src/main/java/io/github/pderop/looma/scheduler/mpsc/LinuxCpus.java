@@ -32,7 +32,7 @@ import java.util.Map;
  * Carrier {@code i} goes to the {@code i}-th CPU the process may run on. The
  * calls go through {@code sched_setaffinity} and {@code sched_getaffinity}. On
  * a system without them, or when the JVM refuses native calls, nothing is
- * pinned, and {@link #pin} says so.
+ * pinned, and {@link #pin} returns false.
  */
 final class LinuxCpus {
 
@@ -61,7 +61,10 @@ final class LinuxCpus {
 		}
 	}
 
-	/** The CPUs the calling thread may run on. */
+	/**
+	 * The CPUs the calling thread may run on. If they cannot be read, the first
+	 * {@code availableProcessors()} CPUs.
+	 */
 	static LinuxCpus discover() {
 		long[] mask = affinity();
 		if (mask == null) {

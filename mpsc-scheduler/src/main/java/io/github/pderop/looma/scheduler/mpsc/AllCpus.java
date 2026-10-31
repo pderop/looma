@@ -19,7 +19,8 @@ import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.concurrent.ThreadFactory;
 
 /**
- * Makes threads that run on every CPU, even when a pinned carrier starts them.
+ * Makes threads that run on every CPU of the process, even when a pinned
+ * carrier starts them.
  *
  * <p>
  * A new thread runs only on the CPUs of the thread that starts it. A thread
@@ -69,7 +70,11 @@ public final class AllCpus implements ForkJoinPool.ForkJoinWorkerThreadFactory {
 		}
 	}
 
-	/** A worker of the common pool, as the JDK makes it, but on every CPU. */
+	/**
+	 * A worker of the common pool. Like the JDK's own, it clears its thread locals
+	 * after each task and has the system class loader. Unlike them, its thread
+	 * group is the one of the thread that starts it.
+	 */
 	private static final class Worker extends ForkJoinWorkerThread {
 
 		Worker(ForkJoinPool pool) {

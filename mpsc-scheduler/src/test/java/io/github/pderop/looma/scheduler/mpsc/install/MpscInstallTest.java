@@ -193,8 +193,9 @@ class MpscInstallTest {
 			});
 		}
 
-		// The JDK shortens "VirtualThread-unparker" to 15 characters for Linux, keeping
-		// its end.
+		// Linux keeps 15 characters of a thread name: the JDK shows
+		// "VirtualThread-unparker"
+		// as "Virtual..parker".
 		List<Path> timers = tasks().filter(task -> name(task).endsWith("parker")).toList();
 		assertFalse(timers.isEmpty(), "no timer thread in this process");
 		for (Path timer : timers) {

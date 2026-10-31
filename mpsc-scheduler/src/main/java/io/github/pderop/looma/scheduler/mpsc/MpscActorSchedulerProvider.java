@@ -28,7 +28,8 @@ import io.github.pderop.looma.spi.ActorSchedulerProvider;
 
 /**
  * Publishes the JDK's MPSC scheduler (openjdk/loom pull request 227) to
- * {@code core}'s {@link ActorSchedulerProvider} discovery.
+ * {@code core}'s {@link ActorSchedulerProvider} discovery, and installs it for
+ * {@link Carriers#affine(int)}.
  *
  * <p>
  * The MPSC scheduler is the JDK's builtin one when
@@ -78,8 +79,9 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 	}
 
 	/**
-	 * A system found by discovery, in a JVM where the flags chose the MPSC
-	 * scheduler. Its carriers are not pinned by Looma.
+	 * A system found by discovery: the flags chose the MPSC scheduler, or an
+	 * earlier {@link #install(Carriers.Affine)} did. Looma pins the carriers only
+	 * in the second case.
 	 */
 	@Override
 	public ActorScheduler create() {
