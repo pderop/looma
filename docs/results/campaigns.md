@@ -8,9 +8,12 @@ number of it comes from. [`../benchmark.md`](../benchmark.md) explains the bench
 ### AMD Ryzen 9 9950X
 
 - [`2026-10-31-ryzen9-9950x/summary.md`](2026-10-31-ryzen9-9950x/summary.md): the latest.
-  `affine`, `mpsc`, `jdk` and `jdk-pinned`, on the JDK of openjdk/loom pull request 227. It
-  replaces a campaign of the same day that ran the same setups under their old names,
-  `stealing-local-home` and `mpsc-home`.
+  `mpsc`, `jdk` and `jdk-pinned`, on the JDK of openjdk/loom pull request 227, without
+  `--enable-preview`. It replaces two earlier campaigns of the same day. The first ran the same
+  setups under their old names, `stealing-local-home` and `mpsc-home`. The second ran `affine`,
+  the copied Netty scheduler, next to `mpsc`, `jdk` and `jdk-pinned`, all with
+  `--enable-preview`; it is in the git history, at commit `268ff6b`. Without the flag, `mpsc`
+  spent the same CPU per request as with it, within 4%, and so did `jdk` and `jdk-pinned`.
 - [`2026-10-24-ryzen9-9950x/summary.md`](2026-10-24-ryzen9-9950x/summary.md): `stealing-local`,
   `stealing-local-home`, `jdk` and `jdk-pinned`, on the Loom JDK of builds.shipilev.net, after
   [#9](https://github.com/pderop/looma/pull/9). `stealing-local-home` spends less CPU per request
@@ -37,9 +40,10 @@ names of their own:
 
 `stealing-global-home` and `mpsc-home-poller3` ran only in short campaigns, not published.
 
-In the campaigns up to 2026-10-31, `affine` is that copied scheduler. Since then, the copy is no
-longer built, `Carriers.affine(n)` runs the MPSC scheduler, and the runs of the MPSC scheduler are
-still named `mpsc`.
+In the campaigns of 2026-10-22 and 2026-10-24, and in the one of commit `268ff6b`, `affine` (or
+its old name, `stealing-local-home`) is that copied scheduler. Since then, the copy is no longer
+built, `Carriers.affine(n)` runs the MPSC scheduler, and the runs of the MPSC scheduler are still
+named `mpsc`.
 
 ## What a campaign contains
 
@@ -49,8 +53,8 @@ still named `mpsc`.
 - **`summary.md`**: the results.
 - **`<case>-c2c-<scheduler>.txt`**: the full `perf c2c` report of each case and scheduler.
 - **`runs/<case>-<run>-<scheduler>-<depth>.out`** and **`.gc.log`**: the console and the GC log
-  of each run, for example `runs/default-r1-affine-256.out`,
-  `runs/big-c2c-jdk-256.out` or `runs/default-epsilon-affine-256.out`.
+  of each run, for example `runs/default-r1-mpsc-256.out`,
+  `runs/big-c2c-jdk-256.out` or `runs/default-epsilon-mpsc-256.out`.
 - **`runs/<case>-stat-<scheduler>.csv`**: the `perf stat` counts of each thread.
 - **`runs/<case>-c2c-<scheduler>.data`**: the `perf c2c` data, which only `perf report` reads.
   It stays in `bench/`: `publish.sh` does not copy it.

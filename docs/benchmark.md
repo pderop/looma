@@ -7,18 +7,17 @@ keeps the actor on one core, the data stays in that core's cache. Does that save
 request makes an actor read a few hundred of its objects. The benchmark compares the CPU each
 scheduler spends per request, the latency, and how often actors moved to another core.
 
-**The answer**, on an AMD Ryzen 9 9950X: when an actor's data fits in its core's L2 cache, the
-schedulers that keep actors on their core spend less CPU per request than the JDK's scheduler:
-42.1% less for `affine`, 57.3% less for `mpsc`. When the data fits in no cache, the JDK's
-scheduler cannot keep up with the rate. With its workers pinned, it keeps up, but spends 16% to
-19% more CPU per request than those two. The numbers:
+**The answer**, on an AMD Ryzen 9 9950X: when an actor's data fits in its core's L2 cache,
+`mpsc`, which keeps each actor on its core, spends 57.0% less CPU per request than the JDK's
+scheduler. When the data fits in no cache, the JDK's scheduler cannot keep up with the rate. With
+its workers pinned, it keeps up, but spends 19.6% more CPU per request than `mpsc`. The numbers:
 [`results/2026-10-31-ryzen9-9950x/summary.md`](results/2026-10-31-ryzen9-9950x/summary.md).
 
-In those results, `affine` is Looma's copy of the Netty-VirtualThread-Scheduler, no longer built
-since. `mpsc` is the scheduler that `Carriers.affine(n)` runs today. Every run up to 2026-10-31
-had `--enable-preview`, which the Netty copy needed. On the JDK of openjdk/loom pull request 227,
-that flag also turns on Valhalla: `Integer` becomes a value class. The runs since have no
-preview flag.
+`mpsc` is the scheduler that `Carriers.affine(n)` runs. The campaigns before this one also ran
+`affine`, Looma's copy of the Netty-VirtualThread-Scheduler, no longer built since, and had
+`--enable-preview`, which that copy needed. On the JDK of openjdk/loom pull request 227, that flag
+also turns on Valhalla: `Integer` becomes a value class. This campaign has no preview flag:
+[`results/campaigns.md`](results/campaigns.md) compares it with the one before.
 
 - Code: [`examples/…/examples/user`](../examples/src/main/java/io/github/pderop/looma/examples/user)
 - Scripts: [`scripts/bench.sh`](../scripts/bench.sh) runs it, and

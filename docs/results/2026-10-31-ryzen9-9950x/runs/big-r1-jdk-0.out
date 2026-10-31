@@ -6,8 +6,8 @@ window       5s warm-up, 20s measured
 
 measure      started, 20s
 throughput   149,999 req/s
-cpu          25.87 us/req (3.88 cores busy) -- server: process minus clients
+cpu          25.78 us/req (3.87 cores busy) -- server: process minus clients
 client cpu   26.66 us/req (4.00 cores busy)
-migrations   87.5% of 93,760 sampled messages ran on another carrier than the one before
-latency      p50 21.2  p90 26.0  p99 30.8  p99.9 784.9  max 3907.6 us (from the scheduled send)
+migrations   85.2% of 93,760 sampled messages ran on another carrier than the one before
+latency      p50 18.3  p90 22.7  p99 28.4  p99.9 56.7  max 4145.2 us (from the scheduled send)
 send lag     p50 0.1  p99 0.2 us (how late the clients sent)
