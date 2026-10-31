@@ -187,7 +187,8 @@ walk   = cpu µs/req at depth 256 - cpu µs/req at depth 0
   `runs/<case>-epsilon-<scheduler>-256.out`.
 - heap used: at exit, Epsilon writes the heap in its GC log, `runs/<case>-epsilon-<scheduler>-256.gc.log`,
   as a line like this one, from `2026-10-24-ryzen9-9950x/runs/default-epsilon-stealing-local-home-256.gc.log`
-  (`stealing-local-home` is the old name of `affine`, see [Older campaigns](#older-campaigns)):
+  (`stealing-local-home` is an old name of the copied Netty scheduler, see
+  [Older campaigns](#older-campaigns)):
   `space 12582912K,  75% used [0x0000000500000000, 0x000000074619cdd8, 0x0000000800000000)`.
   The three addresses are the start of the heap, its top (where the next object would go) and
   its end. heap used = top - start: here 0x74619cdd8 - 0x500000000 = 9,766,030,808 bytes, so

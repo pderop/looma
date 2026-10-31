@@ -133,7 +133,11 @@ lists. `lscpu -e` shows the core and the caches of each CPU.
 - **`--cpus-backend`**: the backend, one thread per CPU.
 
 The client threads run in the benchmark JVM, but their CPU time is not counted: "cpu µs/req" is
-the CPU of the server alone.
+the CPU of the server. One piece of client work runs on the server: the actor that answers
+completes the client's future on its carrier. There, the client only takes the time and pushes
+the request back to its own thread, which counts it. The campaigns up to the one of commit
+`0521e04` counted the latency on the carrier itself, so a little more client work fell in the
+server's CPU.
 
 Who pins what:
 
@@ -141,9 +145,9 @@ Who pins what:
   `taskset` on the backend CPUs.
 - The carriers of `mpsc` pin themselves. Each one takes one CPU of the JVM's list.
 - The client threads pin themselves too, to the client CPUs.
-- The JDK's Master-Poller, the thread that wakes the virtual threads whose socket has data,
-  runs on the carrier CPUs, like the other threads of the JVM. So do the Write-Poller and, in
-  mode 4, the JDK's own Read-Poller.
+- The JDK's poller threads run on the carrier CPUs, like the other threads of the JVM: the
+  Read-Poller and the Write-Poller, and, in `jdk` and `jdk-pinned`, the Master-Poller, which
+  wakes the virtual threads whose socket has data. `mpsc` has no Master-Poller.
 - In `jdk-pinned`, the script pins each JDK carrier to one carrier CPU, during the warm-up.
 - In `jdk`, nothing pins the carriers. They can move between the carrier CPUs.
 
@@ -200,10 +204,10 @@ What the script does:
    the instructions of the server's threads during the same window.
 6. Then one more run per scheduler at `--depth`, the epsilon run: the Epsilon GC, which frees
    nothing, so no GC runs (`-XX:+UseEpsilonGC -Xms12g -Xmx12g -XX:+AlwaysPreTouch`). A run
-   allocates about 5 GiB.
+   allocates 5 to 7 GiB.
 7. It writes `summary.md`, with both cases.
 
-With the 4 default schedulers, that is 72 runs, about 37 minutes; 36 runs for one case.
+With the 3 default schedulers, that is 54 runs, about 28 minutes; 27 runs for one case.
 
 Everything goes to `bench/<date>-<time>/` (`--out` changes it): `summary.md`, and the files each
 of its numbers comes from. [`results/campaigns.md`](results/campaigns.md) explains them, and where each
@@ -324,7 +328,8 @@ CPU cost and their latency. Latency is measured from the planned send time, so a
 cannot hide a delay.
 
 **Why pinned clients.** The client threads are the load, not the server. On their own CPUs, they
-do not compete with the carriers.
+do not compete with the carriers. For the same reason, they count the answers themselves: on
+the carrier, an answer only takes the time and goes back to its client thread.
 
 **Why one carrier per core.** The two CPUs of a core share its L2. Two carriers there would share
 the cache each one is meant to keep to itself.
@@ -338,9 +343,8 @@ clients and the backend.
 **Why only these three.** Earlier campaigns also ran other setups of the same schedulers, and,
 until 2026-10-31, `affine`, Looma's copy of the Netty-VirtualThread-Scheduler: see
 [Older campaigns](results/campaigns.md#older-campaigns). Letting an idle carrier steal an actor cost
-CPU, in the published campaigns. Short runs, not published, also found stealing within an L3
-faster than from any carrier, and the MPSC scheduler faster with poller mode 4 than with mode 3.
-So each scheduler keeps one setup.
+CPU, in the published campaigns. Short runs, not published, also found the MPSC scheduler faster
+with poller mode 4 than with mode 3. So each scheduler keeps one setup.
 
 **Why count the StackChunks.** A parked virtual thread keeps its stack in a `StackChunk`, on the
 heap. If chunks were kept alive and piled up, the GC would have more to do under some

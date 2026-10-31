@@ -167,7 +167,7 @@ do {
     if (envelope != null) { runEnvelope; interrupted(); }
   }
 } while (pending.decrementAndGet() > 0);
-if (TERMINATING && !cascadeStarted) tryFinishDraining();
+if (TERMINATING && !cascadeStarted && pending == 0) tryFinishDraining();
 ```
 
 - The count *is* the serialization: only the `tell` that takes it from 0 starts a burst, so two
@@ -222,8 +222,9 @@ counts as in-flight work; a scheduler never counts its own.
 
 ## Tests
 
-The scheduler module runs its tests in several Surefire executions, because the scheduler is
-configured once per JVM. In `mpsc-scheduler`:
+`core` runs the contract suites once, on the builtin scheduler, in its single Surefire execution.
+The scheduler module runs them again, in several executions, because the scheduler is configured
+once per JVM. In `mpsc-scheduler`:
 
 | Execution | Flags | Runs |
 | --- | --- | --- |
@@ -311,9 +312,9 @@ state while it fits a core's L2, and vanish once it no longer does.**
 ### Why no options
 
 The benchmark compared the setups of each scheduler. Letting an idle carrier steal an actor
-cost CPU: the published campaigns show it, `stealing-local` against `stealing-local-home`. Short
-runs, not published, also found stealing within an L3 faster than from any carrier, and the MPSC
-scheduler faster with poller mode 4 than with mode 3. So each scheduler keeps one setup. Options
+cost CPU: the published campaigns show it, `stealing-local` against `stealing-local-home`, two
+setups of the copied Netty scheduler. Short runs, not published, also found the MPSC scheduler
+faster with poller mode 4 than with mode 3. So each scheduler keeps one setup. Options
 would make every user answer questions the benchmark already answered. The old setups, and their
 results, are in [the older campaigns](results/campaigns.md#older-campaigns).
 

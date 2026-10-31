@@ -10,7 +10,7 @@ carrier — so on the same core, with its data still in that core's caches. His
 [PERFORMANCE.md](https://github.com/franz1981/Netty-VirtualThread-Scheduler/blob/master/PERFORMANCE.md)
 shows what that is worth to a Netty event loop. Looma asks the next question:
 
-> **Does that scheduler help an actor system?**
+> **Does a carrier-affine scheduler help an actor system?**
 
 An actor is defined by private state that only it touches, which is exactly what wants to stay on
 one core. Looma exists to measure whether it does.
@@ -23,8 +23,12 @@ one core. Looma exists to measure whether it does.
   enough that a benchmark compares schedulers rather than frameworks. See
   [what it does not do](docs/api.md#10-what-looma-does-not-do).
 - **One engine, two schedulers.** The same actors run on the JDK's builtin scheduler, or on a
-  carrier-affine one, today the JDK's MPSC scheduler, chosen by
-  `ActorSystem.builder().carriers(...)` or by JVM flags — never by the actor code.
+  carrier-affine one, chosen by `ActorSystem.builder().carriers(...)` or by JVM flags — never by
+  the actor code. The carrier-affine one is the JDK's MPSC scheduler: Francesco Nigro's next
+  step after his Netty scheduler, proposed to the JDK itself as
+  [openjdk/loom pull request 227](https://github.com/openjdk/loom/pull/227), a draft. Each
+  carrier has its own queue, and a `Thread.Affinity` keeps a virtual thread on one carrier.
+  Looma first ran on a copy of the Netty scheduler, and now runs on this one.
 - **A benchmark** that runs the same workload under each scheduler and compares CPU per request,
   latency and migrations.
 
@@ -44,7 +48,7 @@ mvn clean install
 scripts/run-hello.sh
 
 # 4. The benchmark: the carrier-affine scheduler against the JDK builtin, same binary. One
-#    repetition of both cases, about 21 minutes; the results go to bench/<date>-<time>/summary.md.
+#    repetition of both cases, about 16 minutes; the results go to bench/<date>-<time>/summary.md.
 #    The default CPUs are those of an AMD Ryzen 9 9950X. On another machine, give yours:
 #    --cpus-carriers, --cpus-client and --cpus-backend (docs/benchmark.md, "Where things run").
 scripts/bench.sh --reps 1
@@ -128,8 +132,10 @@ Everything else is in [`docs/api.md`](docs/api.md) and [`docs/schedulers.md`](do
 | `examples` | `looma-examples` | 25 | `….examples.hello` (the affinity trace) and `….examples.user` (the benchmark). |
 
 Everything depends on `looma-core`, never the reverse, and `looma-core` never names a scheduler
-class. `netty-loom-scheduler`, Looma's copy of the Netty-VirtualThread-Scheduler, stays in the
-repository but is no longer built: see [its README](netty-loom-scheduler/README.md). Inside `core`, everything under `impl` but `DefaultActorSystem` is package-private.
+class. Inside `core`, everything under `impl` but `DefaultActorSystem` is package-private.
+
+`netty-loom-scheduler`, Looma's copy of the Netty-VirtualThread-Scheduler, stays in the
+repository but is no longer built: see [its README](netty-loom-scheduler/README.md).
 
 ## Prerequisites
 
@@ -244,8 +250,9 @@ mvn -B verify -P '!dev'      # what CI runs: formatting checked, not applied
 
 The scheduler is configured once per JVM, so the tests run in several Surefire executions, one per
 configuration: the contract suites over the builtin in `core`, then again over the MPSC scheduler,
-plus `carriers(...)` installing it in a fresh JVM per class. The table is in [`docs/schedulers.md`](docs/schedulers.md#tests). To run a single
-class, name the execution too — `-Dtest=` alone applies to every execution, with the wrong flags:
+plus `carriers(...)` installing it in a fresh JVM per class. The table is in
+[`docs/schedulers.md`](docs/schedulers.md#tests). To run a single class, name the execution too —
+`-Dtest=` alone applies to every execution, with the wrong flags:
 
 ```sh
 mvn -pl mpsc-scheduler test-compile surefire:test@install-test -Dtest=MpscInstallTest

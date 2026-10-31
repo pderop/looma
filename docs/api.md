@@ -181,7 +181,8 @@ see [Pools](#pools-n-actors-of-one-type-behind-one-reference).
 
 ## 4. The hierarchy
 
-A child is spawned from its parent's context — normally in `preStart`:
+A child is spawned from its parent's context — often in `preStart`, but then the parent cannot be
+restarted ([§7](#7-supervision)):
 
 ```java
 public class Db implements Actor {
@@ -432,9 +433,10 @@ fixed policy in the table in §2. A strategy that itself throws, and a `RESTART`
 throws or returns `null`, are both treated as `STOP` and logged.
 
 Supervision here is **self-supervision only**: nothing escalates to a parent. Unlike Akka, `RESTART`
-does not stop the actor's children — which means an actor that spawns children in `preStart` and is
-then restarted will fail to re-spawn them at the same paths. Spawn children on a message, or on a
-strategy of `STOP`, if that pattern matters to you.
+does not stop the actor's children. So an actor that spawns its children in `preStart` cannot be
+restarted: the default `postRestart` calls `preStart`, which spawns at paths the old children
+still hold, and the restart turns into a `STOP`. If the actor must be restartable, spawn its
+children on a message, or give it a strategy that never restarts.
 
 ## 8. Placement
 
@@ -588,8 +590,8 @@ int carrier = system.homeCarrierIdOf(system.findActor("/db-0").orElseThrow());
 
 `poolSize` must be at least `1`, and a pool of `1` is exactly the single-actor spawn it always was —
 same path, no `-0` suffix. A pool whose name collides partway through (`/db-2` already taken) leaves
-nothing behind: the actors already created are stopped before the `IllegalStateException` reaches the
-caller.
+nothing behind: the actors already created are started, then stopped, before the
+`IllegalStateException` reaches the caller. Their `preStart` and `postStop` run.
 
 ### Asserting affinity
 
@@ -663,6 +665,6 @@ Stated plainly, so nothing is inferred from silence:
 
 ## See also
 
-- [`schedulers.md`](schedulers.md) — the three schedulers, choosing one, work stealing, and the
+- [`schedulers.md`](schedulers.md) — the two schedulers, choosing one, work stealing, and the
   engine internals, documented once.
 - The javadoc on every type above; it is the normative reference for the exact exception contracts.
