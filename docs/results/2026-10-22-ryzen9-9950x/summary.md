@@ -42,7 +42,7 @@ more with perf c2c, once more with perf stat, and once more with the Epsilon GC,
 The stat run of each scheduler, at depth 256. instructions and cycles: the counts of perf
 stat, summed over the server's threads (every thread but client-*), in
 runs/<case>-stat-<scheduler>.csv. requests: 150,000 req/s × 14 s, the window of perf stat.
-Step by step, on one line: [Where the numbers come from](../../benchmark.md#where-the-numbers-come-from).
+Step by step, on one line: [Where the numbers come from](../README.md#where-the-numbers-come-from).
 
 ```
 instructions/req       = instructions / requests
@@ -73,7 +73,7 @@ are copied from its report, <case>-c2c-<scheduler>.txt, block Trace Event Inform
 - Load DRAM: among them, the loads served by the memory (Load Local DRAM + Load Remote DRAM).
 
 migrations: the line migrations of the console of the c2c run, runs/<case>-c2c-<scheduler>-256.out.
-Step by step: [Where the numbers come from](../../benchmark.md#where-the-numbers-come-from).
+Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from).
 
 ```
 other L3 = Load Remote HITM / Load Operations
@@ -98,7 +98,7 @@ From the files of each run, in runs/: req/s, the line throughput of its console
 the full GCs of the StackChunk counts (Heap Inspection); live StackChunks, the line
 stackchunks of the console of the c2c run, during the warm-up → after the measure; note,
 "not a measurement" when a console says the run could not keep up with its rate, a GET
-failed, or a pinning failed (the line pinning). req/s and GCs: the lowest and the highest of r1 to r3. Step by step: [Where the numbers come from](../../benchmark.md#where-the-numbers-come-from).
+failed, or a pinning failed (the line pinning). req/s and GCs: the lowest and the highest of r1 to r3. Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from).
 
 | case | scheduler | depth | req/s | GCs | live StackChunks | note |
 |---|---|---|---|---|---|---|
@@ -124,7 +124,7 @@ failed, or a pinning failed (the line pinning). req/s and GCs: the lowest and th
 From the console of each run, runs/<case>-<run>-<scheduler>-<depth>.out, r1 to r3: cpu µs/req,
 the line cpu; latencies, the line latency; migrations, the line migrations.
 cpu µs/req and migrations: the mean of r1 to r3. cpu range and latencies: the lowest and the highest of r1 to r3.
-Step by step: [Where the numbers come from](../../benchmark.md#where-the-numbers-come-from).
+Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from).
 
 ```
 vs jdk = cpu µs/req / cpu µs/req of jdk, same case and depth, - 1
@@ -156,7 +156,7 @@ The epsilon run of each scheduler, at depth 256: the same run with the Epsilon G
 frees nothing, so no GC runs. cpu µs/req G1: the mean of r1 to r3, as in In short. cpu µs/req Epsilon:
 the line cpu of its console, runs/<case>-epsilon-<scheduler>-256.out. heap used: from its GC log
 (.gc.log), the line of the heap at exit "space ... used [start, top, end)", top - start.
-Step by step: [Where the numbers come from](../../benchmark.md#where-the-numbers-come-from).
+Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from).
 
 ```
 difference = cpu µs/req Epsilon - cpu µs/req G1

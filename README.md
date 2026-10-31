@@ -113,7 +113,8 @@ The carrier-affine scheduler also needs `looma-netty-scheduler` on the classpath
 | --- | --- |
 | [`docs/api.md`](docs/api.md) | The API: actors, messages, `tell`/`ask`, hierarchy, supervision, placement, pools, offloading, shutdown. |
 | [`docs/schedulers.md`](docs/schedulers.md) | The three schedulers (`affine`, `mpsc`, `builtin`): what each one does, choosing one in code or by flags, placement, the engine and the SPI, and why carrier affinity. |
-| [`docs/benchmark.md`](docs/benchmark.md) | The benchmark: the question and the answer, the program, the schedulers it compares, running it, reading `summary.md`, and the results per machine. |
+| [`docs/benchmark.md`](docs/benchmark.md) | The benchmark: the question and the answer, the program, the schedulers it compares, running it, the machine, and why it is built this way. |
+| [`docs/results/README.md`](docs/results/README.md) | The published campaigns, what a campaign folder contains, and where each number of a `summary.md` comes from. |
 | [`netty-loom-scheduler/README.md`](netty-loom-scheduler/README.md) | The copy of the Netty scheduler: upstream commit, Looma's two patches, refresh procedure. |
 
 ## Modules

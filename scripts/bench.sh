@@ -21,7 +21,7 @@ at depth 0. Then one more run per scheduler with perf c2c, and one with perf sta
 there. All runs use the same jar and the same JVM flags: only -Dbench.scheduler changes.
 
 The default CPUs are those of an AMD Ryzen 9 9950X. On another machine, give the three lists,
-as taskset writes them:
+with commas and ranges only (2-7,10-15), and no CPU in two lists:
 
   --cpus-carriers <list>   One carrier per CPU, one CPU per core. Default: 2-7,10-15.
   --cpus-client <list>     The load generator: one connection thread per CPU. Default: 0,1,16,17.
@@ -92,6 +92,33 @@ for n in ${USERS_PER_GROUP//,/ }; do
 done
 ((DEPTH > 0)) || die "--depth must be above 0: every run is also made at depth 0"
 
+# "2-7,10" -> one CPU per line.
+expand_cpus() {
+	local part IFS=,
+	for part in $1; do
+		case $part in
+			*-*) seq "${part%-*}" "${part#*-}" ;;
+			*) echo "$part" ;;
+		esac
+	done
+}
+
+# The three CPU lists: commas and ranges only, and no CPU in two lists.
+declare -A LIST_OF=()
+for opt in carriers:$CARRIER_LIST client:$CLIENT_LIST backend:$BACKEND_LIST; do
+	name=${opt%%:*} list=${opt#*:}
+	[[ $list =~ ^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$ ]] ||
+		die "--cpus-$name '$list': give CPUs with commas and ranges only, as in 2-7,10-15"
+	for part in ${list//,/ }; do
+		[[ $part != *-* ]] || ((${part%-*} <= ${part#*-})) || die "--cpus-$name '$list': the range $part goes down"
+	done
+	cpus=$(expand_cpus "$list")
+	for cpu in $cpus; do
+		[ -z "${LIST_OF[$cpu]:-}" ] || die "CPU $cpu is twice in the lists: --cpus-${LIST_OF[$cpu]} and --cpus-$name"
+		LIST_OF[$cpu]=$name
+	done
+done
+
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"
 # Turbo off, a fixed frequency, perf allowed. Applying it again keeps the saved originals.
@@ -107,16 +134,6 @@ OUT=${OUT:-$ROOT/bench/$(date +%Y%m%d-%H%M%S)}
 RUNS=$OUT/runs
 mkdir -p "$RUNS"
 
-# "2-7,10" -> one CPU per line.
-expand_cpus() {
-	local part IFS=,
-	for part in $1; do
-		case $part in
-			*-*) seq "${part%-*}" "${part#*-}" ;;
-			*) echo "$part" ;;
-		esac
-	done
-}
 CARRIER_CPUS=($(expand_cpus "$CARRIER_LIST"))
 
 # Two carriers on the two CPUs of one core would share its L2.
@@ -366,7 +383,7 @@ summary_tables() {
 			print "The stat run of each scheduler, at depth " depth ". instructions and cycles: the counts of perf"
 			print "stat, summed over the server'"'"'s threads (every thread but client-*), in"
 			print "runs/<case>-stat-<scheduler>.csv. requests: " group(rate) " req/s × " window " s, the window of perf stat."
-			print "Step by step, on one line: [Where the numbers come from](../../benchmark.md#where-the-numbers-come-from)."
+			print "Step by step, on one line: [Where the numbers come from](../README.md#where-the-numbers-come-from)."
 			print ""
 			print "```"
 			print "instructions/req       = instructions / requests"
@@ -400,7 +417,7 @@ summary_tables() {
 			print "- Load DRAM: among them, the loads served by the memory (Load Local DRAM + Load Remote DRAM)."
 			print ""
 			print "migrations: the line migrations of the console of the c2c run, runs/<case>-c2c-<scheduler>-" depth ".out."
-			print "Step by step: [Where the numbers come from](../../benchmark.md#where-the-numbers-come-from)."
+			print "Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from)."
 			print ""
 			print "```"
 			print "other L3 = Load Remote HITM / Load Operations"
@@ -428,7 +445,7 @@ summary_tables() {
 			print "the full GCs of the StackChunk counts (Heap Inspection); live StackChunks, the line"
 			print "stackchunks of the console of the c2c run, during the warm-up → after the measure; note,"
 			print "\"not a measurement\" when a console says the run could not keep up with its rate, a GET"
-			print "failed, or a pinning failed (the line pinning). req/s and GCs: " span ". Step by step: [Where the numbers come from](../../benchmark.md#where-the-numbers-come-from)."
+			print "failed, or a pinning failed (the line pinning). req/s and GCs: " span ". Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from)."
 			print ""
 			print "| case | scheduler | depth | req/s | GCs | live StackChunks | note |"
 			print "|---|---|---|---|---|---|---|"
@@ -448,7 +465,7 @@ summary_tables() {
 			print "From the console of each run, runs/<case>-<run>-<scheduler>-<depth>.out, " runs ": cpu µs/req,"
 			print "the line cpu; latencies, the line latency; migrations, the line migrations."
 			print "cpu µs/req and migrations: " avg ". cpu range and latencies: " span "."
-			print "Step by step: [Where the numbers come from](../../benchmark.md#where-the-numbers-come-from)."
+			print "Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from)."
 			print ""
 			print "```"
 			print "vs jdk = cpu µs/req / cpu µs/req of jdk, same case and depth, - 1"
@@ -477,7 +494,7 @@ summary_tables() {
 			print "frees nothing, so no GC runs. cpu µs/req G1: " avg ", as in In short. cpu µs/req Epsilon:"
 			print "the line cpu of its console, runs/<case>-epsilon-<scheduler>-" depth ".out. heap used: from its GC log"
 			print "(.gc.log), the line of the heap at exit \"space ... used [start, top, end)\", top - start."
-			print "Step by step: [Where the numbers come from](../../benchmark.md#where-the-numbers-come-from)."
+			print "Step by step: [Where the numbers come from](../README.md#where-the-numbers-come-from)."
 			print ""
 			print "```"
 			print "difference = cpu µs/req Epsilon - cpu µs/req G1"
