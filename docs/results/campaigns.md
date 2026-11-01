@@ -8,16 +8,8 @@ number of it comes from. [`../benchmark.md`](../benchmark.md) explains the bench
 ### AMD Ryzen 9 9950X
 
 - [`2026-10-31-ryzen9-9950x/summary.md`](2026-10-31-ryzen9-9950x/summary.md): the latest.
-  `mpsc`, `jdk` and `jdk-pinned`, on the JDK of openjdk/loom pull request 227, without
-  `--enable-preview`, with the client threads counting their own answers. It replaces three
-  earlier campaigns of the same day, all in the git history:
-  - the same setups under their old names, `stealing-local-home` and `mpsc-home`;
-  - at commit `268ff6b`: `affine`, the copied Netty scheduler, next to `mpsc`, `jdk` and
-    `jdk-pinned`, all with `--enable-preview`;
-  - at commit `0521e04`: the same three schedulers without the flag, the latency still counted on
-    the carriers. Against `268ff6b`, `mpsc` spent the same CPU per request without the flag,
-    within 4%, and so did `jdk` and `jdk-pinned`. This campaign, against `0521e04`, moves by
-    -5.7% to +5.8%, every range of r1 to r3 overlapping.
+  `mpsc`, `jdk` and `jdk-pinned`, on the JDK of openjdk/loom pull request 227, with the client
+  threads counting their own answers.
 - [`2026-10-24-ryzen9-9950x/summary.md`](2026-10-24-ryzen9-9950x/summary.md): `stealing-local`,
   `stealing-local-home`, `jdk` and `jdk-pinned`, on the Loom JDK of builds.shipilev.net, after
   [#9](https://github.com/pderop/looma/pull/9). `stealing-local-home` spends less CPU per request
@@ -31,23 +23,16 @@ The machine, and where each part of the benchmark runs on it:
 
 ### Older campaigns
 
-Before 2026-10-31, `affine` and `mpsc` had options, and the campaigns compared their setups under
-names of their own:
+The campaigns of 2026-10-22 and 2026-10-24 ran two setups of Looma's copy of the
+Netty-VirtualThread-Scheduler, which `Carriers.affine(n)` then ran:
 
-| Old name | What it was | Now |
+| Name | What it was | Now |
 | --- | --- | --- |
-| `stealing-local-home` | the copied scheduler, stealing within an L3, actors never stolen | `affine` until 2026-10-31, now removed |
+| `stealing-local-home` | the copied scheduler, stealing within an L3, actors never stolen | removed |
 | `stealing-local` | the same, but an idle carrier could also steal an actor | removed |
-| `stealing-global-home` | `stealing-local-home`, stealing from any carrier | removed |
-| `mpsc-home` | the MPSC scheduler, stealing from any carrier, actors never stolen | `mpsc` |
-| `mpsc-home-poller3` | `mpsc-home` with `jdk.pollerMode=3` | removed |
 
-`stealing-global-home` and `mpsc-home-poller3` ran only in short campaigns, not published.
-
-In the campaigns of 2026-10-22 and 2026-10-24, and in the one of commit `268ff6b`, `affine` (or
-its old name, `stealing-local-home`) is that copied scheduler. Since then, the copy is no longer
-built, `Carriers.affine(n)` runs the MPSC scheduler, and the runs of the MPSC scheduler are still
-named `mpsc`.
+Since 2026-10-31, the copy is no longer built, `Carriers.affine(n)` runs the MPSC scheduler, and
+its runs are named `mpsc`.
 
 ## What a campaign contains
 

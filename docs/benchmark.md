@@ -17,11 +17,9 @@ The numbers:
 The JDK's scheduler seems to fall behind because of a setting of the Linux kernel, ITMT (the
 preferred cores of AMD and Intel CPUs), which is on by default. The investigation is in progress.
 
-`mpsc` is the scheduler that `Carriers.affine(n)` runs. The campaigns before 2026-10-31 also ran
-`affine`, Looma's copy of the Netty-VirtualThread-Scheduler, no longer built since, and had
-`--enable-preview`, which that copy needed. On the JDK of openjdk/loom pull request 227, that flag
-also turns on Valhalla: `Integer` becomes a value class. This campaign has no preview flag:
-[`results/campaigns.md`](results/campaigns.md) compares it with the one before.
+`mpsc` is the scheduler that `Carriers.affine(n)` runs. The campaigns of 2026-10-22 and
+2026-10-24 ran Looma's copy of the Netty-VirtualThread-Scheduler instead, no longer built since:
+see [the older campaigns](results/campaigns.md#older-campaigns).
 
 - Code: [`examples/…/examples/user`](../examples/src/main/java/io/github/pderop/looma/examples/user)
 - Scripts: [`scripts/bench.sh`](../scripts/bench.sh) runs it, and
@@ -139,9 +137,8 @@ lists. `lscpu -e` shows the core and the caches of each CPU.
 The client threads run in the benchmark JVM, but their CPU time is not counted: "cpu µs/req" is
 the CPU of the server. One piece of client work runs on the server: the actor that answers
 completes the client's future on its carrier. There, the client only takes the time and pushes
-the request back to its own thread, which counts it. The campaigns up to the one of commit
-`0521e04` counted the latency on the carrier itself, so a little more client work fell in the
-server's CPU.
+the request back to its own thread, which counts it. The campaigns of 2026-10-22 and 2026-10-24
+counted the latency on the carrier itself, so a little more client work fell in the server's CPU.
 
 Who pins what:
 

@@ -21,8 +21,8 @@ scheduler that ran.
 
 Until 2026-10-31, `affine` was Looma's copy of the
 [Netty-VirtualThread-Scheduler](https://github.com/franz1981/Netty-VirtualThread-Scheduler) of
-Francesco Nigro, and the MPSC scheduler was `Carriers.mpsc(n)`. That copy, `netty-loom-scheduler`,
-is no longer built. In the results up to that date, `affine` is that copy.
+Francesco Nigro. That copy, `netty-loom-scheduler`, is no longer built. The campaigns of
+2026-10-22 and 2026-10-24 ran it.
 
 ## Choosing one
 

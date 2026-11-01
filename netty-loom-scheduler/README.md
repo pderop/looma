@@ -2,12 +2,10 @@
 
 **This module is no longer built, since 2026-10-31.** It stays in the repository for a possible
 patch upstream. Looma's `Carriers.affine(n)` now runs the JDK's MPSC scheduler, in
-[`mpsc-scheduler`](../mpsc-scheduler/README.md). The tag `last-affine` is the last commit where
-this module builds and passes its tests, with the root `pom.xml` that lists it and the Spotless
-exclude described below. Build it, or run `netty-loom-scheduler/scripts/run-wake-jmh.sh`, from
-that tag.
+[`mpsc-scheduler`](../mpsc-scheduler/README.md).
 
-What follows describes the module as it was at that tag.
+What follows describes the module as it was when it was last built, with the root `pom.xml` that
+listed it and the Spotless exclude described below.
 
 This module holds:
 
