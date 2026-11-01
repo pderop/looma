@@ -105,8 +105,7 @@ ActorSystem system = ActorSystem.builder()
 ```
 
 `affine(8)` keeps each actor on one carrier for life, each carrier pinned to one CPU on Linux. It
-has no options: it is the setup the benchmark found the fastest (see
-[why no options](docs/schedulers.md#why-no-options)).
+has no options: it is the setup the benchmark found the fastest.
 
 `affine` runs the JDK's MPSC scheduler. It needs `looma-mpsc-scheduler` on the classpath, and the
 Loom JDK below.

@@ -345,11 +345,6 @@ clients and the backend.
 
 **Why `jdk-pinned`.** It tells whether pinning alone makes the difference.
 
-**Why only these three.** Earlier campaigns also ran other setups of the same schedulers, and,
-until 2026-10-31, `affine`, Looma's copy of the Netty-VirtualThread-Scheduler: see
-[Older campaigns](results/campaigns.md#older-campaigns). Letting an idle carrier steal an actor cost
-CPU, in the published campaigns. So each scheduler keeps one setup.
-
 **Why count the StackChunks.** A parked virtual thread keeps its stack in a `StackChunk`, on the
 heap. If chunks were kept alive and piled up, the GC would have more to do under some
 schedulers. Two counts show whether they pile up.
