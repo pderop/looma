@@ -114,7 +114,7 @@ public class Connection implements Actor {
 
     @Override
     public void preStart(ActorContext context) throws Exception {
-        socket = open();               // runs on this actor's own loop, before the first message
+        socket = open();               // runs in this actor's first burst, before the first message
     }
 
     @Override
@@ -152,24 +152,24 @@ builder has three knobs, and applications normally need at most the first:
 
 ```java
 ActorSystem system = ActorSystem.builder()
-        .carriers(Carriers.affine(8).pinned())     // chooses and sizes the JVM's scheduler, in code
+        .carriers(Carriers.affine(8))              // chooses and sizes the JVM's scheduler, in code
         .mailboxQueueFactory(myQueueFactory)       // per-actor envelope queue; default ConcurrentLinkedQueue
         .build();
 
 ActorSystem.builder().scheduler(someScheduler);    // bypasses everything — tests only
 ```
 
-`carriers(...)` is the code form of the scheduler's JVM flags: `Carriers.affine(n)` for the
-carrier-affine pool (refined with `.pinned()`, `.workStealing(...)` and `.actorsStayHome()`),
-`Carriers.builtin(n)` for the JDK's own with its parallelism fixed. Without it, the system takes
-whatever the flags installed. Because the JDK resolves its scheduler once per process, `build()`
-must run **before the JVM's first virtual thread**, and throws rather than run on the wrong
-scheduler — see [`schedulers.md`](schedulers.md#in-code-carriers) for every case it refuses.
+`carriers(...)` is the code form of the scheduler's JVM flags: `Carriers.affine(n)` for a
+carrier-affine pool, today the JDK's MPSC scheduler, `Carriers.builtin(n)` for the JDK's default
+one with its parallelism fixed. They have no options.
+Without it, the system takes whatever the flags installed. Because the JDK resolves its scheduler
+once per process, `build()` must run **before the JVM's first virtual thread**, and throws rather
+than run on the wrong scheduler — see [`schedulers.md`](schedulers.md#in-code) for every case it
+refuses.
 
-`.actorsStayHome()` matters only with work stealing on: stealing then takes only the virtual
-threads actors create through `ActorContext.vThreadFactory()`, never an actor's own loop, so every
-actor keeps its home carrier and its state in that core's cache, while the work it offloads can
-still be balanced across carriers.
+With `affine`, an actor never leaves its home carrier, so its state stays in that
+core's cache. An idle carrier may steal only the threads actors create through
+`ActorContext.vThreadFactory()`.
 
 The `factory` passed to `spawn` is a `Supplier<Actor>`, not an instance, because the engine calls it
 **again** to obtain a fresh instance after a `RESTART`.
@@ -181,7 +181,8 @@ see [Pools](#pools-n-actors-of-one-type-behind-one-reference).
 
 ## 4. The hierarchy
 
-A child is spawned from its parent's context — normally in `preStart`:
+A child is spawned from its parent's context — often in `preStart`, but then the parent cannot be
+restarted ([§7](#7-supervision)):
 
 ```java
 public class Db implements Actor {
@@ -233,6 +234,10 @@ receiving actor replies exactly as it would to anyone else:
 ```java
 case AccountMessage.GetBalance ignored -> sender.tell(new Balance(balance), context.self());
 ```
+
+The reply completes the future on the thread of the actor that replies, inside its burst. A stage
+chained with `thenApply` or `thenAccept` runs there too, and that actor handles nothing else
+meanwhile: chain slow work with `thenApplyAsync`.
 
 The returned future completes **at most once**: a second reply is silently dropped. There is no
 timeout on `ask` itself — an actor that never replies leaves the future open. Bound it with
@@ -286,7 +291,7 @@ When there is no useful common supertype at all, the one-argument
 | Situation | `tell` | `ask` |
 | --- | --- | --- |
 | target already stopped, or unknown | silently dropped (dead letter) | future fails synchronously with `IllegalStateException` |
-| system shutting down | silently dropped | fails synchronously with `IllegalStateException` |
+| system shutting down | dropped once that actor is stopping: a root at once, a descendant when the cascade reaches it | fails synchronously with `IllegalStateException` |
 | target accepted the request, then stopped without replying | — | future stays open — bound it with `orTimeout` |
 | no reply | — | future stays open — bound it with `orTimeout` |
 
@@ -304,9 +309,9 @@ An actor runs on a virtual thread, so blocking inside `onReceive` **parks** it: 
 back, no OS thread is consumed, and the rest of the machine keeps working. Blocking is not a
 correctness problem here, and it is not a scheduler problem.
 
-What it costs is narrower: **an actor's loop is the only consumer of its own mailbox**, so for as long
-as `onReceive` sits inside a blocking call, that actor answers nothing. Neighbours have loops of
-their own and keep running; this actor's messages queue up behind a thread that is only waiting.
+What it costs is narrower: **an actor's burst is the only consumer of its own mailbox**, so for as
+long as `onReceive` sits inside a blocking call, that actor answers nothing. Neighbours have bursts
+of their own and keep running; this actor's messages queue up behind a thread that is only waiting.
 
 So:
 
@@ -339,9 +344,8 @@ public void onReceive(Message message, ActorRef sender, ActorContext context) {
 `vThreadFactory()` is the only offload mechanism, and it is the one that carries the actor's
 affinity to the work:
 
-- under the **carrier-affine** scheduler, the new virtual thread has this actor's home carrier as
-  its own, so it runs on the same core the actor does — unless work stealing moves it, which
-  `actorsStayHome()` still allows for these threads;
+- under **`affine`**, the new virtual thread starts on this actor's home carrier,
+  so it runs on the same core the actor does, unless an idle carrier steals it;
 - under the **JDK builtin** scheduler, it is a plain virtual thread on the JDK's default scheduler.
 
 The engine counts every thread created through this factory as in-flight work, so `awaitTermination`
@@ -355,14 +359,34 @@ completion, as above — is exactly what it is for. What the forked thread must 
 actor's fields: take what it needs by value and hand the outcome back as a message, or the
 "one message at a time" guarantee that makes those fields safe is gone.
 
+### Platform threads started from an actor
+
+On Linux, a new thread runs only on the CPUs of the thread that starts it, and under `affine` a
+carrier runs on one CPU. A platform thread started from an actor would keep that one CPU. Under
+`affine`, Looma gives every CPU back to the threads the JDK starts: its timers, and the
+common pool behind `parallelStream` and `supplyAsync`. Your own threads and executors need a
+factory that does the same. Take it from the system, and give the executor to the actors that
+use it:
+
+```java
+ThreadFactory platform = system.scheduler().platformThreadFactory();
+ExecutorService workers = Executors.newFixedThreadPool(4, platform);
+```
+
+An executor starts its threads at its first tasks, so this matters even for one created in
+`main`, if an actor gives it its first tasks. Under the builtin scheduler, the factory is
+`Thread.ofPlatform().factory()`. The
+[`mpsc-scheduler` README](../mpsc-scheduler/README.md#threads-started-from-an-actor) lists what
+the install covers.
+
 ### Pinning is the case that is genuinely bad
 
 A **native frame** on the stack — a JNI call, or a foreign-function downcall — cannot unmount the
-virtual thread at all, so it holds its **carrier** rather than merely its own loop. Under the JDK
-builtin scheduler that costs one `ForkJoinPool` worker and the pool compensates by growing; under the
-carrier-affine scheduler the pool is fixed and there is nothing to grow, so every actor that calls
-that carrier home stops until the pin is released. Keep native calls off the actor loop and off
-anything forked from it.
+virtual thread at all, so it holds its **carrier** rather than merely its own burst. Under the JDK
+builtin scheduler that costs one `ForkJoinPool` worker and the pool compensates by growing; under
+`affine` the pool is fixed and there is nothing to grow, so every actor that calls that
+carrier home stops until the pin is released. Keep native calls out of an actor's bursts and out of
+anything forked from them.
 
 `synchronized` is **not** a pin on the JDKs this project targets: [JEP 491](https://openjdk.org/jeps/491)
 (JDK 24) unmounts a virtual thread that blocks inside a monitor. `ReentrantLock` is still the better
@@ -410,9 +434,10 @@ fixed policy in the table in §2. A strategy that itself throws, and a `RESTART`
 throws or returns `null`, are both treated as `STOP` and logged.
 
 Supervision here is **self-supervision only**: nothing escalates to a parent. Unlike Akka, `RESTART`
-does not stop the actor's children — which means an actor that spawns children in `preStart` and is
-then restarted will fail to re-spawn them at the same paths. Spawn children on a message, or on a
-strategy of `STOP`, if that pattern matters to you.
+does not stop the actor's children. So an actor that spawns its children in `preStart` cannot be
+restarted: the default `postRestart` calls `preStart`, which spawns at paths the old children
+still hold, and the restart turns into a `STOP`. If the actor must be restartable, spawn its
+children on a message, or give it a strategy that never restarts.
 
 ## 8. Placement
 
@@ -457,8 +482,8 @@ Rules and bounds:
 - `Placement.inherit()` on `ActorSystem.spawn` throws `IllegalArgumentException` — a root has no
   parent.
 - Under the JDK builtin scheduler `carrierCount()` is `1`, so every valid placement resolves to that
-  one factory, and only `carrier(0)` is in bounds. Placement code therefore runs unchanged on both
-  schedulers.
+  one factory, and only `carrier(0)` is in bounds. Placement code therefore runs unchanged on every
+  scheduler.
 
 **Placing a child away from its parent is not free**: every parent↔child `tell` becomes a
 cross-carrier hop instead of the same-core delivery the default gives for nothing. Reach for an
@@ -509,8 +534,8 @@ system.stop(db);                                     // stops all four
 ActorRef io = context.spawn("io", BlockingIoActor::new, SpawnOptions.pooled(4));
 ```
 
-**The point is blocking work.** Each actor in a pool has its own mailbox and its own loop virtual
-thread, so one of them sitting in a blocking call stalls *its* mailbox and nothing else — the other
+**The point is blocking work.** Each actor in a pool has its own mailbox and its own bursts, so one
+of them sitting in a blocking call stalls *its* mailbox and nothing else — the other
 `n-1` keep answering. That is the alternative to `vThreadFactory()` offloading in
 [§6](#6-blocking-work): the actor is free to just block. Note that this needs no spread across
 carriers to work — a virtual thread blocking on I/O unmounts from its carrier rather than holding it,
@@ -566,8 +591,8 @@ int carrier = system.homeCarrierIdOf(system.findActor("/db-0").orElseThrow());
 
 `poolSize` must be at least `1`, and a pool of `1` is exactly the single-actor spawn it always was —
 same path, no `-0` suffix. A pool whose name collides partway through (`/db-2` already taken) leaves
-nothing behind: the actors already created are stopped before the `IllegalStateException` reaches the
-caller.
+nothing behind: the actors already created are started, then stopped, before the
+`IllegalStateException` reaches the caller. Their `preStart` and `postStop` run.
 
 ### Asserting affinity
 
@@ -578,9 +603,10 @@ sound basis for an affinity assertion:
 assertEquals(system.homeCarrierIdOf(parent), system.homeCarrierIdOf(child));
 ```
 
-The home carrier is the only *deterministic* thing about placement. Which carrier a continuation
-happens to *run* on may, under work stealing, legitimately be a sibling — asserting against the
-running carrier is a flaky test, not a bug in the scheduler. It throws `IllegalArgumentException`
+The home carrier is the only *deterministic* thing about placement. Under `affine` an
+actor always runs there, but a thread it offloads may be stolen, and under the builtin anything may
+run anywhere — asserting against the running carrier is a flaky test, not a bug in the
+scheduler. It throws `IllegalArgumentException`
 for any reference that is not one spawned actor: the single-use `sender` an `ask` produces, and a
 [pool](#pools-n-actors-of-one-type-behind-one-reference), which stands for `n` of them — assert on
 its actors, at `/db-0` and so on.
@@ -609,16 +635,17 @@ if (!system.awaitTermination(5, TimeUnit.SECONDS)) {
 ```
 
 `shutdown()` stops every root actor, each mailbox drains, the cascade descends, `postStop` unwinds
-back up to the roots. Once it has begun, `tell` is silently dropped, and `ask` and `spawn` throw
-`IllegalStateException`.
+back up to the roots. Once it has begun, `ask` fails at once with `IllegalStateException`, and
+`spawn` throws it. A `tell` is silently dropped once its actor is stopping: a root at once, a
+descendant when the cascade reaches it, after its parent's mailbox has drained.
 
 `awaitTermination` returns `true` once every actor is unregistered **and** every unit of in-flight
-work has finished — actor loops *and* every thread created through `vThreadFactory()`. That is what
+work has finished — the actors' bursts *and* every thread created through `vThreadFactory()`. That is what
 keeps a caller from observing termination while user-spawned blocking work is still running.
 
-Both schedulers drain identically. Neither owns a pool to stop: the JDK builtin owns nothing, and the
-affine scheduler's carriers are a permanent JVM-wide pool created during `VirtualThread.<clinit>`
-that outlives any single `ActorSystem`.
+Every scheduler drains identically. None owns a pool to stop: the JDK builtin owns nothing, and the
+carriers of `affine` are a permanent JVM-wide pool created during
+`VirtualThread.<clinit>` that outlives any single `ActorSystem`.
 
 ## 10. What Looma does not do
 
@@ -633,6 +660,8 @@ Stated plainly, so nothing is inferred from silence:
 - **No mailbox bounds or priorities.** One `ConcurrentLinkedQueue` per actor by default;
   `Builder.mailboxQueueFactory` replaces it with anything MPSC and non-blocking.
 - **No scheduler/timer service.** Use a `ScheduledExecutorService` and `tell` yourself a message.
+  Create it with `platformThreadFactory()`, so that its thread does not stay on the CPU of the
+  actor that schedules first ([§6](#platform-threads-started-from-an-actor)).
 - **No dead-letter queue.** A `tell` to a stopped actor is dropped, not diverted.
 
 ## See also

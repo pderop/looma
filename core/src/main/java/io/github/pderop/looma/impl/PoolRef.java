@@ -28,7 +28,7 @@ import io.github.pderop.looma.SpawnOptions;
  * actors, spreading every {@code tell} and {@code ask} across them round-robin.
  *
  * <p>
- * <b>This reference owns no mailbox, no loop and no actor instance of its
+ * <b>This reference owns no mailbox, no burst and no actor instance of its
  * own.</b> It is a plain fan-out over {@link ActorRefImpl}s, so a message pays
  * exactly one hop, the same as to a single actor: there is no router actor in
  * the middle to relay it, and therefore no extra queue and no extra virtual

@@ -1,14 +1,13 @@
-# Builds and tests looma against a fresh Loom JDK pulled from builds.shipilev.net.
+# Builds and tests looma on the Loom JDK of openjdk/loom pull request 227, built from source.
 # Adapted from the upstream Netty-VirtualThread-Scheduler project's
 # .github/workflows/loom-tests.yml.
 #
 # One JDK: Maven runs on the Loom JDK itself, so there is nothing to set up beyond pointing
-# JAVA_HOME at the extracted image. The runner's preinstalled Maven is used as-is.
+# JAVA_HOME at it. The runner's preinstalled Maven is used as-is.
 #
-# The JDK is downloaded rather than taken from the `shipilev/openjdk:loom` container image
-# because builds.shipilev.net is rebuilt continuously: together with the nightly cron below,
-# that is what catches an upstream Loom regression instead of it going unnoticed until someone
-# next pushes here.
+# There is no binary of that JDK. The job builds it once per commit of the pull request and keeps
+# it in the Actions cache: the first run takes about an hour, the next ones a few minutes. The
+# boot JDK is the Loom build of builds.shipilev.net, a JDK 28.
 name: Build
 
 on:
@@ -16,75 +15,99 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-  schedule:
-    # Nightly at 02:00 UTC. builds.shipilev.net overwrites the tarball in place -- there is no
-    # versioned/"latest" alias -- so this cron is the only thing that re-tests against a moving
-    # upstream.
-    - cron: '0 2 * * *'
   workflow_dispatch:
 
 jobs:
-  # Everything, on the Loom JDK: core, examples AND netty-loom-scheduler, which the
-  # root pom's loom-jdk profile only adds to the reactor on JDK 28+.
+  # Everything, on the Loom JDK: core, examples AND mpsc-scheduler, which the root pom's
+  # loom-jdk profile only adds to the reactor on JDK 28+.
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 120
 
     env:
-      LOOM_JDK_URL: https://builds.shipilev.net/openjdk-jdk-loom/openjdk-jdk-loom-linux-x86_64-server.tar.xz
+      # The commit of openjdk/loom pull request 227, the same as in the README.
+      PR227_SHA: 731930db54a052cc4549db7361816f16a0119835
+      LOOM_JDK: ${{ github.workspace }}/../loom-jdk-pr227
+      BOOT_JDK_URL: https://builds.shipilev.net/openjdk-jdk-loom/openjdk-jdk-loom-linux-x86_64-server.tar.xz
 
     steps:
       - uses: actions/checkout@v7
 
-      - name: Download and extract the Loom JDK
+      - name: Restore the Loom JDK
+        id: jdk-cache
+        uses: actions/cache/restore@v6
+        with:
+          path: ${{ env.LOOM_JDK }}
+          key: loom-jdk-pr227-${{ env.PR227_SHA }}
+
+      - name: Build the Loom JDK
+        if: steps.jdk-cache.outputs.cache-hit != 'true'
         run: |
           set -euo pipefail
-          curl -fsSL -o "$RUNNER_TEMP/loom-jdk.tar.xz" "$LOOM_JDK_URL"
-          mkdir -p "$RUNNER_TEMP/loom-jdk"
-          # The tarball's single top-level entry is "jdk/" (verified with `tar -tJf`), so
-          # --strip-components=1 is what makes "$RUNNER_TEMP/loom-jdk/bin/java" exist directly.
-          tar -xJf "$RUNNER_TEMP/loom-jdk.tar.xz" -C "$RUNNER_TEMP/loom-jdk" --strip-components=1
-          rm -f "$RUNNER_TEMP/loom-jdk.tar.xz"
-          "$RUNNER_TEMP/loom-jdk/bin/java" -version
+          sudo apt-get update -q
+          sudo apt-get install -y -q autoconf libasound2-dev libcups2-dev libfontconfig1-dev \
+            libx11-dev libxext-dev libxrender-dev libxrandr-dev libxtst-dev libxt-dev
+          boot="$RUNNER_TEMP/boot-jdk"
+          mkdir -p "$boot"
+          curl -fsSL "$BOOT_JDK_URL" | tar -xJ -C "$boot" --strip-components=1
+          src="$RUNNER_TEMP/loom-src"
+          mkdir -p "$src"
+          curl -fsSL "https://github.com/franz1981/loom/archive/$PR227_SHA.tar.gz" \
+            | tar -xz -C "$src" --strip-components=1
+          cd "$src"
+          bash configure --with-boot-jdk="$boot" --disable-warnings-as-errors \
+            --with-native-debug-symbols=none --with-version-opt="pr227-${PR227_SHA:0:7}"
+          make images
+          mkdir -p "$LOOM_JDK"
+          cp -a build/linux-x86_64-server-release/images/jdk/. "$LOOM_JDK/"
 
-      # The shipilev Loom build's major version moves forward over time. Without this check a
-      # bump surfaces as an opaque compiler error instead of a clear message telling you to bump
-      # <java.version> in netty-loom-scheduler/pom.xml.
+      # Saved right after the build, so that a test failure below does not throw it away.
+      - name: Save the Loom JDK
+        if: steps.jdk-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ${{ env.LOOM_JDK }}
+          key: loom-jdk-pr227-${{ env.PR227_SHA }}
+
+      - name: Check the Loom JDK
+        run: |
+          set -euo pipefail
+          "$LOOM_JDK/bin/java" -version
+          "$LOOM_JDK/bin/javap" 'java.lang.Thread$Affinity' >/dev/null
+
+      # The Loom JDK's major version must be mpsc-scheduler's <java.version>. Without this
+      # check a mismatch surfaces as an opaque compiler error.
       #
       # That module's java.version is the one to compare, NOT the root pom's: the root sets 25
       # (core and examples compile at release=25 and run on a stock JDK), and only
-      # the scheduler module -- the one built with --enable-preview against the virtual thread
-      # scheduler SPI -- follows the Loom JDK's own major version.
-      - name: Assert the Loom JDK major version matches netty-loom-scheduler
+      # the scheduler module follows the Loom JDK's own major version.
+      - name: Assert the Loom JDK major version matches mpsc-scheduler
         run: |
           set -euo pipefail
           # "|| true" on each pipeline is deliberate: under `set -e -o pipefail` a grep that
           # matches nothing would abort here with no message -- these are meant to end up empty
           # so the "-z" checks below can report something actionable instead.
-          expected=$(grep -oE '<java\.version>[0-9]+</java\.version>' netty-loom-scheduler/pom.xml \
+          expected=$(grep -oE '<java\.version>[0-9]+</java\.version>' mpsc-scheduler/pom.xml \
             | grep -oE '[0-9]+' || true)
           if [ -z "$expected" ]; then
-            echo "::error::Could not find <java.version> in netty-loom-scheduler/pom.xml"
+            echo "::error::Could not find <java.version> in mpsc-scheduler/pom.xml"
             exit 1
           fi
-          actual=$("$RUNNER_TEMP/loom-jdk/bin/java" -XshowSettings:properties -version 2>&1 \
+          actual=$("$LOOM_JDK/bin/java" -XshowSettings:properties -version 2>&1 \
             | grep 'java.specification.version' | grep -oE '[0-9]+' | head -1 || true)
           if [ -z "$actual" ]; then
-            echo "::error::Could not determine the extracted Loom JDK's major version"
+            echo "::error::Could not determine the Loom JDK's major version"
             exit 1
           fi
-          echo "netty-loom-scheduler java.version: $expected"
-          echo "Extracted Loom JDK major version:  $actual"
+          echo "mpsc-scheduler java.version: $expected"
+          echo "Loom JDK major version:      $actual"
           if [ "$expected" != "$actual" ]; then
             echo "::error::Loom JDK major version ($actual) does not match <java.version>" \
-              "($expected) in netty-loom-scheduler/pom.xml. The shipilev Loom build has likely" \
-              "moved to a new major version -- bump <java.version> there before this build can pass."
+              "($expected) in mpsc-scheduler/pom.xml."
             exit 1
           fi
 
-      # Only the dependency cache. Deliberately does NOT cache the extracted Loom JDK: the
-      # shipilev tarball is overwritten in place with no versioned alias, so a stable cache key
-      # would pin a stale JDK forever and the nightly cron above would stop testing anything new.
+      # The dependency cache.
       - name: Cache Maven repository
         uses: actions/cache@v6
         with:
@@ -94,12 +117,11 @@ jobs:
 
       # CI must CHECK formatting, not rewrite it: "-P '!dev'" disables the profile that applies
       # Spotless at compile time, leaving only the spotless:check bound to verify. "verify" also
-      # runs core's single Surefire execution (the JDK builtin) and all four of
-      # netty-loom-scheduler's -- the vendored scheduler's own tests, carrier, work stealing,
-      # replaceBuiltinScheduler.
+      # runs core's single Surefire execution (the JDK builtin) and mpsc-scheduler's: the
+      # suites and install.
       - name: Build with Maven
         env:
-          JAVA_HOME: ${{ runner.temp }}/loom-jdk
+          JAVA_HOME: ${{ env.LOOM_JDK }}
         run: mvn -B verify --file pom.xml -P '!dev'
 
       - name: Upload test reports on failure

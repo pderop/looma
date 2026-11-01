@@ -19,16 +19,16 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * How an {@code ActorSystem} places actors on carriers: how many there are,
- * which virtual-thread factory creates an actor's loop (and its offloaded
- * threads) for a given carrier, and what the calling thread's own placement is.
+ * which virtual-thread factories create an actor's bursts and its offloaded
+ * threads for a given carrier, and what the calling thread's own placement is.
  *
  * <p>
  * This interface is deliberately small. The engine no longer dispatches
- * per-message tasks onto an {@code Executor}: each actor is one virtual thread
- * for life, started from {@link #vThreadFactory(int)} at spawn. Resist growing
- * this interface. A concern that is not placement or topology (topology probing
- * aside, which is diagnostics-only, see below) belongs somewhere else, never
- * here.
+ * per-message tasks onto an {@code Executor}: an actor runs on a virtual
+ * thread, a burst, only while it has messages, started from
+ * {@link #actorLoopFactory(int)}. Resist growing this interface. A concern that
+ * is not placement or topology (topology probing aside, which is
+ * diagnostics-only, see below) belongs somewhere else, never here.
  *
  * <p>
  * <b>{@link #pinnedCpu()} is current-thread; {@link #clusterOf(int)} is
@@ -45,16 +45,10 @@ import java.util.concurrent.TimeUnit;
  * genuinely different questions.
  *
  * <p>
- * <b>Both {@link #pinnedCpu()} and {@link #clusterOf(int)} exist purely as a
- * compile-time firewall, not because the dispatch path needs them.</b> They let
- * {@code benchmarks}' {@code CarrierPinning} and {@code examples}'
- * {@code HttpBenchMain.reportCarrierPinning} keep their "refuse to publish
- * numbers from an unpinned fork" and "warn on a single-LLC host" guards while
- * talking only to this interface — neither module ever imports anything from
- * the scheduler module itself. That is precisely what lets {@code benchmarks}
- * and {@code examples} stay compiled at {@code release=25}, without
- * {@code --enable-preview}, on a stock JDK: the topology questions those two
- * guards ask are answerable through the SPI alone.
+ * <b>{@link #pinnedCpu()} and {@link #clusterOf(int)} are diagnostics.</b> The
+ * dispatch path never reads them. They let a test or a startup banner ask
+ * whether the carriers are pinned, and how they share caches, through this
+ * interface alone, without naming the scheduler module.
  *
  * <p>
  * <b>An implementation never touches in-flight accounting.</b>
@@ -75,20 +69,33 @@ public interface ActorScheduler extends AutoCloseable {
 
 	/**
 	 * Returns the factory that creates every extra virtual thread an actor hands
-	 * out through {@code ActorContext.vThreadFactory()} — and its loop too, unless
-	 * {@link #actorLoopFactory(int)} says otherwise — placed on carrier
+	 * out through {@code ActorContext.vThreadFactory()} — and its bursts too,
+	 * unless {@link #actorLoopFactory(int)} says otherwise — placed on carrier
 	 * {@code index}, {@code 0 <= index < carrierCount()}.
 	 */
 	ThreadFactory vThreadFactory(int index);
 
 	/**
-	 * Returns the factory that creates an actor's loop virtual thread on carrier
-	 * {@code index}. By default the same as {@link #vThreadFactory(int)}; a
-	 * scheduler that keeps actor loops on their home carrier while letting the
-	 * other virtual threads be stolen returns a different one.
+	 * Returns the factory that creates an actor's bursts on carrier {@code index}.
+	 * By default the same as {@link #vThreadFactory(int)}; a scheduler that keeps
+	 * the bursts on their home carrier while letting the other virtual threads be
+	 * stolen returns a different one.
 	 */
 	default ThreadFactory actorLoopFactory(int index) {
 		return vThreadFactory(index);
+	}
+
+	/**
+	 * Returns a factory of platform threads for the code of an actor. By default
+	 * {@code Thread.ofPlatform().factory()}.
+	 *
+	 * <p>
+	 * A new thread runs only on the CPUs of the thread that starts it. A scheduler
+	 * that pins its carriers returns a factory whose threads run on every CPU
+	 * again, even when an actor starts them.
+	 */
+	default ThreadFactory platformThreadFactory() {
+		return Thread.ofPlatform().factory();
 	}
 
 	/**
@@ -120,11 +127,11 @@ public interface ActorScheduler extends AutoCloseable {
 	 * <p>
 	 * The non-blocking contract is load-bearing, not stylistic:
 	 * {@code ActorRuntime.maybeFireAfterTermination()} — the caller that reaches
-	 * this method — runs from inside the actor loop whose completion just made the
+	 * this method — runs from inside the burst whose completion just made the
 	 * in-flight counter hit zero, i.e. <b>on that actor's virtual thread</b>.
 	 * Blocking here would risk that thread waiting on its own exit. Waiting for the
 	 * release to complete is {@link #awaitClosed}'s job, called separately from
-	 * {@code ActorSystem.awaitTermination}, off the loop.
+	 * {@code ActorSystem.awaitTermination}, off the burst.
 	 */
 	@Override
 	void close();

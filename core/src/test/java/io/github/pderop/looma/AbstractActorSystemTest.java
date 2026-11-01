@@ -196,6 +196,23 @@ public abstract class AbstractActorSystemTest {
 		assertInstanceOf(IllegalStateException.class, e.getCause());
 	}
 
+	/** A factory that makes no actor is refused at spawn, and nothing is left. */
+	@Test
+	void aFactoryReturningNullIsRefusedAtSpawn() {
+		IllegalStateException e = assertThrows(IllegalStateException.class, () -> system.spawn("none", () -> null));
+
+		assertTrue(e.getMessage().contains("returned null"), e.getMessage());
+		assertTrue(system.findActor("/none").isEmpty());
+	}
+
+	@Test
+	void aNullMessageIsRefused() {
+		ActorRef ref = system.spawn("a", () -> new RecordingActor(0));
+
+		assertThrows(NullPointerException.class, () -> ref.tell(null));
+		assertThrows(NullPointerException.class, () -> ref.ask(null));
+	}
+
 	@Test
 	void findActorResolvesALiveRootAndNothingElse() {
 		ActorRef ref = system.spawn("db", () -> new RecordingActor(0));

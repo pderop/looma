@@ -29,8 +29,8 @@ import io.github.pderop.looma.spi.ActorSchedulerProvider;
  * <p>
  * Discovery uses {@link ServiceLoader#load(Class, ClassLoader)} with this
  * class's own defining classloader — deliberately <b>not</b> the thread context
- * classloader overload. The JDK itself resolves
- * {@code io.netty.loom.scheduler.NettyScheduler} through the <i>system</i>
+ * classloader overload. The JDK itself resolves a scheduler named by
+ * {@code -Djdk.virtualThreadScheduler.implClass} through the <i>system</i>
  * classloader while running {@code VirtualThread.<clinit>}, and every
  * deployment recipe this project documents is a flat-classpath one; the TCCL
  * overload would silently miss a provider on setups where the two classloaders
@@ -38,8 +38,8 @@ import io.github.pderop.looma.spi.ActorSchedulerProvider;
  *
  * <p>
  * <b>A provider that fails to even load is caught and skipped, not just one
- * that reports unavailable.</b> A scheduler module compiled with
- * {@code --enable-preview} loaded on a stock JDK throws
+ * that reports unavailable.</b> A scheduler module compiled for a newer JDK
+ * ({@code release=28}) loaded on a stock JDK 25 throws
  * {@link UnsupportedClassVersionError} — a {@link LinkageError} — the moment
  * {@link ServiceLoader} tries to resolve its provider class.
  * {@code ServiceLoader} only ever wraps {@link ClassNotFoundException} into
@@ -62,9 +62,12 @@ final class ActorSchedulers {
 
 	/**
 	 * What {@link #install(Carriers)} installed in this JVM, or {@code null}. The
-	 * scheduler belongs to the JVM, so it can be affine or builtin, not both.
+	 * scheduler belongs to the JVM, so it is one kind of pool only.
 	 */
 	private static Carriers installed;
+
+	/** The JDK property that makes the MPSC scheduler the builtin one. */
+	private static final String USE_MPSC = "jdk.virtualThreadScheduler.useMpsc";
 
 	private ActorSchedulers() {
 	}
@@ -100,9 +103,9 @@ final class ActorSchedulers {
 	 * because {@link ServiceLoader}'s iterator has already consumed the offending
 	 * entry by the time it throws — the next {@code hasNext()} resumes at the
 	 * following one. This bound is what keeps a hypothetical iterator that does
-	 * <em>not</em> advance from spinning forever inside
-	 * {@code VirtualThread.<clinit>}-adjacent initialisation, where an infinite
-	 * loop would be close to undiagnosable. No real classpath comes near it.
+	 * <em>not</em> advance from spinning forever inside {@code build()}, where an
+	 * infinite loop would be close to undiagnosable. No real classpath comes near
+	 * it.
 	 */
 	private static final int MAX_PROVIDER_FAILURES = 64;
 
@@ -127,10 +130,7 @@ final class ActorSchedulers {
 	 *             when the scheduler asked for cannot be installed in this JVM
 	 */
 	static synchronized ActorScheduler install(Carriers carriers) {
-		// Affine against affine is the provider's call: two systems may differ in
-		// actorsStayHome().
-		boolean bothAffine = installed instanceof Carriers.Affine && carriers instanceof Carriers.Affine;
-		if (installed != null && !bothAffine && !installed.equals(carriers)) {
+		if (installed != null && !installed.equals(carriers)) {
 			throw new IllegalStateException(
 					"this JVM's scheduler is already installed as " + installed + " and cannot also be " + carriers);
 		}
@@ -138,8 +138,8 @@ final class ActorSchedulers {
 			case Carriers.Affine affine -> {
 				ActorSchedulerProvider provider = firstProvider(p -> p.install(affine), true)
 						.orElseThrow(() -> new IllegalStateException("no ActorSchedulerProvider could install " + affine
-								+ ": a carrier-affine scheduler needs looma-netty-scheduler on the classpath of a"
-								+ " Loom JDK started with --enable-preview"));
+								+ ": it needs looma-mpsc-scheduler on the classpath of a JDK built from openjdk/loom"
+								+ " pull request 227"));
 				discovered = Optional.of(provider);
 				yield provider.create(affine);
 			}
@@ -148,6 +148,10 @@ final class ActorSchedulers {
 				if (implClass != null) {
 					throw new IllegalStateException("-Djdk.virtualThreadScheduler.implClass=" + implClass
 							+ " is set, so this JVM does not run the builtin scheduler: cannot build with " + builtin);
+				}
+				if (Boolean.getBoolean(USE_MPSC)) {
+					throw new IllegalStateException("-D" + USE_MPSC
+							+ "=true is set, so this JVM runs the MPSC scheduler: cannot build with " + builtin);
 				}
 				SystemProperties.setOnce("jdk.virtualThreadScheduler.parallelism",
 						Integer.toString(builtin.parallelism()));

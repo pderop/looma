@@ -21,8 +21,8 @@ import io.github.pderop.looma.Carriers;
  * A {@link ServiceLoader}-discoverable factory for one {@link ActorScheduler}.
  *
  * <p>
- * {@code core} ships no implementation of this interface: the only one in this
- * project lives in the {@code netty-loom-scheduler} module, registered under
+ * {@code core} ships no implementation of this interface: the one in this
+ * project lives in the {@code mpsc-scheduler} module, registered under
  * {@code META-INF/services/io.github.pderop.looma.spi.ActorSchedulerProvider}.
  * A third-party scheduler is added to a process the same way — implement both
  * SPI interfaces and register the provider — without {@code core} ever
@@ -47,8 +47,8 @@ public interface ActorSchedulerProvider {
 	ActorScheduler create();
 
 	/**
-	 * Installs this provider's scheduler in this JVM as a carrier-affine pool
-	 * shaped by {@code carriers}, as {@code ActorSystem.Builder.carriers(...)}
+	 * Installs this provider's scheduler in this JVM as the carrier-affine pool
+	 * {@code carriers} describes, as {@code ActorSystem.Builder.carriers(...)}
 	 * asks. On success {@link #isAvailable()} reports {@code true} and
 	 * {@link #create(Carriers.Affine)} is called next.
 	 *
@@ -73,11 +73,10 @@ public interface ActorSchedulerProvider {
 	/**
 	 * Creates a new {@link ActorScheduler} for a system built with
 	 * {@code carriers}, after {@link #install(Carriers.Affine)} accepted them. The
-	 * pool belongs to the JVM; what {@code carriers} adds on top of it, such as
-	 * {@link Carriers.Affine#actorsStealable()}, belongs to this one system. The
-	 * default ignores it and calls {@link #create()}.
+	 * default calls {@link #create()}.
 	 */
 	default ActorScheduler create(Carriers.Affine carriers) {
 		return create();
 	}
+
 }

@@ -40,8 +40,9 @@ import io.netty.loom.topology.LinuxCarrierTopology;
  * <p>
  * The per-carrier {@link ThreadFactory} is resolved once into an array at
  * construction: neither the group's size nor a carrier's factory can change
- * over the life of the pool. Each actor placed on a carrier starts its loop
- * virtual thread from that factory, so the loop is home-affine.
+ * over the life of the pool. Each actor placed on a carrier starts its bursts
+ * on that carrier's home queue, which thieves never read: an actor is never
+ * stolen. The threads it offloads go to the usual queue, and can be.
  */
 final class NettyActorScheduler implements ActorScheduler {
 
@@ -56,9 +57,8 @@ final class NettyActorScheduler implements ActorScheduler {
 	private final ThreadFactory[] factories;
 
 	/**
-	 * The actor loops' factories: the same as {@link #factories}, or each carrier's
-	 * {@link EventLoopScheduler#homeVirtualThreadFactory()} when the actor loops
-	 * must never be stolen.
+	 * The factories of the actors' bursts: each carrier's
+	 * {@link EventLoopScheduler#homeVirtualThreadFactory()}.
 	 */
 	private final ThreadFactory[] loopFactories;
 
@@ -78,16 +78,12 @@ final class NettyActorScheduler implements ActorScheduler {
 	private final int[] carrierToCluster;
 
 	NettyActorScheduler(EventLoopSchedulerGroup group) {
-		this(group, true);
-	}
-
-	NettyActorScheduler(EventLoopSchedulerGroup group, boolean actorsStealable) {
 		int size = group.size();
 		this.factories = new ThreadFactory[size];
 		this.loopFactories = new ThreadFactory[size];
 		for (int i = 0; i < size; i++) {
 			factories[i] = group.scheduler(i).virtualThreadFactory();
-			loopFactories[i] = actorsStealable ? factories[i] : group.scheduler(i).homeVirtualThreadFactory();
+			loopFactories[i] = group.scheduler(i).homeVirtualThreadFactory();
 		}
 		this.carrierToCluster = readClusterMap(group, size);
 	}

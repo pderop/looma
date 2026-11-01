@@ -30,7 +30,7 @@ import java.util.function.Supplier;
  * default without changing anything else about the child: its place in the
  * cascading stop, its path, and its place among its parent's children are
  * exactly the same whichever carrier it lands on. {@link Actor#onReceive} — and
- * every lifecycle hook — always runs on one of this actor's own loop virtual
+ * every lifecycle hook — always runs on one of this actor's own virtual
  * threads: one per burst of messages, each started from that home carrier's
  * factory, never two at once.
  *
@@ -49,7 +49,7 @@ import java.util.function.Supplier;
  * <p>
  * This interface is deliberately not an {@link java.util.concurrent.Executor}
  * and takes no {@code Runnable} directly: {@link #vThreadFactory()} is the sole
- * mechanism for moving blocking work off an actor's own loop, because it is
+ * mechanism for moving blocking work off an actor's own burst, because it is
  * also the mechanism that carries the actor's carrier affinity to that work —
  * see there for exactly what it guarantees.
  */
@@ -141,7 +141,7 @@ public interface ActorContext {
 	 * children</b>: that many actors from the same {@code factory}, named
 	 * {@code name-0} … {@code name-(poolSize-1)}, and one returned {@link ActorRef}
 	 * spreading every {@code tell} and {@code ask} over them round-robin. Each has
-	 * a mailbox and a loop of its own, so a child that blocks on I/O inside
+	 * a mailbox and bursts of its own, so a child that blocks on I/O inside
 	 * {@code onReceive} stalls only its own mailbox and its {@code poolSize - 1}
 	 * peers keep serving — a pool is the way to absorb blocking work without
 	 * offloading it to {@link #vThreadFactory()}. Ordering, in exchange, is per
@@ -238,8 +238,8 @@ public interface ActorContext {
 
 	/**
 	 * Returns the id of the carrier {@code ref}'s actor calls home — the one its
-	 * loop virtual thread and its {@link #vThreadFactory()} threads are placed on.
-	 * Always {@code 0} under a single-carrier scheduler such as the JDK builtin.
+	 * bursts and its {@link #vThreadFactory()} threads are placed on. Always
+	 * {@code 0} under a single-carrier scheduler such as the JDK builtin.
 	 *
 	 * <p>
 	 * The home carrier is the only <em>deterministic</em> thing about an actor's
@@ -269,15 +269,15 @@ public interface ActorContext {
 	 *
 	 * <p>
 	 * The affinity guarantee depends on which
-	 * {@code io.github.pderop.looma.spi.ActorScheduler} placed this actor: a
-	 * carrier-affine scheduler pins a thread created here to this actor's home
+	 * {@code io.github.pderop.looma.spi.ActorScheduler} placed this actor: under a
+	 * carrier-affine scheduler, a thread created here starts on this actor's home
 	 * carrier, so it shares its locality and can complete work back into the actor
-	 * (e.g. {@code self().tell(result, self())}) without a cross-carrier hop; the
-	 * JDK builtin scheduler hands out a plain, unpinned virtual thread on the JDK's
-	 * default scheduler instead. Either way, blocking directly inside
-	 * {@link Actor#onReceive} instead of offloading here occupies this actor's own
-	 * loop and stalls its own mailbox — that never changes. Neighbours have loops
-	 * of their own.
+	 * (e.g. {@code self().tell(result, self())}) without a cross-carrier hop, but
+	 * an idle carrier may steal it; the JDK builtin scheduler hands out a plain
+	 * virtual thread on the JDK's default scheduler instead. Either way, blocking
+	 * directly inside {@link Actor#onReceive} instead of offloading here occupies
+	 * this actor's own burst and stalls its own mailbox — that never changes.
+	 * Neighbours have bursts of their own.
 	 *
 	 * <p>
 	 * The engine counts every thread created through this factory as in-flight

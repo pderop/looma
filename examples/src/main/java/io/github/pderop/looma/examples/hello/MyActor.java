@@ -24,11 +24,10 @@ import io.github.pderop.looma.Message;
  * <p>
  * Demonstrates the distinctive thing this project exists to show: a
  * <b>blocking</b> call inside {@link #onReceive} moved off the actor's own gate
- * onto a virtual thread from {@link ActorContext#vThreadFactory()}. On this
- * carrier-affine implementation that thread is pinned to the actor's home
- * carrier (see {@code CarrierAffinityTest}), so blocking there parks it without
- * stalling any other actor's dispatch, and replying from it pays no
- * cross-carrier hop.
+ * onto a virtual thread from {@link ActorContext#vThreadFactory()}. That thread
+ * starts on the actor's home carrier, and an idle carrier may steal it:
+ * blocking there parks it without stalling this actor, or any other one. The
+ * actor itself never leaves its home carrier.
  *
  * <p>
  * It also spawns one child, in {@link #preStart}, to show the second half of

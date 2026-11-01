@@ -29,13 +29,13 @@ import io.github.pderop.looma.spi.MailboxQueueFactory;
  * One implementation of this interface ships in this project, and
  * {@link #builder()} is the only way to reach it — a caller never names an
  * implementation type. It always runs the identical actor engine (spawn,
- * hierarchy, one virtual thread per actor, supervision, {@code ask}, graceful
- * stop). What varies is which {@code io.github.pderop.looma.spi.ActorScheduler}
- * supplies the factory that starts those loops — two shapes ship in this
- * project: a carrier-affine one, discovered through the SPI and backed by a
+ * hierarchy, one virtual thread per burst of messages, supervision,
+ * {@code ask}, graceful stop). What varies is which
+ * {@code io.github.pderop.looma.spi.ActorScheduler} supplies the factories that
+ * start those threads — two ship in this project: a carrier-affine one,
+ * {@link Carriers#affine(int)}, discovered through the SPI and backed by a
  * JVM-wide pool of carrier threads installed once per process — by
- * {@link Builder#carriers(Carriers)} or by
- * {@code -Djdk.virtualThreadScheduler.implClass} — and outliving any single
+ * {@link Builder#carriers(Carriers)} or by JVM flags — and outliving any single
  * {@code ActorSystem}; or, when none is installed, the JDK builtin scheduler,
  * whose factories create plain virtual threads on the JDK's default virtual
  * thread scheduler. Both are directly comparable for exactly this reason; see
@@ -82,9 +82,8 @@ public interface ActorSystem {
 
 		/**
 		 * Chooses and sizes this JVM's virtual-thread scheduler in code — what the
-		 * {@code -Djdk.virtualThreadScheduler.*} and {@code -Dio.netty.loom.*} flags
-		 * otherwise do. {@link #build()} sets the properties those flags would have
-		 * set, then checks that they took.
+		 * {@code -Djdk.virtualThreadScheduler.*} flags otherwise do. {@link #build()}
+		 * sets the properties those flags would have set, then checks that they took.
 		 *
 		 * <p>
 		 * <b>{@link #build()} must run before this JVM's first virtual thread.</b> The
@@ -93,27 +92,23 @@ public interface ActorSystem {
 		 * {@link IllegalStateException}:
 		 * <ul>
 		 * <li>for {@link Carriers#affine(int)}, when no provider on the classpath can
-		 * install one — no scheduler module, or a JVM started without
-		 * {@code --enable-preview};
+		 * install it: no scheduler module, or a JDK without the MPSC scheduler;
 		 * <li>for {@link Carriers#affine(int)}, when a virtual thread already ran under
-		 * another scheduler, or under this one configured differently;
-		 * <li>for {@link Carriers#builtin(int)}, when
-		 * {@code -Djdk.virtualThreadScheduler.implClass} names another scheduler;
-		 * <li>for {@link Carriers#affine(int)}, when
-		 * {@code -Djdk.virtualThreadScheduler.implClass} is set, whatever its value:
-		 * the pool is configured by the flags or by the code, not by both;
-		 * <li>for either, when a property it sets already holds another value — from a
-		 * {@code -D} flag — or when an earlier system in this JVM was built with
-		 * another pool. A second system on the same pool is fine, and may differ in
-		 * {@link Carriers.Affine#actorsStayHome()} only.
+		 * another scheduler;
+		 * <li>when {@code -Djdk.virtualThreadScheduler.implClass} or
+		 * {@code -Djdk.virtualThreadScheduler.useMpsc} is set: the pool is configured
+		 * by the flags or by the code, not by both;
+		 * <li>when a property it sets already holds another value, from a {@code -D}
+		 * flag, or when an earlier system in this JVM was built with another pool. A
+		 * second system on the same pool is fine.
 		 * </ul>
 		 * The one case that cannot be detected is {@link Carriers#builtin(int)} after
 		 * the JDK's scheduler was initialised by an earlier virtual thread: the
 		 * parallelism is then silently the JDK's default.
 		 *
 		 * <p>
-		 * {@code --enable-preview} and {@code --enable-native-access} are not
-		 * properties and stay on the command line.
+		 * {@code --enable-native-access} is not a property and stays on the command
+		 * line.
 		 *
 		 * @throws NullPointerException
 		 *             if {@code carriers} is {@code null}
@@ -137,18 +132,17 @@ public interface ActorSystem {
 	 * banners and pinning probes need.
 	 *
 	 * <p>
-	 * On the contract rather than on an implementation type because the two
-	 * consumers of it — an example's startup banner and the benchmark harness'
-	 * "refuse to publish numbers from an unpinned fork" guard — must keep working
-	 * whichever scheduler is installed, without naming one.
+	 * On the contract rather than on an implementation type because its users — the
+	 * startup banner of the benchmark, the tests that check the pinning, and the
+	 * {@link ActorScheduler#platformThreadFactory()} of an application — must keep
+	 * working whichever scheduler is installed, without naming one.
 	 */
 	ActorScheduler scheduler();
 
 	/**
 	 * Returns the id of the carrier {@code ref}'s actor calls home — the one its
-	 * loop virtual thread and its {@link ActorContext#vThreadFactory()} threads are
-	 * placed on. Always {@code 0} under a single-carrier scheduler such as the JDK
-	 * builtin.
+	 * bursts and its {@link ActorContext#vThreadFactory()} threads are placed on.
+	 * Always {@code 0} under a single-carrier scheduler such as the JDK builtin.
 	 *
 	 * <p>
 	 * The home carrier is the only <em>deterministic</em> thing about an actor's
@@ -224,11 +218,11 @@ public interface ActorSystem {
 	 * many root actors from the same {@code factory}, named {@code name-0} …
 	 * {@code name-(poolSize-1)}, and one returned {@link ActorRef} that spreads
 	 * every {@code tell} and {@code ask} over them round-robin. Each is an ordinary
-	 * actor with its own mailbox, its own loop virtual thread and its own
-	 * supervision, so one of them blocking on I/O inside {@code onReceive} stalls
-	 * only its own mailbox and the pool keeps serving — which is what a pool is
-	 * for. There is no router actor in between: a message pays the same single hop
-	 * it would to a lone actor.
+	 * actor with its own mailbox, its own bursts and its own supervision, so one of
+	 * them blocking on I/O inside {@code onReceive} stalls only its own mailbox and
+	 * the pool keeps serving — which is what a pool is for. There is no router
+	 * actor in between: a message pays the same single hop it would to a lone
+	 * actor.
 	 *
 	 * <pre>{@code
 	 * // four actors, load-balanced behind one reference
@@ -339,10 +333,13 @@ public interface ActorSystem {
 	 * pool shared by every virtual thread in the process.
 	 *
 	 * <p>
-	 * Once shutdown has begun, {@link ActorRef#tell} to any actor in this system is
-	 * silently dropped (dead-letter semantics) and {@link ActorRef#ask} fails
-	 * immediately with {@link IllegalStateException}; a new {@link #spawn} throws
-	 * {@link IllegalStateException} for the same reason.
+	 * Once shutdown has begun, {@link ActorRef#ask} to any actor of this system
+	 * fails immediately with {@link IllegalStateException}, and a new
+	 * {@link #spawn} throws {@link IllegalStateException} for the same reason. A
+	 * {@link ActorRef#tell} is silently dropped (dead-letter semantics) once its
+	 * actor is stopping: a root at once, a descendant when the cascade reaches it,
+	 * after its parent's mailbox has drained. Until then, a descendant still takes
+	 * messages, so that its parent can finish its work.
 	 */
 	void shutdown();
 
@@ -352,11 +349,10 @@ public interface ActorSystem {
 	 * work finished — or the timeout elapses.
 	 *
 	 * <p>
-	 * "In-flight work" means every actor loop virtual thread and every thread
-	 * created through {@link ActorContext#vThreadFactory()} that has not yet
-	 * finished, regardless of which scheduler is in use: this is what keeps a
-	 * caller from observing termination while user-spawned blocking work is still
-	 * running.
+	 * "In-flight work" means every burst and every thread created through
+	 * {@link ActorContext#vThreadFactory()} that has not yet finished, regardless
+	 * of which scheduler is in use: this is what keeps a caller from observing
+	 * termination while user-spawned blocking work is still running.
 	 *
 	 * @return {@code true} if the system terminated before the timeout elapsed
 	 * @throws InterruptedException

@@ -63,7 +63,7 @@ import org.openjdk.jmh.runner.IterationType;
  * when a task started: it shows that the tasks really ran side by side.
  *
  * <p>
- * Run it with {@code scripts/run-wake-jmh.sh}.
+ * Run it with {@code netty-loom-scheduler/scripts/run-wake-jmh.sh}.
  */
 @State(Scope.Benchmark)
 @BenchmarkMode(Mode.Throughput)

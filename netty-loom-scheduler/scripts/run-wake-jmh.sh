@@ -7,9 +7,9 @@
 #   random   the scan starts at a random carrier: IdleCarrierTracker from commit 12af517 (#8),
 #            compiled on top of the same classes.
 #
-#   scripts/run-wake-jmh.sh                       # the CPUs of an AMD Ryzen 9 9950X
-#   scripts/run-wake-jmh.sh --reps 3              # first, random, first, random, ...
-#   scripts/run-wake-jmh.sh -- -p tasks=4         # what follows -- goes to JMH
+#   netty-loom-scheduler/scripts/run-wake-jmh.sh  # the CPUs of an AMD Ryzen 9 9950X
+#   netty-loom-scheduler/scripts/run-wake-jmh.sh --reps 3  # first, random, first, random, ...
+#   netty-loom-scheduler/scripts/run-wake-jmh.sh -- -p tasks=4  # what follows -- goes to JMH
 #
 # Prerequisites: Linux, the Loom JDK selected (`sdk env`), the project built (`mvn install`), and
 # the git history (for commit 12af517).
@@ -28,7 +28,7 @@
 
 set -euo pipefail
 
-ROOT=$(cd "$(dirname "$0")/.." && pwd)
+ROOT=$(cd "$(dirname "$0")/../.." && pwd)
 RANDOM_COMMIT=12af517
 TRACKER=netty-loom-scheduler/src/main/java/io/netty/loom/scheduler/IdleCarrierTracker.java
 

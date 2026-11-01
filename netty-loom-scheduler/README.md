@@ -1,9 +1,21 @@
 # `netty-loom-scheduler`
 
-This module is a copy of the upstream carrier-affine virtual thread scheduler, **byte-for-byte
-except for two documented patches, one per file** (below), plus the `ActorSchedulerProvider` / `ActorScheduler`
-adapter that lets `looma` reach it through the SPI declared in `core`
-(`io.github.pderop.looma.spi`).
+**This module is no longer built, since 2026-10-31.** It stays in the repository for a possible
+patch upstream. Looma's `Carriers.affine(n)` now runs the JDK's MPSC scheduler, in
+[`mpsc-scheduler`](../mpsc-scheduler/README.md).
+
+What follows describes the module as it was when it was last built, with the root `pom.xml` that
+listed it and the Spotless exclude described below.
+
+This module holds:
+
+- a copy of the upstream carrier-affine virtual thread scheduler, **byte-for-byte except for two
+  documented patches, one per file** (below);
+- the `ActorSchedulerProvider` / `ActorScheduler` adapter that lets `looma` reach it through the
+  SPI declared in `core` (`io.github.pderop.looma.spi`), for `Carriers.affine(n)`.
+
+The adapter of the JDK's MPSC scheduler, for `Carriers.mpsc(n)`, is in its own module,
+[`mpsc-scheduler`](../mpsc-scheduler/README.md). It does not use this copy.
 
 ## Origin
 
@@ -12,10 +24,10 @@ adapter that lets `looma` reach it through the SPI declared in `core`
 - Copied packages:
   - `io.netty.loom.scheduler.*` (including `.jfr`), from `bootstrap/src/{main,test}/java/io/netty/loom/scheduler/**`
   - `io.netty.loom.topology.*`, from `topology/src/{main,test}/java/io/netty/loom/topology/**`
-- Licence: Apache License, Version 2.0. See `NOTICE` at the repository root for the
+- License: Apache License, Version 2.0. See `NOTICE` at the repository root for the
   full attribution block and the Section 4(b) statement.
 
-## The Looma patch: a home queue that stealing never reads
+## The Looma patches: a home queue that stealing never reads, and the pollers
 
 Two copied files are modified: `io/netty/loom/scheduler/EventLoopScheduler.java` and
 `io/netty/loom/scheduler/NettyScheduler.java`.
@@ -32,16 +44,16 @@ change in it is marked `Looma:`.
   other. Parking checks both; signalling an idle sibling to steal looks at the stealable one
   only.
 
-Looma uses it for `Carriers.affine(n)...actorsStayHome()`: actor loops come from the home
-factory, the virtual threads an actor offloads from the ordinary one. The test is
+Looma uses it for `Carriers.affine(n)`: actor bursts come from the home factory, the virtual
+threads an actor offloads from the ordinary one. The test is
 `HomeVirtualThreadTest` (Looma's own file, run by the `workstealing-test` execution).
 
 In `NettyScheduler`, the constructor starts the JDK's pollers before it creates the carriers.
 The JDK starts its `Master-Poller` and `Write-Poller` threads the first time a virtual thread
 waits on a socket, from the carrier that runs it. On Linux, a new thread runs only on the CPUs of
 the thread that starts it. So both pollers stayed for good on that carrier's one CPU, and that
-carrier had more work than the others. Started from the constructor, they may run on the CPUs
-of the thread that installs the scheduler. The read pollers do not change: there is still one
+carrier had more work than the others. Started from the constructor, they keep the CPUs of the
+thread that installs the scheduler. The read pollers do not change: there is still one
 per carrier, as before.
 
 ## The copied files are not edited, and never formatted
@@ -60,7 +72,7 @@ is kept **diffable against upstream**:
   carrying the plain Apache-2.0 header rather than the upstream project's copyright line,
   never mixed into a copied file.
 - The JMH benchmarks are Looma's own too, under `src/test/java/io/github/pderop/looma/scheduler/netty/jmh/`.
-  `scripts/run-wake-jmh.sh` runs them.
+  `netty-loom-scheduler/scripts/run-wake-jmh.sh` runs them.
 
 ## Refreshing from upstream
 
@@ -98,9 +110,7 @@ S=netty-loom-scheduler/src/main/java/io/netty/loom/scheduler
 ```
 
 (`a/` holding the upstream files, `b/` the patched ones.) Then update the commit hash above and
-in `NOTICE`, and check with `diff -r` that every other copied file is identical to upstream. Do
-not run `mvn spotless:apply` afterwards — the exclude means it will not touch these files, but
-running it on the whole repo after a manual edit elsewhere is a habit worth keeping deliberate.
+in `NOTICE`, and check with `diff -r` that every other copied file is identical to upstream.
 
 ## Why this module needs a separate JDK / preview flag
 
@@ -111,7 +121,7 @@ the command line, or by `ActorSystem.builder().carriers(Carriers.affine(n))` thr
 `NettyActorSchedulerProvider.install`, which sets it before the JVM's first virtual
 thread. That
 SPI is a **preview feature of a Loom-enabled JDK 28+**, not of stock JDK 25. That is
-why this module alone compiles at `release=28` with `--enable-preview` (both on the
+why this module compiles at `release=28` with `--enable-preview` (both on the
 compiler and on Surefire), while `core` and `examples` compile at
 `release=25` without it — see the root `pom.xml`'s `loom-jdk` profile
 (`<jdk>[28,)</jdk>`), which is the only thing that adds this module to the reactor.

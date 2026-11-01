@@ -16,9 +16,8 @@
         A single Surefire execution: core runs entirely on the JDK's default virtual thread
         scheduler, behind JdkActorScheduler — one virtual thread per actor, no preview flag
         and no -Djdk.virtualThreadScheduler.implClass. This module compiles and tests at
-        release=25. The carrier-affine executions (carrier-test, workstealing-test and the
-        rest) live in netty-loom-scheduler, the only module that depends on the preview
-        virtual thread scheduler SPI.
+        release=25. The carrier-affine executions live in mpsc-scheduler, which needs the
+        JDK of openjdk/loom pull request 227.
     -->
     <build>
         <plugins>

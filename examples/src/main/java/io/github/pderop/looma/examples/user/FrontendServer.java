@@ -45,6 +45,13 @@ import org.HdrHistogram.Recorder;
  * <p>
  * The threads are named {@code client-N}. The script uses this name to leave
  * them out of the perf counters.
+ *
+ * <p>
+ * The actor that answers completes the future on its carrier. So the work done
+ * there for the client is kept to the least: take the time, and push the
+ * request back to its client thread. The client thread counts it: the latency,
+ * the failures, the requests in flight. This way the CPU of the server holds as
+ * little client work as possible.
  */
 final class FrontendServer {
 
@@ -75,8 +82,6 @@ final class FrontendServer {
 	private final List<Integer> cpus;
 
 	private final List<Thread> threads = new ArrayList<>();
-
-	private final List<AtomicLong> inFlight = new ArrayList<>();
 
 	private volatile boolean running = true;
 
@@ -114,8 +119,6 @@ final class FrontendServer {
 		for (int i = 0; i < count; i++) {
 			Integer cpu = cpus.isEmpty() ? null : cpus.get(i);
 			Random random = new Random(i);
-			AtomicLong pending = new AtomicLong();
-			inFlight.add(pending);
 			threads.add(Thread.ofPlatform().name("client-" + i).start(() -> {
 				try {
 					if (cpu != null) {
@@ -127,7 +130,7 @@ final class FrontendServer {
 				} finally {
 					pinned.countDown();
 				}
-				send(interval, cpu != null, random, pending);
+				send(interval, cpu != null, random);
 			}));
 		}
 		pinned.await();
@@ -141,9 +144,12 @@ final class FrontendServer {
 	 * Sends one request every {@code interval} ns. The schedule is fixed: a late
 	 * send does not delay the next one.
 	 */
-	private void send(long interval, boolean spin, Random random, AtomicLong pending) {
+	private void send(long interval, boolean spin, Random random) {
+		Answers answers = new Answers();
+		long pending = 0;
 		long next = System.nanoTime();
 		while (running) {
+			pending -= count(answers.takeAll());
 			// Wait until the time of the next request.
 			// Sleeping is not precise: the thread may wake up too late,
 			// and the request would leave late.
@@ -163,22 +169,44 @@ final class FrontendServer {
 			long scheduled = next;
 			next += interval;
 			Window window = current;
-			if (pending.get() >= MAX_IN_FLIGHT) {
+			if (pending >= MAX_IN_FLIGHT) {
 				window.dropped.incrementAndGet();
 				continue;
 			}
 			window.sent.incrementAndGet();
 			window.sendLag.recordValue(clamp(System.nanoTime() - scheduled));
-			pending.incrementAndGet();
+			pending++;
+			Request request = new Request(scheduled, window);
+			// Runs on the carrier of the actor that answers: the time, and a push.
 			handler.handleRequest(random.nextInt(users)).whenComplete((reply, error) -> {
-				if (error != null) {
-					window.failed.incrementAndGet();
-				} else {
-					window.latency.recordValue(clamp(System.nanoTime() - scheduled));
-				}
-				pending.decrementAndGet();
+				request.answeredAt = System.nanoTime();
+				request.failed = error != null;
+				answers.push(request);
 			});
 		}
+		// The last answers, for up to 5 s.
+		long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
+		while (pending > 0 && System.nanoTime() < deadline) {
+			pending -= count(answers.takeAll());
+			LockSupport.parkNanos(1_000_000);
+		}
+	}
+
+	/**
+	 * Counts the answered requests of a list, on the client thread. Returns how
+	 * many there were.
+	 */
+	private static int count(Request answered) {
+		int n = 0;
+		for (Request request = answered; request != null; request = request.next) {
+			if (request.failed) {
+				request.window.failed.incrementAndGet();
+			} else {
+				request.window.latency.recordValue(clamp(request.answeredAt - request.scheduled));
+			}
+			n++;
+		}
+		return n;
 	}
 
 	/** From now on, requests are measured. */
@@ -192,17 +220,11 @@ final class FrontendServer {
 		current = new Window();
 	}
 
-	/** Stops the threads, then waits up to 5 s for the last answers. */
+	/** Stops the threads. Each one waits up to 5 s for its last answers. */
 	void stop() throws InterruptedException {
 		running = false;
 		for (Thread thread : threads) {
 			thread.join();
-		}
-		long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
-		for (AtomicLong pending : inFlight) {
-			while (pending.get() > 0 && System.nanoTime() < deadline) {
-				LockSupport.parkNanos(1_000_000);
-			}
 		}
 	}
 
@@ -249,6 +271,51 @@ final class FrontendServer {
 
 	private static double micros(Histogram histogram, double percentile) {
 		return histogram.getValueAtPercentile(percentile) / 1e3;
+	}
+
+	/** One request, from its send to its answer. */
+	private static final class Request {
+
+		private final long scheduled;
+
+		/** The window that was current when the request was scheduled. */
+		private final Window window;
+
+		/** Written on the carrier, before the push; read after the take. */
+		private long answeredAt;
+
+		private boolean failed;
+
+		/** The next request in a list of {@link Answers}. */
+		private Request next;
+
+		private Request(long scheduled, Window window) {
+			this.scheduled = scheduled;
+			this.window = window;
+		}
+	}
+
+	/**
+	 * The answered requests of one client thread, not counted yet: a stack that the
+	 * carriers push onto, and that the client thread takes whole. A push is one
+	 * compare-and-set and allocates nothing.
+	 */
+	private static final class Answers {
+
+		private final AtomicReference<Request> head = new AtomicReference<>();
+
+		void push(Request request) {
+			Request top;
+			do {
+				top = head.get();
+				request.next = top;
+			} while (!head.compareAndSet(top, request));
+		}
+
+		/** Every request pushed so far, or null. */
+		Request takeAll() {
+			return head.getAndSet(null);
+		}
 	}
 
 	/** The counters of one window. A Recorder can be written from any thread. */

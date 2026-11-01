@@ -38,7 +38,7 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-        <!-- The JMH benchmarks under src/test (scripts/run-wake-jmh.sh). Test scope: not in the jar. -->
+        <!-- The JMH benchmarks under src/test (netty-loom-scheduler/scripts/run-wake-jmh.sh). Test scope: not in the jar. -->
         <dependency>
             <groupId>org.openjdk.jmh</groupId>
             <artifactId>jmh-core</artifactId>
@@ -73,7 +73,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- Writes target/test-classpath.txt, for scripts/run-wake-jmh.sh. -->
+            <!-- Writes target/test-classpath.txt, for netty-loom-scheduler/scripts/run-wake-jmh.sh. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>

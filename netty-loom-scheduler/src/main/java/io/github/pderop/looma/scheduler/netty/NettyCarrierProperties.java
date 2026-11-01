@@ -25,13 +25,9 @@ import io.netty.loom.topology.LinuxCarrierTopology;
 /**
  * The system properties a {@link Carriers.Affine} stands for — the ones
  * {@code scripts/} used to pass as {@code -D} flags, under the copied
- * scheduler's own names, which stay unchanged because that code does.
- *
- * <p>
- * A property the configuration leaves out is required to be <em>absent</em>,
- * not merely left alone: a {@code -Dio.netty.loom.topology} on the command line
- * would otherwise pin the carriers of a pool asked for unpinned, and the run
- * would report a configuration it did not have.
+ * scheduler's own names, which stay unchanged because that code does. The
+ * values are always the same: carriers pinned and grouped by L3, stealing
+ * within a group, poller mode 3.
  */
 final class NettyCarrierProperties {
 
@@ -58,17 +54,15 @@ final class NettyCarrierProperties {
 	}
 
 	/**
-	 * Every property {@code carriers} decides, mapped to its value, or to
-	 * {@code null} where it must not be set. {@code implClass} last: it is the one
-	 * that makes the others matter.
+	 * Every property {@code carriers} decides, mapped to its value.
+	 * {@code implClass} last: it is the one that makes the others matter.
 	 */
 	static Map<String, String> of(Carriers.Affine carriers) {
 		Map<String, String> properties = new LinkedHashMap<>();
 		properties.put(CARRIERS, Integer.toString(carriers.count()));
-		properties.put(TOPOLOGY, carriers.pinnedToCpus() ? LinuxCarrierTopology.class.getName() : null);
-		boolean stealing = carriers.workStealing() != Carriers.WorkStealing.OFF;
-		properties.put(WORK_STEALING, Boolean.toString(stealing));
-		properties.put(STEAL_SCOPE, stealing ? carriers.workStealing().name() : null);
+		properties.put(TOPOLOGY, LinuxCarrierTopology.class.getName());
+		properties.put(WORK_STEALING, "true");
+		properties.put(STEAL_SCOPE, "CLUSTER_LOCAL");
 		properties.put(POLLER_MODE, "3");
 		properties.put(IMPL_CLASS, NettyScheduler.class.getName());
 		return properties;
@@ -82,8 +76,7 @@ final class NettyCarrierProperties {
 	 * @return the properties this call set, which were absent before: what
 	 *         {@link #clear(List)} takes back if the install fails
 	 * @throws IllegalStateException
-	 *             naming the first property already set to another value, or set
-	 *             where it must be absent
+	 *             naming the first property already set to another value
 	 */
 	static List<String> set(Carriers.Affine carriers) {
 		Map<String, String> properties = of(carriers);
@@ -91,12 +84,12 @@ final class NettyCarrierProperties {
 			String current = System.getProperty(key);
 			if (current != null && !current.equals(value)) {
 				throw new IllegalStateException("-D" + key + "=" + current + " is already set, and conflicts with "
-						+ carriers + (value == null ? ", which leaves it unset" : ", which sets it to " + value));
+						+ carriers + ", which sets it to " + value);
 			}
 		});
 		List<String> added = new ArrayList<>();
 		properties.forEach((key, value) -> {
-			if (value != null && System.getProperty(key) == null) {
+			if (System.getProperty(key) == null) {
 				System.setProperty(key, value);
 				added.add(key);
 			}

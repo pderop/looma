@@ -14,7 +14,7 @@
 
 /**
  * The one {@link io.github.pderop.looma.ActorSystem} implementation and the
- * actor engine it drives: the mailbox, one virtual thread per actor, the
+ * actor engine it drives: the mailbox, one virtual thread per burst, the
  * hierarchy, supervision, {@code ask}, and the graceful cascading stop — all
  * implemented exactly once, and parameterised only by the small
  * {@code ActorDispatcher} that {@code DefaultActorSystem} wraps an
@@ -48,7 +48,7 @@
  * here, package-private and reached only from {@code DefaultActorSystem}'s own
  * {@code Builder} when discovery finds nothing: {@code JdkActorScheduler},
  * whose factories create plain virtual threads on the JDK's default scheduler.
- * The carrier-affine implementation lives in {@code netty-loom-scheduler} and
- * is the only one reached through {@code ServiceLoader}, never by name.
+ * The other one lives in {@code mpsc-scheduler}, and is reached through
+ * {@code ServiceLoader}, never by name.
  */
 package io.github.pderop.looma.impl;

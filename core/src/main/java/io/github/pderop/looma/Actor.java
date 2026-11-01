@@ -27,9 +27,11 @@ import java.util.Optional;
  * with it, and never concurrently with each other.
  *
  * <p>
- * Each actor is one virtual thread for life; messages and lifecycle hooks run
- * on that loop. See {@link ActorContext#vThreadFactory()} for the per-scheduler
- * affinity guarantee of extra threads created for blocking work.
+ * An actor runs on a virtual thread only while it has messages: a burst. A
+ * burst runs the messages and lifecycle hooks one at a time, and ends when the
+ * mailbox is empty; the next {@code tell} starts a new one. See
+ * {@link ActorContext#vThreadFactory()} for the per-scheduler affinity
+ * guarantee of extra threads created for blocking work.
  *
  * <p>
  * An actor's {@link ActorContext} is threaded through every hook's parameter
@@ -68,12 +70,12 @@ public interface Actor {
 
 	/**
 	 * Called once, before this actor processes its first message, with the context
-	 * it will keep for its whole lifetime (or, after a {@link Directive#RESTART},
-	 * the context of the fresh instance created by the
-	 * {@link java.util.function.Supplier} passed at spawn time).
+	 * it will keep for its whole lifetime. After a {@link Directive#RESTART}, the
+	 * fresh instance from the {@link java.util.function.Supplier} passed at spawn
+	 * time gets the same context.
 	 *
 	 * <p>
-	 * Runs on the actor's own loop virtual thread, through the same mailbox as
+	 * Runs in the actor's first burst, through the same mailbox as
 	 * {@link #onReceive}, so it is guaranteed to complete before any message is
 	 * delivered — even if no message is ever sent.
 	 *
@@ -143,19 +145,20 @@ public interface Actor {
 	 * Handles a single message.
 	 *
 	 * <p>
-	 * Blocking here <em>parks</em> this actor's loop virtual thread — the carrier
-	 * is released and the machine keeps working — but it occupies that loop for the
-	 * duration, and the loop is the only consumer of this actor's mailbox. So the
-	 * actor answers nothing until the block returns; neighbours, having loops of
-	 * their own, are unaffected. Block when there is nothing else this actor could
-	 * usefully do meanwhile; offload through {@link ActorContext#vThreadFactory()}
-	 * when it must stay responsive to its own next message.
+	 * Blocking here <em>parks</em> this actor's burst — the carrier is released and
+	 * the machine keeps working — but the burst is the only consumer of this
+	 * actor's mailbox. So the actor answers nothing until the block returns;
+	 * neighbours, having bursts of their own, are unaffected. Block when there is
+	 * nothing else this actor could usefully do meanwhile; offload through
+	 * {@link ActorContext#vThreadFactory()} when it must stay responsive to its own
+	 * next message.
 	 *
 	 * <p>
-	 * A <em>pin</em> ({@code synchronized} around a blocking call, JNI) is the case
-	 * that is genuinely costly: it cannot unmount the virtual thread at all, so it
-	 * holds the carrier itself — one pool worker under the JDK builtin scheduler,
-	 * but every actor sharing that home carrier under a carrier-affine one.
+	 * A <em>pin</em> (a JNI or foreign-function call on the stack) is the case that
+	 * is genuinely costly. {@code synchronized} no longer pins since JDK 24 (JEP
+	 * 491). A pin cannot unmount the virtual thread at all, so it holds the carrier
+	 * itself — one pool worker under the JDK builtin scheduler, but every actor
+	 * sharing that home carrier under a carrier-affine one.
 	 *
 	 * @param message
 	 *            the message to handle
@@ -174,7 +177,7 @@ public interface Actor {
 	 *             {@link #supervisorStrategy()}. The engine catches
 	 *             {@link Throwable}, not just {@code RuntimeException}: a checked
 	 *             exception or an {@link Error} goes through supervision exactly
-	 *             like a runtime one, rather than silently killing the actor's loop
+	 *             like a runtime one, rather than silently ending the actor's burst
 	 */
 	void onReceive(Message message, ActorRef sender, ActorContext context) throws Exception;
 

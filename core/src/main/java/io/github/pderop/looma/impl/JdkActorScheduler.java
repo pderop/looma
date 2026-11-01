@@ -23,12 +23,12 @@ import io.github.pderop.looma.spi.ActorSchedulerProvider;
 /**
  * The {@link ActorScheduler} used when no {@link ActorSchedulerProvider} is
  * found on the classpath, none reports itself available, or a provider failed
- * to even load — in practice, on a stock JDK, or on a Loom JDK that was never
- * started with {@code -Djdk.virtualThreadScheduler.implClass}.
+ * to even load — in practice, on a stock JDK, or on a Loom JDK that runs no
+ * MPSC scheduler.
  *
  * <p>
- * It owns nothing: no pool, no carrier loops. Each actor is one virtual thread
- * created from {@link #vThreadFactory(int)}, which is a plain
+ * It owns nothing: no pool, no carriers. Each burst of an actor is a virtual
+ * thread created from {@link #vThreadFactory(int)}, which is a plain
  * {@link Thread#ofVirtual() Thread.ofVirtual()} factory. There is no placement
  * to vary, so {@link #carrierCount()} is {@code 1} and every index this
  * scheduler is asked for resolves to that one factory. Continuations resume on

@@ -162,14 +162,13 @@ public final class Main {
 	 * carriers.
 	 */
 	private static Carriers carriers(int count) {
-		String name = System.getProperty("bench.scheduler", "stealing-local-home");
+		String name = System.getProperty("bench.scheduler", "mpsc");
 		return switch (name) {
-			case "stealing-local" -> Carriers.affine(count).pinned().workStealing(Carriers.WorkStealing.CLUSTER_LOCAL);
-			case "stealing-local-home" ->
-				Carriers.affine(count).pinned().workStealing(Carriers.WorkStealing.CLUSTER_LOCAL).actorsStayHome();
+			// The benchmark names the scheduler that runs: the MPSC one, behind
+			// Carriers.affine.
+			case "mpsc" -> Carriers.affine(count);
 			case "jdk" -> Carriers.builtin(count);
-			default -> throw new IllegalArgumentException(
-					"bench.scheduler must be stealing-local, stealing-local-home or jdk, not '" + name + "'");
+			default -> throw new IllegalArgumentException("bench.scheduler must be mpsc or jdk, not '" + name + "'");
 		};
 	}
 

@@ -33,7 +33,7 @@ import io.github.pderop.looma.spi.MailboxQueueFactory;
 /**
  * The one {@link ActorSystem} implementation this project ships: an actor
  * system whose placement comes entirely from an {@link ActorScheduler}, with
- * two possible providers behind that seam — the carrier-affine one
+ * two possible schedulers behind that seam — the carrier-affine one
  * (discovered), and {@link JdkActorScheduler} when discovery finds nothing.
  *
  * <p>
@@ -46,13 +46,13 @@ import io.github.pderop.looma.spi.MailboxQueueFactory;
  * cannot span without a {@code module-info.java}.
  *
  * <p>
- * The actor engine itself — mailboxes, one virtual thread per actor, hierarchy,
+ * The actor engine itself — mailboxes, one virtual thread per burst, hierarchy,
  * supervision, {@code ask}, the graceful cascading stop — lives in
  * {@link ActorRuntime} and {@link ActorCell} and never differs between the two
  * schedulers. This class contributes only placement: which carrier an actor
  * lands on, according to whichever {@link ActorScheduler} it was built with.
- * Every actor then starts its own loop from that carrier's
- * {@link ActorScheduler#vThreadFactory(int)}. It exposes its dispatcher array
+ * Every actor then starts its bursts from that carrier's
+ * {@link ActorScheduler#actorLoopFactory(int)}. It exposes its dispatcher array
  * to {@link ActorRuntime} through the {@link Dispatchers} seam, which is what
  * lets {@link ActorRuntime#dispatcherFor(Placement, ActorCell)} resolve a
  * {@link Placement} without this class implementing the engine's own
@@ -325,12 +325,13 @@ public final class DefaultActorSystem implements ActorSystem {
 	// ================================================================
 
 	/**
-	 * Places an actor's loop on one carrier: the virtual thread started at spawn,
-	 * and the threads the actor creates through
-	 * {@link ActorContext#vThreadFactory()}, come from that carrier's own factory.
+	 * Places an actor on one carrier: its bursts, and the threads it creates
+	 * through {@link ActorContext#vThreadFactory()}, come from that carrier's own
+	 * factories.
 	 *
 	 * <p>
-	 * The factory is cached at construction, from
+	 * The factories are cached at construction, from
+	 * {@link ActorScheduler#actorLoopFactory(int)} and
 	 * {@link ActorScheduler#vThreadFactory(int)} — nothing is looked up on the
 	 * spawn path beyond the array index.
 	 */
