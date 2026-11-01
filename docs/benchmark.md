@@ -9,11 +9,15 @@ scheduler spends per request, the latency, and how often actors moved to another
 
 **The answer**, on an AMD Ryzen 9 9950X: when an actor's data fits in its core's L2 cache,
 `mpsc`, which keeps each actor on its core, spends 57.7% less CPU per request than the JDK's
-scheduler. When the data fits in no cache, the JDK's scheduler cannot keep up with the rate. With
-its workers pinned, it keeps up, but spends 19.6% more CPU per request than `mpsc`. The numbers:
+scheduler. When the data does not fit in the caches, the JDK's scheduler cannot keep up with the
+rate. With its workers pinned, it keeps up, but spends 19.6% more CPU per request than `mpsc`.
+The numbers:
 [`results/2026-10-31-ryzen9-9950x/summary.md`](results/2026-10-31-ryzen9-9950x/summary.md).
 
-`mpsc` is the scheduler that `Carriers.affine(n)` runs. The campaigns before this one also ran
+The JDK's scheduler seems to fall behind because of a setting of the Linux kernel, ITMT (the
+preferred cores of AMD and Intel CPUs), which is on by default. The investigation is in progress.
+
+`mpsc` is the scheduler that `Carriers.affine(n)` runs. The campaigns before 2026-10-31 also ran
 `affine`, Looma's copy of the Netty-VirtualThread-Scheduler, no longer built since, and had
 `--enable-preview`, which that copy needed. On the JDK of openjdk/loom pull request 227, that flag
 also turns on Valhalla: `Integer` becomes a value class. This campaign has no preview flag:
@@ -162,7 +166,8 @@ On macOS nothing is pinned. It is fine to test the script, not to measure.
 One group must fit in a core's L2 cache, and all the groups together must be several times bigger
 than one L2. A moved actor then reads its data from the L3, or from memory if all the groups are
 bigger than the L3. That is the `default` case. In the `big` case, 200000 users per group, a
-group fits in no cache.
+group (about 16 MiB) does not fit in an L2, and the 6 groups of a CCD (about 94 MiB) do not fit
+in its 32 MiB L3.
 
 ## Running it
 
@@ -343,8 +348,7 @@ clients and the backend.
 **Why only these three.** Earlier campaigns also ran other setups of the same schedulers, and,
 until 2026-10-31, `affine`, Looma's copy of the Netty-VirtualThread-Scheduler: see
 [Older campaigns](results/campaigns.md#older-campaigns). Letting an idle carrier steal an actor cost
-CPU, in the published campaigns. Short runs, not published, also found the MPSC scheduler faster
-with poller mode 4 than with mode 3. So each scheduler keeps one setup.
+CPU, in the published campaigns. So each scheduler keeps one setup.
 
 **Why count the StackChunks.** A parked virtual thread keeps its stack in a `StackChunk`, on the
 heap. If chunks were kept alive and piled up, the GC would have more to do under some

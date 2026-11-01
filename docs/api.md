@@ -375,8 +375,9 @@ ExecutorService workers = Executors.newFixedThreadPool(4, platform);
 
 An executor starts its threads at its first tasks, so this matters even for one created in
 `main`, if an actor gives it its first tasks. Under the builtin scheduler, the factory is
-`Thread.ofPlatform().factory()`. [`schedulers.md`](schedulers.md#threads-started-from-an-actor)
-lists each case.
+`Thread.ofPlatform().factory()`. The
+[`mpsc-scheduler` README](../mpsc-scheduler/README.md#threads-started-from-an-actor) lists what
+the install covers.
 
 ### Pinning is the case that is genuinely bad
 

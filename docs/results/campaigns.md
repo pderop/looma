@@ -36,7 +36,7 @@ names of their own:
 
 | Old name | What it was | Now |
 | --- | --- | --- |
-| `stealing-local-home` | the copied scheduler, stealing within an L3, actors never stolen | `affine` |
+| `stealing-local-home` | the copied scheduler, stealing within an L3, actors never stolen | `affine` until 2026-10-31, now removed |
 | `stealing-local` | the same, but an idle carrier could also steal an actor | removed |
 | `stealing-global-home` | `stealing-local-home`, stealing from any carrier | removed |
 | `mpsc-home` | the MPSC scheduler, stealing from any carrier, actors never stolen | `mpsc` |
@@ -78,8 +78,6 @@ of each part, the heap, and the command. Then, with no reading of the numbers:
 - **Epsilon:** per case and scheduler, the CPU with G1 and with Epsilon, and the heap used.
 
 Each section gives its table first, then the formulas and the files its numbers come from.
-The campaigns of 2026-10-22 and 2026-10-24 give the sections in another order, the sources first,
-and the raw counts of perf stat and perf c2c before the computed columns.
 
 | Column | What it is |
 | --- | --- |
@@ -107,12 +105,11 @@ from other numbers of the same line. This section shows how, on one line of each
 
 ### perf stat
 
-The line, from [`2026-10-22-ryzen9-9950x/summary.md`](2026-10-22-ryzen9-9950x/summary.md) (in
-newer campaigns, the computed columns come before the raw counts):
+The line, from [`2026-10-22-ryzen9-9950x/summary.md`](2026-10-22-ryzen9-9950x/summary.md):
 
-| case | scheduler | instructions | cycles | requests | instructions/req | IPC | cycles per instruction | cycles/req | note |
+| case | scheduler | instructions/req | IPC | cycles per instruction | cycles/req | instructions | cycles | requests | note |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| default | jdk | 287,653,929,416 | 307,912,670,779 | 2,100,000 | 136,978 | 0.93 | 1.07 | 146,625 | |
+| default | jdk | 136,978 | 0.93 | 1.07 | 146,625 | 287,653,929,416 | 307,912,670,779 | 2,100,000 | |
 
 It comes from `2026-10-22-ryzen9-9950x/runs/default-stat-jdk.csv`, the output of `perf stat` during the stat
 run of `jdk`. The file has one line per thread and counter, for example:

@@ -38,7 +38,7 @@ ActorSystem system = ActorSystem.builder()
 
 | `Carriers` | Properties it sets |
 | --- | --- |
-| `affine(n)` | `jdk.virtualThreadScheduler.useMpsc=true`, `jdk.virtualThreadScheduler.mpscSteal=true`, `jdk.virtualThreadScheduler.parallelism=n`, and `java.util.concurrent.ForkJoinPool.common.threadFactory` unless already set: see [Threads started from an actor](#threads-started-from-an-actor) |
+| `affine(n)` | `jdk.virtualThreadScheduler.useMpsc=true`, `jdk.virtualThreadScheduler.mpscSteal=true`, `jdk.virtualThreadScheduler.parallelism=n`, and `java.util.concurrent.ForkJoinPool.common.threadFactory` unless already set: see [Threads started from an actor](../mpsc-scheduler/README.md#threads-started-from-an-actor) |
 | `builtin(n)` | `jdk.virtualThreadScheduler.parallelism=n` |
 
 The JDK reads these properties once, while it initialises virtual threads. So `build()` must run
@@ -104,7 +104,7 @@ The MPSC scheduler comes with the JDK of openjdk/loom pull request 227, a draft 
   affinity, and reads its carrier from the thread's name.
 - Looma pins each carrier: one thread with that carrier's affinity calls `sched_setaffinity`.
   Before that, it starts the JDK's pollers and timers: see
-  [Threads started from an actor](#threads-started-from-an-actor).
+  [Threads started from an actor](../mpsc-scheduler/README.md#threads-started-from-an-actor).
 - On Linux, the JDK uses poller mode 4 by default with this scheduler: each carrier has its own
   epoll, and looks at it between two rounds of its queue. The JDK still starts one `Read-Poller`
   thread, for the virtual threads that run on no MPSC carrier, and a `Write-Poller`. There is no
@@ -242,33 +242,6 @@ holds its carrier. Under the builtin that costs one `ForkJoinPool` worker, which
 compensate for; under `affine` it stalls every virtual thread that calls that carrier
 home. `synchronized` no longer pins ([JEP 491](https://openjdk.org/jeps/491), JDK 24).
 
-## Threads started from an actor
-
-On Linux, a new thread runs only on the CPUs of the thread that starts it. Under `affine`, each
-carrier is pinned to one CPU. So a platform thread started from an actor keeps that
-one CPU. On the AMD box, a parallel stream run from an actor ran on one CPU only.
-
-The JDK starts some threads from the thread that first needs them:
-
-| Thread | Started by | Under `affine` |
-| --- | --- | --- |
-| `Read-Poller`, `Write-Poller` | the first socket read or write | started at install |
-| `VirtualThread-unparker` | the first sleep or timed wait on a carrier | started at install, on each carrier |
-| `ForkJoinPool.commonPool-delayScheduler` | the first `orTimeout`, `completeOnTimeout` or `delayedExecutor` | started at install |
-| `ForkJoinPool.commonPool-worker-*` | `parallelStream`, `supplyAsync`, `runAsync`, all the time | made by `AllCpus`, which gives them every CPU |
-
-The install starts them before it pins the carriers, so they keep every CPU. For
-`VirtualThread-unparker`, this is a workaround until the JDK solves it: it relies on details of
-the JDK that no API promises. For the common pool, the install sets
-`-Djava.util.concurrent.ForkJoinPool.common.threadFactory`, unless the application set it. The
-common pool reads it once: if the pool ran before the install, Looma warns.
-
-The application's own threads and executors are not covered: `new Thread`,
-`Thread.ofPlatform()`, `Executors.newFixedThreadPool`, `ScheduledThreadPoolExecutor`. An executor
-starts its threads at its first tasks, from the thread that gives them, even when `main` created
-it. Started from an actor, they should come from `ActorScheduler.platformThreadFactory()`. Under
-`affine`, its threads run on every CPU.
-
 ## Why it is built this way
 
 ### Why carrier affinity
@@ -313,8 +286,7 @@ state while it fits a core's L2, and vanish once it no longer does.**
 
 The benchmark compared the setups of each scheduler. Letting an idle carrier steal an actor
 cost CPU: the published campaigns show it, `stealing-local` against `stealing-local-home`, two
-setups of the copied Netty scheduler. Short runs, not published, also found the MPSC scheduler
-faster with poller mode 4 than with mode 3. So each scheduler keeps one setup. Options
+setups of the copied Netty scheduler. So each scheduler keeps one setup. Options
 would make every user answer questions the benchmark already answered. The old setups, and their
 results, are in [the older campaigns](results/campaigns.md#older-campaigns).
 
