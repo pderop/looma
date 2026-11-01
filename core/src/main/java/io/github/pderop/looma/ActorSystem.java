@@ -13,13 +13,14 @@
  */
 package io.github.pderop.looma;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import io.github.pderop.looma.impl.DefaultActorSystem;
 import io.github.pderop.looma.spi.ActorScheduler;
-import io.github.pderop.looma.spi.MailboxQueueFactory;
+import io.github.pderop.looma.spi.MpscQueueFactory;
 
 /**
  * The root of an actor hierarchy: spawns root actors, resolves paths, and
@@ -69,8 +70,9 @@ public interface ActorSystem {
 	 * discovering whatever the JVM flags installed.
 	 * {@link #scheduler(ActorScheduler)} bypasses both and hands the system an
 	 * instance: what a test injecting a specific scheduler needs, and what an
-	 * application should not do. {@link #mailboxQueueFactory} is orthogonal: it
-	 * does not choose a scheduler, only the per-actor envelope queue.
+	 * application should not do. {@link #mpscQueueFactory} is orthogonal: it does
+	 * not choose a scheduler, only the queues: the per-actor envelope queue and the
+	 * timer queues.
 	 */
 	interface Builder {
 
@@ -116,11 +118,23 @@ public interface ActorSystem {
 		Builder carriers(Carriers carriers);
 
 		/**
-		 * Sets the factory that creates one mailbox queue per actor. When unset, each
-		 * actor gets a {@code ConcurrentLinkedQueue}. Not discovered through
-		 * {@code ServiceLoader}.
+		 * Sets the factory that provides every MPSC queue of the system. Today these
+		 * are the actor mailboxes and the timer queues. When unset, each queue is a
+		 * {@code ConcurrentLinkedQueue}. Not discovered through {@code ServiceLoader}.
 		 */
-		Builder mailboxQueueFactory(MailboxQueueFactory mailboxQueueFactory);
+		Builder mpscQueueFactory(MpscQueueFactory mpscQueueFactory);
+
+		/**
+		 * Sets the tick of the timer wheels. A delayed tell fires with a precision of
+		 * one tick when the carrier is free. It never fires early. The default is 10
+		 * ms.
+		 *
+		 * @throws NullPointerException
+		 *             if {@code tick} is {@code null}
+		 * @throws IllegalArgumentException
+		 *             if {@code tick} is zero or negative
+		 */
+		Builder timerTick(Duration tick);
 
 		/** Builds the system. */
 		ActorSystem build();

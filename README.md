@@ -18,10 +18,11 @@ one core. Looma exists to measure whether it does.
 ## What Looma is
 
 - **A deliberately minimal actor API**: `tell` and `ask`, a parent/child hierarchy with paths,
-  supervision (resume / restart / stop), a graceful cascading stop, and pools of N actors behind
-  one reference. Ten types in one package — enough to write a realistic workload against, small
-  enough that a benchmark compares schedulers rather than frameworks. See
-  [what it does not do](docs/api.md#10-what-looma-does-not-do).
+  supervision (resume / restart / stop), a graceful cascading stop, pools of N actors behind
+  one reference, and delayed or periodic `tell` from a timer wheel on each carrier. Ten types in
+  one package — enough to write a realistic workload against, small enough that a benchmark
+  compares schedulers rather than frameworks. See
+  [what it does not do](docs/api.md#11-what-looma-does-not-do).
 - **One engine, two schedulers.** The same actors run on the JDK's builtin scheduler, or on a
   carrier-affine one, chosen by `ActorSystem.builder().carriers(...)` or by JVM flags — never by
   the actor code. The carrier-affine one is the JDK's MPSC scheduler: Francesco Nigro's next

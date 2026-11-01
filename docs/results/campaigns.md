@@ -9,7 +9,7 @@ One folder per campaign, `<date>-<cpu>`: its `summary.md`, and the files behind 
 
 | Campaign | Schedulers | JDK | Note |
 | --- | --- | --- | --- |
-| [`2026-10-31-ryzen9-9950x`](2026-10-31-ryzen9-9950x/summary.md) | `mpsc`, `jdk`, `jdk-pinned` | openjdk/loom pull request 227 | the latest; the client threads count their own answers |
+| [`2026-11-01-ryzen9-9950x`](2026-11-01-ryzen9-9950x/summary.md) | `mpsc`, `jdk`, `jdk-pinned` | openjdk/loom pull request 227 | the latest; the client threads count their own answers |
 | [`2026-10-24-ryzen9-9950x`](2026-10-24-ryzen9-9950x/summary.md) | `stealing-local`, `stealing-local-home` ([older names](#older-campaigns)), `jdk`, `jdk-pinned` | builds.shipilev.net | after [#9](https://github.com/pderop/looma/pull/9); `stealing-local-home` spends less CPU per request than `stealing-local` in both cases |
 | [`2026-10-22-ryzen9-9950x`](2026-10-22-ryzen9-9950x/summary.md) | the same four | builds.shipilev.net | before #9: the scan for an idle carrier started at a random one, not the first; #9 removed it |
 
@@ -105,17 +105,17 @@ walk   = cpu µs/req at depth 256 - cpu µs/req at depth 0
 
 ### perf stat
 
-The line, from [`2026-10-31-ryzen9-9950x/summary.md`](2026-10-31-ryzen9-9950x/summary.md):
+The line, from [`2026-11-01-ryzen9-9950x/summary.md`](2026-11-01-ryzen9-9950x/summary.md):
 
 | case | scheduler | instructions/req | IPC | cycles per instruction | cycles/req | instructions | cycles | requests | note |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| default | mpsc | 78,494 | 1.19 | 0.84 | 66,012 | 164,837,292,060 | 138,625,332,763 | 2,100,000 | |
+| default | mpsc | 69,045 | 1.11 | 0.90 | 62,116 | 144,993,497,176 | 130,444,552,351 | 2,100,000 | |
 
-From `2026-10-31-ryzen9-9950x/runs/default-stat-mpsc.csv`, one line per thread and counter:
+From `2026-11-01-ryzen9-9950x/runs/default-stat-mpsc.csv`, one line per thread and counter:
 
 ```
-mpsc-carrier-0-153571,11938480237,,cycles,3098171451,100.00,,
-mpsc-carrier-0-153571,13696140312,,instructions,3098189501,100.00,,
+mpsc-carrier-0-36182,11030440516,,cycles,2867367740,100.00,,
+mpsc-carrier-0-36182,11694737474,,instructions,2867359170,100.00,,
 field 1: the thread   field 2: the count   field 4: what it counts   (the file's comment lists all)
 ```
 
@@ -126,10 +126,10 @@ cycles       = the same, where field 4 = cycles
 requests     = 150,000 req/s × 14 s (the perf stat window), not counted;
                the line throughput of runs/default-stat-mpsc-256.out shows the rate was kept
 
-instructions/req       = instructions / requests  = 164,837,292,060 / 2,100,000       = 78,494
-cycles/req             = cycles / requests        = 138,625,332,763 / 2,100,000       = 66,012
-IPC                    = instructions / cycles    = 164,837,292,060 / 138,625,332,763 = 1.19
-cycles per instruction = cycles / instructions    = 138,625,332,763 / 164,837,292,060 = 0.84
+instructions/req       = instructions / requests  = 144,993,497,176 / 2,100,000       = 69,045
+cycles/req             = cycles / requests        = 130,444,552,351 / 2,100,000       = 62,116
+IPC                    = instructions / cycles    = 144,993,497,176 / 130,444,552,351 = 1.11
+cycles per instruction = cycles / instructions    = 130,444,552,351 / 144,993,497,176 = 0.90
 ```
 
 ### perf c2c
@@ -152,10 +152,10 @@ heap used           top - start, in the GC log's last heap line, runs/<case>-eps
 difference          cpu µs/req Epsilon - cpu µs/req G1
 ```
 
-Example, `2026-10-31-ryzen9-9950x/runs/default-epsilon-mpsc-256.gc.log`:
+Example, `2026-11-01-ryzen9-9950x/runs/default-epsilon-mpsc-256.gc.log`:
 
 ```
-space 12582912K,  51% used [0x0000000500000000, 0x000000068eeeca50, 0x0000000800000000)
+space 12582912K,  51% used [0x0000000500000000, 0x000000068b3379e0, 0x0000000800000000)
                              start               top (next object)    end
-heap used = 0x68eeeca50 - 0x500000000 = 6,692,981,328 bytes = 6,382 MiB
+heap used = 0x68b3379e0 - 0x500000000 = 6,630,373,856 bytes = 6,323 MiB
 ```

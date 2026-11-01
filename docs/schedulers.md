@@ -176,6 +176,75 @@ VT on carrier-0: the first read() of the JVM
   -> both run on CPU 2 only, for good
 ```
 
+### The wheel thread
+
+Looma itself starts one more thread for its [timers](api.md#10-timers). It is a virtual thread
+of the carrier, not a platform thread.
+
+```
+a carrier gets its first timer       (delayed or periodic tell)
+  -> Looma starts the wheel thread on that carrier
+  -> it has the carrier's affinity: no other carrier takes it
+     (under `builtin` it is a plain virtual thread, and the system has one wheel)
+  -> each round it drains the inbox and the cancelled queue, then fires the timers that are due
+  -> it parks when the wheel is empty, and wakes at each tick while the wheel holds a timer
+shutdown()
+  -> the wheel thread cancels every timer and ends
+```
+
+| Thread | Does | Started | Counted by `awaitTermination` |
+|---|---|---|---|
+| wheel thread, one per carrier | runs the timer wheel of the carrier | at the first timer of the carrier | no |
+
+A carrier without a timer has no wheel thread.
+
+**A delayed tell to an actor of carrier-3:**
+
+```
+ref.tell(msg, 50 ms)
+  -> from an actor of carrier-3, once the wheel of carrier-3 runs:
+       the timer goes straight into the wheel of carrier-3, no queue
+  -> from any other thread, or the first timer of carrier-3:
+       the timer goes to the inbox of the wheel of carrier-3, the home carrier of ref
+       the wheel thread of carrier-3 moves it into its slot
+  -> at the deadline the wheel thread calls ref.tell(msg): local to carrier-3
+  -> the envelope goes to the queue of carrier-3, and ref's burst runs there
+```
+
+**A cancel of that timer:**
+
+```
+future.cancel(false)
+  -> from an actor of carrier-3, once the wheel of carrier-3 runs:
+                                  the timer leaves the wheel at once
+  -> from any other thread:       the message is freed at once,
+                                  the timer goes to the cancelled queue of the wheel,
+                                  the wheel thread removes it at the next tick
+  -> still in the inbox:          the wheel thread drops it when it drains the inbox
+```
+
+No other carrier takes part. A tell to a pool has no single carrier: an actor uses the wheel of
+its own carrier, any other caller a wheel chosen from its thread id. The message may then go to
+a member on another carrier.
+
+An actor runs its messages on a virtual thread that starts when its mailbox gets a message, and
+ends when the mailbox is empty again: the code calls it a burst. On an MPSC carrier that thread
+never leaves its carrier, so it takes the direct paths:
+
+```
+the actor's thread starts on carrier-3
+  -> the wheel of carrier-3 runs ?   no  -> one volatile read; its timers go through the queues
+                                     yes -> it marks itself local to the wheel of carrier-3 (a ScopedValue)
+an arm or a cancel on the wheel of carrier-3
+  -> the caller is the thread that marked itself ?   yes -> the direct path
+                                                     no  -> the queues
+     (a thread forked in a StructuredTaskScope inherits the mark, but is not that thread)
+```
+
+Under `builtin` no thread counts as local: every arm and every cancel goes through the queues. One
+switch decides: only a scheduler whose `mailboxThreadsStayOnCarrier()` returns true gets the
+direct path. The builtin returns false.
+
 ### What the install does
 
 `Carriers.affine(n)` installs the scheduler from the calling thread, `main` here, which still has
@@ -304,6 +373,7 @@ public interface ActorScheduler extends AutoCloseable {
     int carrierCount();                          // builtin: 1 | affine: one per carrier
     ThreadFactory vThreadFactory(int i);         // the threads an actor offloads
     default ThreadFactory actorLoopFactory(int i) { return vThreadFactory(i); }   // its bursts
+    default boolean mailboxThreadsStayOnCarrier() { return false; }   // affine: true; they never move
     int currentCarrierId();                      // the calling thread's carrier; builtin: -1
     OptionalInt pinnedCpu();
     OptionalInt clusterOf(int i);                // builtin: empty
@@ -313,12 +383,15 @@ public interface ActorScheduler extends AutoCloseable {
 }
 ```
 
+- `mailboxThreadsStayOnCarrier()`: true only if every thread from `actorLoopFactory(i)`, the
+  threads that run the actors' messages, runs on carrier i alone, one at a time, never stolen.
+  Looma then arms and cancels timers on that carrier without a queue.
 - `ActorSchedulerProvider`: creates one, `isAvailable()`, can install itself for `Carriers.Affine`.
 - A third-party scheduler: implement both, register the provider in
   `META-INF/services/io.github.pderop.looma.spi.ActorSchedulerProvider`.
 - `ActorRuntime` wraps every factory, so each thread counts as in-flight work.
-- **The mailbox queue**: `spi.MailboxQueueFactory`, set with
-  `ActorSystem.Builder.mailboxQueueFactory(...)`. Default: `ConcurrentLinkedQueue`. At least MPSC,
+- **The MPSC queues**: `spi.MpscQueueFactory`, set with
+  `ActorSystem.Builder.mpscQueueFactory(...)`. Default: `ConcurrentLinkedQueue`. At least MPSC,
   no blocking `poll`.
 
 ## Tests
@@ -328,7 +401,7 @@ setup (the scheduler is set once per JVM):
 
 | Execution | Flags | Runs |
 | --- | --- | --- |
-| `default-test` | the MPSC scheduler, 4 carriers, stealing | the actor suites, and `MpscAffinityTest`: an actor never leaves its carrier, an offloaded thread can be stolen |
+| `default-test` | the MPSC scheduler, 4 carriers, stealing | the actor suites; `MpscAffinityTest`: an actor never leaves its carrier, an offloaded thread can be stolen; `MpscTimerTest` and `MpscTimerStressTest`: timers on the target's carrier, direct and queued arms and cancels at once |
 | `install-test` | no scheduler flag, one JVM per class | `carriers(...)` installing `affine`, and refusing to once a virtual thread has run, or below a `maxPoolSize`. On Linux: each carrier on its own CPU, and the threads an actor makes start on every CPU: the JDK's pollers and timers, the common pool, `platformThreadFactory()` |
 | `no-native-access-test` | `--illegal-native-access=deny` | `carriers(...)` installing `affine` in a JVM that refuses native calls: it runs, and nothing is pinned |
 

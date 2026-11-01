@@ -61,6 +61,11 @@ final class MpscActorScheduler implements ActorScheduler {
 		return loopFactories[index];
 	}
 
+	@Override
+	public boolean mailboxThreadsStayOnCarrier() {
+		return true;
+	}
+
 	/**
 	 * {@inheritDoc}
 	 *

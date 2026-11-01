@@ -60,4 +60,14 @@ interface DispatcherSource {
 	 *            is an engine bug, not a user-facing one
 	 */
 	ActorDispatcher dispatcherFor(int carrierId);
+
+	/** Returns the timers of one carrier. The id is within the carrier count. */
+	CarrierTimer timer(int carrierId);
+
+	/**
+	 * Returns the timers a burst on this carrier publishes, or null when the
+	 * scheduler does not keep bursts on their carrier. Only on a carrier-affine
+	 * scheduler may a burst use the wheel of its carrier without the queues.
+	 */
+	CarrierTimer burstTimer(int carrierId);
 }

@@ -19,19 +19,22 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import io.github.pderop.looma.Actor;
 import io.github.pderop.looma.ActorRef;
+import io.github.pderop.looma.Message;
 import io.github.pderop.looma.Placement;
 import io.github.pderop.looma.SpawnOptions;
 import io.github.pderop.looma.SupervisionStrategy;
-import io.github.pderop.looma.spi.MailboxQueueFactory;
+import io.github.pderop.looma.spi.MpscQueueFactory;
 
 /**
  * The state one {@code ActorSystem} instance shares across every actor it
@@ -78,7 +81,7 @@ final class ActorRuntime {
 	 */
 	private final DispatcherSource dispatchers;
 
-	private final MailboxQueueFactory mailboxQueueFactory;
+	private final MpscQueueFactory mpscQueueFactory;
 
 	/**
 	 * Every unit of work currently spawned or running: an actor's burst and every
@@ -122,25 +125,25 @@ final class ActorRuntime {
 	 * @param dispatchers
 	 *            the seam to whoever owns the dispatcher array, used to resolve
 	 *            every {@link Placement} into an {@link ActorDispatcher}
-	 * @param mailboxQueueFactory
-	 *            creates one mailbox queue per spawned actor
+	 * @param mpscQueueFactory
+	 *            creates the mailbox queue of every actor and the timer queues
 	 * @param afterTermination
 	 *            invoked exactly once, after {@link #beginShutdown()} has been
 	 *            called and every actor and every in-flight unit of work has
 	 *            finished
 	 */
-	public ActorRuntime(DispatcherSource dispatchers, MailboxQueueFactory mailboxQueueFactory,
-			Runnable afterTermination) {
+	public ActorRuntime(DispatcherSource dispatchers, MpscQueueFactory mpscQueueFactory, Runnable afterTermination) {
 		this.dispatchers = dispatchers;
-		this.mailboxQueueFactory = mailboxQueueFactory;
+		this.mpscQueueFactory = mpscQueueFactory;
 		this.afterTermination = afterTermination;
 	}
 
 	/**
-	 * Returns the factory that creates one mailbox queue per actor, at spawn.
+	 * Returns the factory that creates the mailbox queue of every actor, at spawn.
+	 * The same factory makes the queues of the timers.
 	 */
-	MailboxQueueFactory mailboxQueueFactory() {
-		return mailboxQueueFactory;
+	MpscQueueFactory mpscQueueFactory() {
+		return mpscQueueFactory;
 	}
 
 	// ================================================================
@@ -209,6 +212,80 @@ final class ActorRuntime {
 	 */
 	public int carrierCount() {
 		return dispatchers.carrierCount();
+	}
+
+	/** Returns the timers of one carrier. */
+	CarrierTimer timer(int carrierId) {
+		return dispatchers.timer(carrierId);
+	}
+
+	/**
+	 * Returns the timers of the carrier a burst of this carrier runs on, or null if
+	 * the scheduler does not keep bursts on their carrier. A burst publishes it, so
+	 * that a timer for the same carrier skips the queues.
+	 */
+	CarrierTimer burstTimer(int carrierId) {
+		return dispatchers.burstTimer(carrierId);
+	}
+
+	/**
+	 * Returns the timers for a caller that has no target carrier, a pool. A burst
+	 * that has bound a wheel of this system gets that wheel, and arms with no
+	 * queue. A wheel of another system in the same JVM does not count. Any other
+	 * caller arms through an inbox anyway, so it gets a wheel chosen from its
+	 * thread id: the same thread always gets the same wheel, and the callers spread
+	 * over the carriers.
+	 */
+	CarrierTimer timerForCaller() {
+		CarrierTimer burst = CarrierTimer.callerCarrier();
+		if (burst != null && burst.belongsTo(this)) {
+			return burst;
+		}
+		long threadId = Thread.currentThread().threadId();
+		return dispatchers.timer((int) Math.floorMod(threadId, (long) dispatchers.carrierCount()));
+	}
+
+	/**
+	 * Hands a delayed tell to {@code wheel}. After shutdown the returned future is
+	 * already cancelled and nothing is sent.
+	 */
+	ScheduledFuture<?> scheduleTell(CarrierTimer wheel, ActorRef target, Message message, ActorRef sender, long delay,
+			TimeUnit unit) {
+		Objects.requireNonNull(unit, "unit");
+		return schedule(wheel, target, message, sender, delay, 0L, unit, () -> false);
+	}
+
+	/**
+	 * Hands a periodic tell to {@code wheel}. The timer cancels itself once
+	 * {@code targetStopped} says so. The period is capped like the delay.
+	 */
+	ScheduledFuture<?> scheduleTellAtFixedRate(CarrierTimer wheel, ActorRef target, Message message, ActorRef sender,
+			long initialDelay, long period, TimeUnit unit, BooleanSupplier targetStopped) {
+		Objects.requireNonNull(unit, "unit");
+		if (period <= 0) {
+			throw new IllegalArgumentException("period must be positive: " + period);
+		}
+		return schedule(wheel, target, message, sender, initialDelay, cappedNanos(period, unit), unit, targetStopped);
+	}
+
+	/**
+	 * Never negative, and small enough that adding it to a clock cannot overflow.
+	 */
+	private static long cappedNanos(long amount, TimeUnit unit) {
+		return Math.min(Math.max(0L, unit.toNanos(amount)), Long.MAX_VALUE / 4);
+	}
+
+	private ScheduledFuture<?> schedule(CarrierTimer wheel, ActorRef target, Message message, ActorRef sender,
+			long delay, long periodNanos, TimeUnit unit, BooleanSupplier targetStopped) {
+		Objects.requireNonNull(message, "message");
+		long deadline = System.nanoTime() + cappedNanos(delay, unit);
+		Timer timer = new Timer(target, message, sender, deadline, Math.max(periodNanos, 0L), targetStopped, wheel);
+		if (isShuttingDown()) {
+			timer.discard();
+		} else {
+			wheel.schedule(timer);
+		}
+		return timer;
 	}
 
 	/**

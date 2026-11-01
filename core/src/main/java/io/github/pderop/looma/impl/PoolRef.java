@@ -16,6 +16,8 @@ package io.github.pderop.looma.impl;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.pderop.looma.ActorRef;
@@ -152,6 +154,34 @@ final class PoolRef implements ActorRef {
 	@Override
 	public void tell(Message message, ActorRef sender) {
 		next().tell(message, sender);
+	}
+
+	/**
+	 * Hands the timer to a wheel of the caller: the wheel of its carrier for an
+	 * actor burst, else a wheel chosen from its thread. The routee is chosen when
+	 * the timer expires, by the normal {@link #tell(Message, ActorRef)}, so the
+	 * message may be sent from another carrier.
+	 */
+	@Override
+	public ScheduledFuture<?> tell(Message message, ActorRef sender, long delay, TimeUnit unit) {
+		ActorRuntime runtime = routees[0].cell().runtime();
+		return runtime.scheduleTell(runtime.timerForCaller(), this, message, sender, delay, unit);
+	}
+
+	/**
+	 * Like the delayed tell, but repeating. It cancels itself once all routees are
+	 * terminating or stopped.
+	 */
+	@Override
+	public ScheduledFuture<?> tellAtFixedRate(Message message, ActorRef sender, long initialDelay, long period,
+			TimeUnit unit) {
+		ActorRuntime runtime = routees[0].cell().runtime();
+		return runtime.scheduleTellAtFixedRate(runtime.timerForCaller(), this, message, sender, initialDelay, period,
+				unit, this::allStopped);
+	}
+
+	private boolean allStopped() {
+		return Arrays.stream(routees).allMatch(routee -> routee.cell().isTerminatingOrStopped());
 	}
 
 	/**

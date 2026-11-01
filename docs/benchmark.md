@@ -9,9 +9,9 @@ actors moved.
 
 **The answer**, on an AMD Ryzen 9 9950X:
 
-- data fits in a core's L2: `mpsc` (each actor stays on its core) spends 57.7% less CPU per request
+- data fits in a core's L2: `mpsc` (each actor stays on its core) spends 59.0% less CPU per request
   than `jdk` (the JDK's default scheduler);
-- data does not fit in the caches: `jdk` cannot keep up. `jdk-pinned` keeps up, but spends 19.6%
+- data does not fit in the caches: `jdk` cannot keep up. `jdk-pinned` keeps up, but spends 19.5%
   more CPU per request than `mpsc`. `jdk` seems to fall behind because of a Linux setting, ITMT
   (preferred cores), on by default. The investigation is in progress.
 
@@ -254,7 +254,7 @@ first. The `perf c2c` data files are not copied. `publish.sh -n` shows what it w
 
 ## Results
 
-Latest: [`results/2026-10-31-ryzen9-9950x/summary.md`](results/2026-10-31-ryzen9-9950x/summary.md).
+Latest: [`results/2026-11-01-ryzen9-9950x/summary.md`](results/2026-11-01-ryzen9-9950x/summary.md).
 All the campaigns: [`results/campaigns.md`](results/campaigns.md).
 
 The campaigns of 2026-10-22 and 2026-10-24 ran Looma's copy of the Netty-VirtualThread-Scheduler,

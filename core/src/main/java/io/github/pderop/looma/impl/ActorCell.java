@@ -34,7 +34,7 @@ import io.github.pderop.looma.Message;
 import io.github.pderop.looma.Placement;
 import io.github.pderop.looma.SpawnOptions;
 import io.github.pderop.looma.SupervisionStrategy;
-import io.github.pderop.looma.spi.MailboxQueue;
+import io.github.pderop.looma.spi.MpscQueue;
 
 /**
  * One actor's whole state: its POJO instance, its mailbox, its place in the
@@ -122,7 +122,7 @@ final class ActorCell implements ActorContext {
 	 */
 	private final SupervisionStrategy explicitStrategy;
 
-	private final MailboxQueue<Envelope> mailbox;
+	private final MpscQueue<Envelope> mailbox;
 
 	private final AtomicReference<State> state = new AtomicReference<>(State.STARTING);
 
@@ -157,6 +157,9 @@ final class ActorCell implements ActorContext {
 	 * rather than at every burst.
 	 */
 	private final ThreadFactory burstFactory;
+
+	/** The body of a burst, built once rather than at every burst. */
+	private final Runnable runEnvelopes = this::runEnvelopes;
 
 	/**
 	 * The envelopes offered and not yet counted down by a burst. A {@code tell}
@@ -196,7 +199,7 @@ final class ActorCell implements ActorContext {
 		this.explicitStrategy = explicitStrategy;
 		this.dispatcher = dispatcher;
 		this.runtime = runtime;
-		this.mailbox = runtime.mailboxQueueFactory().create();
+		this.mailbox = runtime.mpscQueueFactory().create();
 		Actor first = factory.get();
 		if (first == null) {
 			throw new IllegalStateException("actor factory returned null for " + path);
@@ -547,8 +550,21 @@ final class ActorCell implements ActorContext {
 	 * mailbox holds no more message: the burst then starts the cascade. If a
 	 * {@code tell} has already started the next burst, that burst starts the
 	 * cascade when it ends, after its envelopes, as a single thread would.
+	 *
+	 * <p>
+	 * Once the wheel of its carrier has started, a burst binds that wheel, so that
+	 * its timers for this carrier skip the queues.
 	 */
 	private void runBurst() {
+		CarrierTimer carrierTimer = runtime.burstTimer(dispatcher.carrierId());
+		if (carrierTimer == null || !carrierTimer.isStarted()) {
+			runEnvelopes();
+		} else {
+			CarrierTimer.runOnCarrier(carrierTimer, runEnvelopes);
+		}
+	}
+
+	private void runEnvelopes() {
 		Thread.currentThread().setName(burstName);
 		do {
 			if (state.get() != State.STOPPED) {
