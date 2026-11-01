@@ -1,46 +1,27 @@
-# The user benchmark
+# The benchmark
 
 **The question:** an actor owns private data, and only that actor reads it. If the scheduler
 keeps the actor on one core, the data stays in that core's cache. Does that save CPU?
 
-**How it answers:** the same program runs under several schedulers, at the same request rate. Each
-request makes an actor read a few hundred of its objects. The benchmark compares the CPU each
-scheduler spends per request, the latency, and how often actors moved to another core.
+**How it answers:** the same program runs under several schedulers, at the same request rate,
+150,000 requests per second. Each request makes an actor read a few hundred of its objects. The
+benchmark compares the CPU each scheduler spends per request, the latency, and how often actors
+moved to another core.
 
 **The answer**, on an AMD Ryzen 9 9950X: when an actor's data fits in its core's L2 cache,
-`mpsc`, which keeps each actor on its core, spends 57.7% less CPU per request than the JDK's
-scheduler. When the data does not fit in the caches, the JDK's scheduler cannot keep up with the
-rate. With its workers pinned, it keeps up, but spends 19.6% more CPU per request than `mpsc`.
-The numbers:
+`mpsc`, the scheduler that keeps each actor on its core, spends 57.7% less CPU per request than
+`jdk`, the JDK's default scheduler. When the data does not fit in the caches, `jdk` cannot keep
+up with the rate. With its carriers pinned, `jdk-pinned` keeps up, but spends 19.6% more CPU per
+request than `mpsc`. [The schedulers](#the-schedulers) describes the three. The numbers:
 [`results/2026-10-31-ryzen9-9950x/summary.md`](results/2026-10-31-ryzen9-9950x/summary.md).
 
-The JDK's scheduler seems to fall behind because of a setting of the Linux kernel, ITMT (the
-preferred cores of AMD and Intel CPUs), which is on by default. The investigation is in progress.
-
-`mpsc` is the scheduler that `Carriers.affine(n)` runs. The campaigns of 2026-10-22 and
-2026-10-24 ran Looma's copy of the Netty-VirtualThread-Scheduler instead, no longer built since:
-see [the older campaigns](results/campaigns.md#older-campaigns).
+`jdk` seems to fall behind because of a setting of the Linux kernel, ITMT (the preferred cores of
+AMD and Intel CPUs), which is on by default. The investigation is in progress.
 
 - Code: [`examples/…/examples/user`](../examples/src/main/java/io/github/pderop/looma/examples/user)
 - Scripts: [`scripts/bench.sh`](../scripts/bench.sh) runs it, and
   [`scripts/publish.sh`](../scripts/publish.sh) copies a result to the docs
-
-## Words used here
-
-- **Virtual thread**: a Java thread that the JVM runs on top of a few OS threads.
-- **Carrier**: one of those OS threads. A virtual thread runs on a carrier.
-- **Scheduler**: what picks the carrier on which a virtual thread runs.
-- **Park**: a virtual thread that waits (for a socket, for a lock) gives its carrier back.
-  When it is woken up, the scheduler picks a carrier for it again, maybe another one.
-- **Carrier-affine scheduler**: each actor has a home carrier, and always runs on it. The threads
-  it offloads start there, but an idle carrier may steal them. In this benchmark, `mpsc` is
-  carrier-affine.
-- **Work stealing**: an idle carrier takes work queued on another carrier.
-- **Pinned**: an OS thread that may run on one CPU only.
-- **CPU, core**: Linux shows two CPUs per core when the core runs two threads at once (SMT). The
-  two CPUs of a core share its caches.
-- **L2, L3**: CPU caches. Each core has its own L2. The L3 is shared by a group of cores (on AMD,
-  a CCD of 8 cores). Memory (DRAM) is much slower than both.
+- To run it: [Running it](#running-it)
 
 ## What it measures
 
@@ -58,11 +39,12 @@ FrontendServer ──▶ Main.handleRequest ──▶ UserGroup ──GET──�
 
 **At start**, in [`Main`](../examples/src/main/java/io/github/pderop/looma/examples/user/Main.java):
 
-1. The JVM creates the scheduler named by `-Dbench.scheduler`, with one carrier per carrier CPU.
+1. The JVM creates the scheduler named by `-Dbench.scheduler`, with one carrier per CPU of
+   [`--cpus-carriers`](#where-things-run).
 2. It creates one `UserGroup` actor per carrier, placed on that carrier.
-3. Each group creates its users (`--users-per-group`), on its own carrier: the core that reads
-   them is the one that wrote them first. Group `i` owns the users `i`, `i + groups`,
-   `i + 2 × groups`, and so on.
+3. Each group creates its users ([`--users-per-group`](#the-sizes)), on its own carrier: the
+   core that reads them is the one that wrote them first. Group `i` owns the users `i`,
+   `i + groups`, `i + 2 × groups`, and so on.
    - A user has a friend, a visit count, a score and the time of its last visit.
    - The users are created in a random order. The friendships form one big cycle, in another
      random order. So a walk jumps around in memory, and never loops on a few users.
@@ -71,9 +53,9 @@ FrontendServer ──▶ Main.handleRequest ──▶ UserGroup ──GET──�
 **The load**, `FrontendServer`, runs in the benchmark JVM. It is not an HTTP server: it calls
 `Main.handleRequest` directly. It has one platform thread per client CPU, each pinned to its CPU.
 Each thread sends its requests on a fixed schedule, so that all the threads together send
-`--rate` requests per second. A late request does not delay the next ones. When a thread has
-too many requests without an answer, it drops the new ones and counts them. Each request asks
-for a random user.
+`--rate` requests per second, an option of `scripts/bench.sh`: 150,000 by default. A late
+request does not delay the next ones. When a thread has too many requests without an answer, it
+drops the new ones and counts them. Each request asks for a random user.
 
 **One request:**
 
@@ -81,9 +63,8 @@ for a random user.
 2. The actor gets `Recommend`. It starts a virtual thread for the GET, and goes on with its next
    message: it does not wait. A group can have many GETs in flight.
 3. The virtual thread takes a free connection, sends `GET /user`, and parks on the response.
-   When the response arrives, the JDK's poller wakes it up (see
-   [the poller modes](#the-schedulers)), and the scheduler runs it on a carrier. It gives the
-   connection back, and sends `UpstreamAnswered` to the actor.
+   When the response arrives, the JDK's poller wakes it up, and the scheduler runs it on a
+   carrier. It gives the connection back, and sends `UpstreamAnswered` to the actor.
 4. The actor gets `UpstreamAnswered`. It walks `--depth` users: it starts at the user asked for,
    then follows the friends. It writes in each one (visits, score, time). Then it answers the
    client.
@@ -100,12 +81,18 @@ answer `200 OK` with a small fixed body, right away.
 
 **One run** is one JVM with one scheduler. The load runs for 5 seconds of warm-up, then the
 counters are reset, and 20 seconds are measured. At the end, the JVM prints the requests served
-per second, the CPU per request, the migrations, the latencies, and whether it kept up with the
+per second, the cpu µs/req, the migrations, the latencies, and whether it kept up with the
 rate.
+
+- **cpu µs/req**: the CPU time of the benchmark JVM, less that of the client threads, divided by
+  the requests served, in microseconds. The main number to compare.
+- **migrations**: how often an actor ran a message on another carrier than the message before
+  it, counted on one message in 64.
 
 ### The schedulers
 
-All runs use the same jar and the same JVM flags. Only `-Dbench.scheduler` changes.
+All runs use the same jar and the same JVM flags. Only `-Dbench.scheduler` changes: `mpsc` or
+`jdk`. A `jdk-pinned` run is a `jdk` run whose carriers the script pins.
 
 | Scheduler | What it is |
 | --- | --- |
@@ -113,21 +100,15 @@ All runs use the same jar and the same JVM flags. Only `-Dbench.scheduler` chang
 | `jdk` | `Carriers.builtin(n)`: the JDK's default scheduler, with as many carriers as the others. Its carriers are not pinned. |
 | `jdk-pinned` | `jdk`, with each carrier pinned to one CPU by the script (Linux only). |
 
-`--schedulers` picks the ones to run, for example `--schedulers mpsc,jdk`. By default, all three.
+The option `--schedulers` of [`scripts/bench.sh`](../scripts/bench.sh) picks the ones to run, for
+example `scripts/bench.sh --schedulers mpsc,jdk`. By default, all three.
 [`schedulers.md`](schedulers.md) explains each scheduler.
-
-The poller modes:
-
-- `mpsc` uses mode 4. Each carrier has its own epoll, and looks at it between two rounds of its
-  queue. The JDK still starts one Read-Poller thread, for the virtual threads that run on no MPSC
-  carrier, and a Write-Poller. There is no Master-Poller.
-- `jdk` and `jdk-pinned` keep the JDK's default mode.
 
 ### Where things run
 
-Three lists of CPUs, with commas and ranges (`2-7,10-15`), and no CPU in two lists. The defaults
-are those of the AMD machine ([The layout](#the-layout)); on another machine, give the three
-lists. `lscpu -e` shows the core and the caches of each CPU.
+Three options of `scripts/bench.sh`, three lists of CPUs, with commas and ranges (`2-7,10-15`),
+and no CPU in two lists. The defaults are those of the AMD machine ([The layout](#the-layout));
+on another machine, give the three lists. `lscpu -e` shows the core and the caches of each CPU.
 
 - **`--cpus-carriers`**: one carrier and one group per CPU. Give one CPU per core: the script
   refuses two CPUs of the same core.
@@ -137,8 +118,7 @@ lists. `lscpu -e` shows the core and the caches of each CPU.
 The client threads run in the benchmark JVM, but their CPU time is not counted: "cpu µs/req" is
 the CPU of the server. One piece of client work runs on the server: the actor that answers
 completes the client's future on its carrier. There, the client only takes the time and pushes
-the request back to its own thread, which counts it. The campaigns of 2026-10-22 and 2026-10-24
-counted the latency on the carrier itself, so a little more client work fell in the server's CPU.
+the request back to its own thread, which counts it.
 
 Who pins what:
 
@@ -146,15 +126,14 @@ Who pins what:
   `taskset` on the backend CPUs.
 - The carriers of `mpsc` pin themselves. Each one takes one CPU of the JVM's list.
 - The client threads pin themselves too, to the client CPUs.
-- The JDK's poller threads run on the carrier CPUs, like the other threads of the JVM: the
-  Read-Poller and the Write-Poller, and, in `jdk` and `jdk-pinned`, the Master-Poller, which
-  wakes the virtual threads whose socket has data. `mpsc` has no Master-Poller.
 - In `jdk-pinned`, the script pins each JDK carrier to one carrier CPU, during the warm-up.
 - In `jdk`, nothing pins the carriers. They can move between the carrier CPUs.
 
 On macOS nothing is pinned. It is fine to test the script, not to measure.
 
 ### The sizes
+
+Two options of `scripts/bench.sh`, with their defaults:
 
 - `--users-per-group` (8000,200000): the cases, one size of the groups each. Each user takes
   about 82 bytes, so a group of 8000 takes about 640 KiB. 8000 is named `default`, 200000 `big`.
@@ -168,16 +147,24 @@ in its 32 MiB L3.
 
 ## Running it
 
-You need Linux, the Loom JDK of openjdk/loom pull request 227 and the project built (the
-[README](../README.md#quickstart) shows both), and `perf` for the `perf c2c` and `perf stat` runs.
+You need Linux, the Loom JDK of openjdk/loom pull request 227 (the
+[README](../README.md#building-the-loom-jdk) shows how to build it), and `perf`: the script
+refuses to run on Linux without it. Then, in this project:
 
-The script first runs [`scripts/prepare-linux-bench.sh`](../scripts/prepare-linux-bench.sh),
+```sh
+sdk env                 # the Loom JDK, from .sdkmanrc; or export JAVA_HOME
+mvn clean install       # once
+scripts/bench.sh        # on the AMD machine
+```
+
+`scripts/bench.sh` first runs [`scripts/prepare-linux-bench.sh`](../scripts/prepare-linux-bench.sh),
 with sudo: turbo off, the `performance` governor, and perf allowed. It saves what it changed;
 `sudo scripts/prepare-linux-bench.sh --restore` puts it back, and a reboot does too.
 `scripts/prepare-linux-bench.sh --check` shows the current state.
 
+Other runs:
+
 ```sh
-scripts/bench.sh                                     # on the AMD machine
 scripts/bench.sh --cpus-carriers <list> --cpus-client <list> --cpus-backend <list>   # elsewhere
 scripts/bench.sh --users-per-group 8000              # the default case only
 scripts/bench.sh --schedulers mpsc,jdk --reps 1      # two schedulers, one repetition
@@ -195,25 +182,25 @@ What the script does:
 2. It runs each run under `taskset` on the carrier CPUs, with a fixed heap (`-Xms2g -Xmx2g
    -XX:+AlwaysPreTouch`) and a GC log. In `jdk-pinned`, it pins each JDK carrier to one carrier
    CPU, during the warm-up.
-3. It runs the cases one after the other: steps 3 to 6 for `default`, then for `big`.
-   For each repetition (`--reps`, 3 by default), it runs every scheduler at `--depth`, then at
-   depth 0. The repetitions follow each other: r1 runs every scheduler, then r2, then r3.
-4. Then, if `perf` is there, one more run per scheduler at `--depth`, the c2c run:
-   - `perf c2c` samples the memory loads during the measure, minus 3 seconds at each end;
-   - the JVM counts its live `StackChunk`s twice: during the warm-up, and after the measure.
-     Each count is a full GC, so none falls in the measure, and the GC column leaves them out.
-5. Then one more run per scheduler at `--depth`, the stat run: `perf stat` counts the cycles and
-   the instructions of the server's threads during the same window.
-6. Then one more run per scheduler at `--depth`, the epsilon run: the Epsilon GC, which frees
-   nothing, so no GC runs (`-XX:+UseEpsilonGC -Xms12g -Xmx12g -XX:+AlwaysPreTouch`). A run
-   allocates 5 to 7 GiB.
-7. It writes `summary.md`, with both cases.
+3. It runs the cases one after the other, `default` then `big`. In each case:
+   1. For each repetition (`--reps`, 3 by default), it runs every scheduler at `--depth`, then
+      at depth 0. The repetitions follow each other: r1 runs every scheduler, then r2, then r3.
+   2. Then one more run per scheduler at `--depth`, the c2c run:
+      - `perf c2c` samples the memory loads during the measure, minus 3 seconds at each end;
+      - the JVM counts its live `StackChunk`s twice: during the warm-up, and after the measure.
+        Each count is a full GC, so none falls in the measure, and the GC column leaves them
+        out.
+   3. Then one more run per scheduler at `--depth`, the stat run: `perf stat` counts the cycles
+      and the instructions of the server's threads during the same window.
+   4. Then one more run per scheduler at `--depth`, the epsilon run: the Epsilon GC, which frees
+      nothing, so no GC runs (`-XX:+UseEpsilonGC -Xms12g -Xmx12g -XX:+AlwaysPreTouch`). A run
+      allocates 5 to 7 GiB.
+4. It writes `summary.md`, with both cases.
 
 With the 3 default schedulers, that is 54 runs, about 28 minutes; 27 runs for one case.
 
 Everything goes to `bench/<date>-<time>/` (`--out` changes it): `summary.md`, and the files each
-of its numbers comes from. [`results/campaigns.md`](results/campaigns.md) explains them, and where each
-number comes from.
+of its numbers comes from. [`results/campaigns.md`](results/campaigns.md) explains them.
 
 To keep a result in the docs, [`scripts/publish.sh`](../scripts/publish.sh) copies `summary.md`,
 the `<case>-c2c-<scheduler>.txt` files, and the consoles, GC logs and `perf stat` files of
@@ -231,6 +218,10 @@ scripts/publish.sh -n bench/<date>-<time>    # -n: show what it would copy, copy
 The latest campaign:
 [`results/2026-10-31-ryzen9-9950x/summary.md`](results/2026-10-31-ryzen9-9950x/summary.md). All
 the campaigns, and how to read them: [`results/campaigns.md`](results/campaigns.md).
+
+`mpsc` is the scheduler that `Carriers.affine(n)` runs. The campaigns of 2026-10-22 and
+2026-10-24 ran Looma's copy of the Netty-VirtualThread-Scheduler instead, no longer built since:
+see [the older campaigns](results/campaigns.md#older-campaigns).
 
 ### AMD Ryzen 9 9950X
 

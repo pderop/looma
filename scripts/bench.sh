@@ -17,8 +17,9 @@ Usage: scripts/bench.sh [options]
 
 Each run is one JVM, with one scheduler: 5 seconds of warm-up, then 20 seconds measured.
 In each case (a size of the groups), for each repetition, it runs every scheduler at --depth and
-at depth 0. Then one more run per scheduler with perf c2c, and one with perf stat, if perf is
-there. All runs use the same jar and the same JVM flags: only -Dbench.scheduler changes.
+at depth 0. Then one more run per scheduler with perf c2c, and one with perf stat: on Linux, the
+script needs perf. All runs use the same jar and the same JVM flags: only -Dbench.scheduler
+changes.
 
 The default CPUs are those of an AMD Ryzen 9 9950X. On another machine, give the three lists,
 with commas and ranges only (2-7,10-15), and no CPU in two lists:
@@ -156,6 +157,10 @@ else
 fi
 C2C=0
 command -v perf >/dev/null && C2C=1
+# On Linux, the c2c and stat runs are part of every measurement: no perf, no run.
+[ "$C2C" = 1 ] || [ "$(uname -s)" != Linux ] || die "perf is needed on Linux (the c2c and stat runs)"
+# Elsewhere, there is no perf: a smoke test, without the c2c and stat runs.
+[ "$C2C" = 1 ] || echo "no perf: no c2c and no stat run, a smoke test and not a measurement" >&2
 
 turbo() {
 	local f
