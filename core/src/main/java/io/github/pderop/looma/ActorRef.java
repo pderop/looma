@@ -187,13 +187,14 @@ public interface ActorRef {
 	 * <p>
 	 * The returned future is done from the start of the send, and {@code get}
 	 * returns once the send has returned. {@code cancel} stops the send and returns
-	 * {@code false} if the message has already gone. When it returns {@code true},
-	 * nothing is sent. If the actor has stopped when the delay ends, the message is
-	 * dropped, as for any {@code tell}.
+	 * {@code false} if the message has already gone, or if the timer was already
+	 * cancelled. When it returns {@code true}, nothing is sent. If the actor has
+	 * stopped when the delay ends, the message is dropped, as for any {@code tell}.
 	 *
 	 * <p>
 	 * After {@code shutdown} the message is not sent and the future comes back
-	 * cancelled. Pending timers are cancelled by {@code shutdown}.
+	 * cancelled. A timer pending at {@code shutdown} is cancelled soon after, by
+	 * the timer thread; {@code awaitTermination} does not wait for it.
 	 *
 	 * @param message
 	 *            the message to send
@@ -219,13 +220,15 @@ public interface ActorRef {
 	 * once every {@code period}.
 	 *
 	 * <p>
-	 * The precision is one tick of the timer wheel. A message never goes early, and
-	 * goes later than a tick only when the carrier is busy. A period shorter than
-	 * the tick sends at most once per tick. The sends stop when the future is
-	 * cancelled, once the actor is stopping, or at {@code shutdown}. A pool stops
-	 * them once all its actors are stopping. The future is never done otherwise, so
-	 * {@code get} blocks until the cancel. A cancel that races a send may return
-	 * {@code true} while that one message still goes.
+	 * The precision is one tick of the timer wheel. A message never goes early.
+	 * Each deadline is one period after the previous deadline. When the sends fall
+	 * behind, after a pause or with a period shorter than the tick, the missed ones
+	 * go one per tick, so the sends never go more than once per tick. The sends
+	 * stop when the future is cancelled, once the actor is stopping, or at
+	 * {@code shutdown}. A pool stops them once all its actors are stopping. The
+	 * future is never done otherwise, so {@code get} blocks until the cancel. A
+	 * cancel that races a send may return {@code true} while that one message still
+	 * goes.
 	 *
 	 * @param message
 	 *            the message to send

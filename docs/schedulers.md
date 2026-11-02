@@ -177,74 +177,6 @@ VT on carrier-0: the first read() of the JVM
   -> both run on CPU 2 only, for good
 ```
 
-### The wheel thread
-
-Looma itself starts one more thread for its [timers](api.md#10-timers). It is a virtual thread
-of the carrier, not a platform thread.
-
-```
-a carrier gets its first timer       (delayed or periodic tell)
-  -> Looma starts the wheel thread on that carrier
-  -> it has the carrier's affinity: no other carrier takes it
-     (under `builtin` it is a plain virtual thread, and the system has one wheel)
-  -> each round it drains the inbox and the cancelled queue, then fires the timers that are due
-  -> it parks when the wheel is empty, and wakes at each tick while the wheel holds a timer
-shutdown()
-  -> the wheel thread cancels every timer and ends
-```
-
-| Thread | Does | Started | Counted by `awaitTermination` |
-|---|---|---|---|
-| wheel thread, one per carrier | runs the timer wheel of the carrier | at the first timer of the carrier | no |
-
-A carrier without a timer has no wheel thread.
-
-**A delayed tell to an actor of carrier-3:**
-
-```
-ref.tell(msg, 50 ms)
-  -> from an actor of carrier-3, once the wheel of carrier-3 runs:
-       the timer goes straight into the wheel of carrier-3, no queue
-  -> from any other thread, or the first timer of carrier-3:
-       the timer goes to the inbox of the wheel of carrier-3, the home carrier of ref
-       the wheel thread of carrier-3 moves it into its slot
-  -> at the deadline the wheel thread calls ref.tell(msg): local to carrier-3
-  -> the envelope goes to the queue of carrier-3, and ref's mailbox thread runs there
-```
-
-**A cancel of that timer:**
-
-```
-future.cancel(false)
-  -> from an actor of carrier-3, once the wheel of carrier-3 runs:
-                                  the timer leaves the wheel at once
-  -> from any other thread:       the message is freed at once,
-                                  the timer goes to the cancelled queue of the wheel,
-                                  the wheel thread removes it at the next tick
-  -> still in the inbox:          the wheel thread drops it when it drains the inbox
-```
-
-No other carrier takes part. A tell to a pool has no single carrier: an actor uses the wheel of
-its own carrier, any other caller a wheel chosen from its thread id. The message may then go to
-a member on another carrier.
-
-On an MPSC carrier an actor's mailbox thread never leaves its carrier, so it takes the direct
-paths:
-
-```
-the mailbox thread starts on carrier-3
-  -> the wheel of carrier-3 runs ?   no  -> one volatile read; its timers go through the queues
-                                     yes -> it marks itself local to the wheel of carrier-3 (a ScopedValue)
-an arm or a cancel on the wheel of carrier-3
-  -> the caller is the thread that marked itself ?   yes -> the direct path
-                                                     no  -> the queues
-     (a thread forked in a StructuredTaskScope inherits the mark, but is not that thread)
-```
-
-Under `builtin` no thread counts as local: every arm and every cancel goes through the queues. One
-switch decides: only a scheduler whose `mailboxThreadsStayOnCarrier()` returns true gets the
-direct path. The builtin returns false.
-
 ### What the install does
 
 `Carriers.affine(n)` installs the scheduler from the calling thread, `main` here, which still has
@@ -284,6 +216,77 @@ actor on carrier-0 (CPU 2): parallelStream()
 
 `system.scheduler().platformThreadFactory()` does the same for the application's own threads.
 The delayScheduler is not made by the pool's factory: that is why step 6 starts it.
+
+### The wheel thread
+
+Looma itself starts one more thread for its [timers](api.md#10-timers). It is a virtual thread
+of the carrier, named `looma-timer-<carrier>`, not a platform thread.
+
+```
+a carrier gets its first timer       (delayed or periodic tell)
+  -> Looma starts the wheel thread on that carrier, from mailboxThreadFactory(carrier)
+  -> it has the carrier's affinity: no other carrier takes it
+     (under `builtin` it is a plain virtual thread, and the system has one wheel)
+  -> each round it drains the inbox and the cancelled queue, then fires the timers that are due
+  -> it parks when the wheel is empty, and wakes at each tick while the wheel holds a timer
+shutdown()
+  -> the wheel thread cancels every pending timer, soon after, then ends
+```
+
+| Thread | Does | Started | Counted by `awaitTermination` |
+|---|---|---|---|
+| wheel thread, one per carrier | runs the timer wheel of the carrier | at the first timer of the carrier | no |
+
+A carrier without a timer has no wheel thread.
+
+On an MPSC carrier an actor's mailbox thread never leaves its carrier, so it may touch the wheel
+of its carrier directly. It marks itself when it starts:
+
+```
+the mailbox thread starts on carrier-3
+  -> the wheel of carrier-3 runs ?   no  -> one volatile read; its timers go through the queues,
+                                            until it ends
+                                     yes -> it marks itself local to the wheel of carrier-3 (a ScopedValue)
+an arm or a cancel on the wheel of carrier-3
+  -> the caller is the thread that marked itself ?   yes -> the direct path
+                                                     no  -> the queues
+     (a thread forked in a StructuredTaskScope inherits the mark, but is not that thread)
+```
+
+**A delayed tell to an actor of carrier-3:**
+
+```
+ref.tell(msg, 50 ms)
+  -> from the marked mailbox thread of carrier-3:
+       the timer goes straight into the wheel of carrier-3, no queue
+  -> from any other thread:
+       the timer goes to the inbox of the wheel of carrier-3, the home carrier of ref
+       the wheel thread of carrier-3 moves it into its slot
+  -> at the deadline the wheel thread calls ref.tell(msg): local to carrier-3
+  -> the envelope goes to the queue of carrier-3, and ref's mailbox thread runs there
+```
+
+**A cancel of that timer:**
+
+```
+future.cancel(false)
+  -> from the marked mailbox thread of carrier-3:
+       the timer leaves the wheel at once
+  -> from any other thread: the message is freed at once, then
+       the timer is still in the inbox  -> the wheel thread drops it when it drains the inbox
+       the timer is in the wheel        -> it goes to the cancelled queue,
+                                           the wheel thread removes it at the next tick
+                                           (that queue is full: it stays in its slot, with no
+                                           message, until the wheel passes the slot)
+```
+
+No other carrier takes part. A tell to a pool has no single carrier: the marked mailbox thread
+uses the wheel of its carrier, any other caller a wheel chosen from its thread id, always a wheel
+of the same system. The message may then go to a member on another carrier.
+
+Under `builtin` no thread counts as local: every arm and every cancel goes through the queues. One
+switch decides: only a scheduler whose `mailboxThreadsStayOnCarrier()` returns true gets the
+direct path. The builtin returns false.
 
 ## `builtin`: the JDK's default scheduler
 

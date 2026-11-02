@@ -21,6 +21,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.LockSupport;
+import java.util.stream.IntStream;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 
@@ -43,6 +44,9 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * Actors on carrier 0 arm and cancel delayed tells to actors on carrier 1 (the
  * remote path), while those actors arm and cancel delayed tells to themselves
  * (the local path). Some timers are left to fire. The wheels fire all the time.
+ * Each batch of arms is one mailbox thread: an actor asks for its next batch
+ * with a delayed tell, so its mailbox thread ends and the next one binds the
+ * wheel again.
  * <p>
  * At the end no timer is left, no cancelled timer was delivered, and every
  * other timer was delivered exactly once.
@@ -66,6 +70,8 @@ class MpscTimerStressTest {
 	/** 1 when cancel returned true for the timer. */
 	private final AtomicIntegerArray cancelled = new AtomicIntegerArray(MAX_TIMERS);
 	private final AtomicIntegerArray deliveries = new AtomicIntegerArray(MAX_TIMERS);
+	/** Batches of the actors on carrier 1 that ran on the direct path. */
+	private final AtomicInteger localBatches = new AtomicInteger();
 
 	@BeforeEach
 	void setUp() {
@@ -82,6 +88,7 @@ class MpscTimerStressTest {
 	void remoteAndLocalArmAndCancelLeaveNoTimerAndNoLostOrDuplicateMessage() throws Exception {
 		assumeTrue(system.carrierCount() >= 2, "needs two carriers");
 		CountDownLatch finished = new CountDownLatch(2 * ACTORS_PER_CARRIER);
+		startWheelOfCarrierOne();
 		long endNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(RUN_MILLIS);
 
 		List<ActorRef> receivers = new ArrayList<>();
@@ -97,11 +104,9 @@ class MpscTimerStressTest {
 
 		assertTrue(finished.await(30, TimeUnit.SECONDS), "actors did not finish arming");
 		int armed = Math.min(nextId.get(), MAX_TIMERS);
-		int expected = 0;
-		for (int id = 0; id < armed; id++) {
-			expected += 1 - cancelled.get(id);
-		}
+		int expected = IntStream.range(0, armed).map(id -> 1 - cancelled.get(id)).sum();
 		assertTrue(expected > 0, "no timer was left to fire");
+		assertTrue(localBatches.get() > 0, "no batch took the direct path");
 
 		// Delays are short, so every timer left alive is delivered soon.
 		long giveUp = System.nanoTime() + TimeUnit.SECONDS.toNanos(10);
@@ -118,11 +123,16 @@ class MpscTimerStressTest {
 	}
 
 	private int delivered(int armed) {
-		int total = 0;
-		for (int id = 0; id < armed; id++) {
-			total += deliveries.get(id);
-		}
-		return total;
+		return IntStream.range(0, armed).map(deliveries::get).sum();
+	}
+
+	/** Starts the wheel of carrier 1 with one timer, and waits until it is sent. */
+	private void startWheelOfCarrierOne() throws Exception {
+		CountDownLatch fired = new CountDownLatch(1);
+		ActorRef warm = system.spawn("warm", () -> (message, sender, context) -> fired.countDown(),
+				SpawnOptions.placedOn(Placement.carrier(1)));
+		warm.tell(new Kick(), 1, TimeUnit.MILLISECONDS);
+		assertTrue(fired.await(10, TimeUnit.SECONDS), "the wheel of carrier 1 did not start");
 	}
 
 	/**
@@ -136,11 +146,15 @@ class MpscTimerStressTest {
 				return;
 			}
 			ActorRef target = remote != null ? remote : context.self();
+			if (remote == null && TimerProbe.mailboxThreadBindsItsCarrier()) {
+				localBatches.incrementAndGet();
+			}
 			for (int i = 0; i < ARMS_PER_KICK; i++) {
 				armOne(target);
 			}
 			if (System.nanoTime() < endNanos && nextId.get() < MAX_TIMERS - 2 * ACTORS_PER_CARRIER * ARMS_PER_KICK) {
-				context.self().tell(new Kick());
+				// A delayed tell, so this mailbox thread ends and the next batch binds again.
+				context.self().tell(new Kick(), 0, TimeUnit.MILLISECONDS);
 			} else {
 				finished.countDown();
 			}

@@ -26,6 +26,14 @@ package io.github.pderop.looma.spi;
  * virtual thread that should have ended. Size, iterators and draining helpers
  * are deliberately absent — the engine does not need them.
  *
+ * <p>
+ * {@link #offer} must publish as a volatile write does, and {@link #isEmpty}
+ * must read as a volatile read does. A producer offers, then reads a volatile
+ * flag; the consumer sets that flag, then calls {@code isEmpty}: one of the two
+ * must see the other, or the timer thread could sleep with a timer waiting. An
+ * offer with only a lazy (release) store is not enough. {@code
+ * ConcurrentLinkedQueue} is enough.
+ *
  * @param <E>
  *            the element type; the engine uses this for its internal envelope
  *            type, which is not part of this interface

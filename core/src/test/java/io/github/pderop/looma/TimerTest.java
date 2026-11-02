@@ -141,8 +141,8 @@ public abstract class TimerTest {
 		ScheduledFuture<?> future = target.tell(new Tick(1), 10, TimeUnit.SECONDS);
 
 		assertTrue(future.cancel(false));
-		// Idempotent: a cancelled timer stays cancelled, and cancel says so.
-		assertTrue(future.cancel(false));
+		// As FutureTask: only the call that cancels returns true.
+		assertFalse(future.cancel(false));
 		assertTrue(future.isCancelled());
 	}
 
@@ -374,10 +374,12 @@ public abstract class TimerTest {
 	}
 
 	@Test
-	void theTimerTickMustBeAPositiveDuration() {
+	void theTimerTickMustBeAtLeastOneMillisecond() {
 		assertThrows(NullPointerException.class, () -> newBuilder().timerTick(null));
 		assertThrows(IllegalArgumentException.class, () -> newBuilder().timerTick(Duration.ZERO));
 		assertThrows(IllegalArgumentException.class, () -> newBuilder().timerTick(Duration.ofMillis(-1)));
+		assertThrows(IllegalArgumentException.class, () -> newBuilder().timerTick(Duration.ofNanos(999_999)));
+		newBuilder().timerTick(Duration.ofMillis(1));
 	}
 
 	@Test

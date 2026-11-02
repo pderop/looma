@@ -91,8 +91,9 @@ public interface ActorScheduler extends AutoCloseable {
 	 * Returns {@code true} only if every thread from
 	 * {@link #mailboxThreadFactory(int)} for carrier {@code i} runs on carrier
 	 * {@code i} alone, one at a time with the other threads of that carrier from
-	 * the same factory, and is never stolen. These are the mailbox threads. Then
-	 * Looma may touch per-carrier state from them without a lock. Default
+	 * the same factory, and is never stolen. These are the mailbox threads. Looma
+	 * also starts the timer thread of carrier {@code i} from this factory. Then
+	 * Looma may touch per-carrier state from those threads without a lock. Default
 	 * {@code false}.
 	 */
 	default boolean mailboxThreadsStayOnCarrier() {

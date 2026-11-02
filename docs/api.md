@@ -676,8 +676,7 @@ ScheduledFuture<?> repeat =
 repeat.cancel(false);                 // stops the sends
 ```
 
-Looma has no scheduler service and no task to run: a timer only does a `tell`. For a task, or a
-finer precision, see [Timers with a `ScheduledExecutorService`](#timers-with-a-scheduledexecutorservice).
+Looma has no scheduler service and no task to run: a timer only does a `tell`.
 
 ### How a timer runs
 
@@ -685,41 +684,26 @@ Each carrier has one timer wheel. A wheel is a ring of slots, one slot per tick.
 
 ```
 ref.tell(msg, 50 ms)                      ref's home carrier is carrier-3
-  -> the caller is an actor on carrier-3 (MPSC scheduler), and the wheel of carrier-3 runs
-       -> the timer goes straight into the wheel of carrier-3, no queue
-  -> any other caller (main, a platform thread, another carrier, `builtin`),
-     or the first timer of carrier-3
-       -> the timer goes into the inbox of carrier-3's wheel     (an MPSC queue)
-       -> the wheel's virtual thread moves it into the slot of its deadline
-  -> at the deadline, that thread calls ref.tell(msg, sender)   (local to carrier-3)
+  -> the timer goes to the wheel of carrier-3
+  -> at the deadline, the wheel's virtual thread calls ref.tell(msg, sender)   (local to carrier-3)
   -> a one-shot future is done
 ```
 
 The wheel's virtual thread starts at the first timer of its carrier. A carrier that never gets a
 timer has no such thread. While its wheel holds a timer, even one far in the future, the thread
-wakes at every tick. [`schedulers.md`](schedulers.md#the-wheel-thread) says more.
+wakes at every tick.
 
-An actor's mailbox thread ([§2](#2-writing-an-actor)) checks the wheel of its carrier when it
-starts:
+Under `affine`, once a timer has run on its carrier, an actor arms and cancels the timers of its
+own carrier with no queue; any other caller goes through a queue of the wheel. [`schedulers.md`](schedulers.md#the-wheel-thread) shows
+both paths.
 
-```
-the mailbox thread starts
-  -> the wheel of its carrier runs ?    no  -> its timers go through the queues
-                                              (a carrier without timers pays one volatile read)
-                                        yes -> its timers for that wheel go straight into it
-```
-
-With `--enable-preview`, a `StructuredTaskScope` opened in `onReceive` must be closed before
-`onReceive` returns, as the JDK requires. Once the wheel of the carrier runs, a scope left open
-makes the JDK throw `StructureViolationException` when the actor's thread ends.
-
-Under `builtin` the system has one wheel and no caller counts as local. Every timer takes the
-inbox path. One switch decides: only a scheduler whose `mailboxThreadsStayOnCarrier()` returns
-true gets the direct path. The builtin returns false.
-
-The inbox is an MPSC queue made by `Builder.mpscQueueFactory`, the same factory as the mailboxes.
+The queues of the wheel are made by `Builder.mpscQueueFactory`, the same factory as the mailboxes.
 A bounded queue that is full cancels the timer: the future comes back cancelled, and a warning is
 logged.
+
+With `--enable-preview`, a `StructuredTaskScope` opened in `onReceive` must be closed before
+`onReceive` returns, as the JDK requires. Once a timer has run on the carrier, a scope left open
+makes the JDK throw `StructureViolationException` when the actor's mailbox thread ends.
 
 ### The tick
 
@@ -727,31 +711,31 @@ logged.
 ActorSystem.builder().timerTick(Duration.ofMillis(5)).build();
 ```
 
-The default is 10 ms. `timerTick` throws `NullPointerException` for `null` and
-`IllegalArgumentException` for zero or negative.
+The default is 10 ms, the minimum 1 ms. `timerTick` throws `NullPointerException` for `null` and
+`IllegalArgumentException` below 1 ms.
 
 ```
-precision   a timer fires on the first tick at or after its deadline
-            -> never early
-            -> about one tick late when the carrier is free; later when the carrier is busy,
-               since the wheel thread waits its turn on the carrier
-delay <= 0  -> fires at the next tick
-period < tick  -> fires at most once per tick
+precision      a timer fires on the first tick at or after its deadline
+               -> never early
+               -> about one tick late when the carrier is free; later when the carrier is busy,
+                  since the wheel thread waits its turn on the carrier
+delay <= 0     -> fires at the next tick
+period < tick  -> fires once per tick, and falls further behind its deadlines
 ```
 
 A `null` message or unit throws `NullPointerException`. A period of zero or less throws
 `IllegalArgumentException`.
 
 A periodic timer keeps its rhythm: each deadline is one period after the previous deadline, not
-after the previous send. If the wheel is late, the missed periods fire on the following ticks, one
-per tick.
+after the previous send. If the sends fall behind, after a pause or with a period shorter than
+the tick, the missed periods fire on the following ticks, one per tick.
 
 ### Cancel and get
 
 ```
-future.cancel(...)  -> true, and nothing is sent        if a one-shot message has not gone yet
-                    -> false                            if a one-shot message has gone
-                    -> idempotent
+future.cancel(...)  -> true, and nothing is sent        if this call cancels a one-shot not yet gone
+                    -> false                            if the message has gone, or the timer was
+                                                        already cancelled (by you, or by the system)
 future.get()        -> one-shot: returns after the send
                     -> periodic: blocks until cancel, then throws CancellationException
 future.getDelay(unit) -> time left to the next send
@@ -759,22 +743,8 @@ future.isDone()     -> true from the start of the send; get() still waits until 
 ```
 
 A cancel that races the send of a periodic timer may return `true` and still let one message go.
-
-Where the timer sits decides how fast it leaves the wheel:
-
-```
-future.cancel(...)
-  -> the caller is an actor on the carrier of the wheel, and the wheel runs
-       -> the timer leaves the wheel at once (constant time)
-  -> any other caller
-       -> the timer is marked cancelled; its message, its sender and its target are freed at once
-       -> it goes into the wheel's cancelled queue
-       -> the wheel removes it at the next tick
-  -> the timer is still in the inbox
-       -> it is dropped when the wheel drains the inbox
-  -> the cancelled queue is full
-       -> the timer stays in its slot until the slot comes up, with no message
-```
+A cancel frees the message at once. The timer leaves the wheel at once when an actor of its carrier
+cancels it, else at the next tick.
 
 `cancel` ignores its argument: it never interrupts anything.
 
@@ -782,25 +752,22 @@ future.cancel(...)
 
 ```
 shutdown()
-  -> every pending timer is cancelled
-  -> awaitTermination does not wait for timers
-  -> the wheel threads end
+  -> the wheel threads cancel every pending timer, soon after, then end
+  -> awaitTermination does not wait for them: a future may still be pending when it returns
 
 tell(msg, delay) after shutdown()   -> the future comes back already cancelled; nothing is sent
 
 one-shot, target stopped at the deadline   -> the message is dropped, as for any tell
-periodic, target stopping at a tick        -> the timer cancels itself
+periodic, target stopping                  -> the timer cancels itself, at the latest at its next
+                                              send or when the wheel passes its slot
 ```
 
 ### Pools and promises
 
 ```
 pool.tell(msg, delay)                     a pool has no single carrier
-  -> an actor whose carrier's wheel runs
-       -> the timer goes straight into the wheel of its carrier, no queue
-  -> any other caller (main, an offloaded thread, the first timer of a carrier)
-       -> a wheel chosen from its thread id: the same thread, the same wheel
-       -> the timer goes into the inbox of that wheel
+  -> from an actor: the wheel of the actor's carrier
+  -> from any other thread: a wheel chosen from its thread id (the same thread, the same wheel)
   -> at the deadline, the pool picks a member, as for any tell
   -> the message may be sent from another carrier than the member's home
 
@@ -811,9 +778,9 @@ The sender of an `ask` (a `PromiseRef`) refuses timers: it throws `UnsupportedOp
 
 ### Timers with a `ScheduledExecutorService`
 
-The delayed `tell` is the preferred way to send a message later
-([Why it is built this way](#why-it-is-built-this-way)). You can also use your own `ScheduledExecutorService`. Build it from the platform thread factory of
-the system, as any executor an actor uses
+The delayed `tell` is the preferred way to send a message later. For a task, or a finer precision,
+use your own `ScheduledExecutorService`. Build it from the platform thread factory of the system,
+as any executor an actor uses
 ([Platform threads started from an actor](#platform-threads-started-from-an-actor)):
 
 ```java
@@ -848,15 +815,13 @@ a Runnable to run, not just a tell                     -> executor
 
 - One wheel per carrier, run by a thread of that carrier, so the timer's `tell` needs no hand-over
   between threads. This is the same reason actors keep to their home carrier.
-- A direct insert and a direct remove for an actor of the same carrier: once the wheel runs, a
-  timeout that is armed and cancelled at once (the usual case) never touches a queue, and holds no
-  message after the cancel.
+- A direct insert and a direct remove for an actor of the same carrier: after the first timer of
+  the carrier, a timeout that is armed and cancelled at once (the usual case) never touches a
+  queue, and holds no message after the cancel.
 - A tick, not an exact deadline: a wheel costs little per timer, and a tick of 10 ms suits timeouts
   and heartbeats.
-- The delayed `tell` before an executor: its timer sits next to the actor it wakes, so arming,
-  cancelling and sending need no hand-over between threads, and Looma owns the thread and the
-  shutdown. An executor costs one hop per expiry and one more thing for you to stop. It is the tool
-  for what the wheel does not do: a tick is not an exact deadline.
+- The delayed `tell` before an executor: Looma owns the wheel thread and stops it at shutdown; an
+  executor is one more thing for you to stop.
 
 ## 11. What Looma does not do
 

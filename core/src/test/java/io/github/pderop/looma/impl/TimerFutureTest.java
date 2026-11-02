@@ -195,7 +195,7 @@ class TimerFutureTest {
 	}
 
 	@Test
-	void cancelAfterSendReturnsFalseAndSecondCancelReturnsTrue() {
+	void cancelAfterSendAndSecondCancelReturnFalse() {
 		Timer sent = scheduled(0);
 		assertTrue(sent.markSent());
 		sent.completeSent();
@@ -203,7 +203,8 @@ class TimerFutureTest {
 		assertFalse(sent.isCancelled());
 		Timer cancelled = scheduled(0);
 		assertTrue(cancelled.cancel(false));
-		assertTrue(cancelled.cancel(false));
+		assertFalse(cancelled.cancel(false));
+		assertTrue(cancelled.isCancelled());
 		assertFalse(cancelled.markSent());
 	}
 }

@@ -121,6 +121,25 @@ class MpscTimerTest extends TimerTest {
 		}
 	}
 
+	/**
+	 * An actor whose wheel runs arms a timer on a pool of its own system: the timer
+	 * goes straight into the wheel of its carrier, no queue.
+	 */
+	@Test
+	void aPoolTimerOfAnActorGoesStraightIntoItsWheel() throws Exception {
+		startWheelOfCarrierZero();
+		ActorRef pool = system().spawn("pool", () -> (message, sender, context) -> {
+		}, SpawnOptions.pooled(2));
+		CompletableFuture<Integer> afterArm = new CompletableFuture<>();
+		ActorRef caller = system().spawn("caller", () -> (message, sender, context) -> {
+			pool.tell(new Ping(), 30, TimeUnit.SECONDS);
+			afterArm.complete(TimerProbe.pendingTimers(system()));
+		}, SpawnOptions.placedOn(Placement.carrier(0)));
+		caller.tell(new Ping());
+
+		assertEquals(1, afterArm.get(10, TimeUnit.SECONDS));
+	}
+
 	/** A mailbox thread on a carrier whose wheel never started binds nothing. */
 	@Test
 	void aCarrierWithoutTimersBindsNothing() throws Exception {

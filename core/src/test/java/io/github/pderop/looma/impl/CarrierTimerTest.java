@@ -26,6 +26,9 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Handler;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
@@ -491,17 +494,160 @@ class CarrierTimerTest {
 		CarrierTimer carrierTimer = new CarrierTimer(IDLE, flaky, unboundedInbox(), TICK);
 		Runnable scheduleFive = () -> IntStream.range(0, 5)
 				.forEach(i -> carrierTimer.schedule(timerIn(carrierTimer, new CountingRef(), 1, 0)));
+		AtomicInteger warnings = new AtomicInteger();
+		Logger logger = Logger.getLogger(CarrierTimer.class.getName());
+		Handler counter = new Handler() {
+			@Override
+			public void publish(LogRecord record) {
+				if (record.getMessage().startsWith("timer inbox full")) {
+					warnings.incrementAndGet();
+				}
+			}
 
-		scheduleFive.run();
-		assertEquals(1, carrierTimer.warningCount());
-		assertEquals(5, carrierTimer.refusedCount());
+			@Override
+			public void flush() {
+			}
 
-		accepting.set(true);
-		carrierTimer.schedule(timerIn(carrierTimer, new CountingRef(), 1, 0));
-		accepting.set(false);
-		scheduleFive.run();
-		assertEquals(2, carrierTimer.warningCount());
-		assertEquals(10, carrierTimer.refusedCount());
+			@Override
+			public void close() {
+			}
+		};
+		logger.addHandler(counter);
+		try {
+			scheduleFive.run();
+			assertEquals(1, warnings.get());
+			assertEquals(5, carrierTimer.refusedCount());
+
+			accepting.set(true);
+			carrierTimer.schedule(timerIn(carrierTimer, new CountingRef(), 1, 0));
+			accepting.set(false);
+			scheduleFive.run();
+			assertEquals(2, warnings.get());
+			assertEquals(10, carrierTimer.refusedCount());
+		} finally {
+			logger.removeHandler(counter);
+		}
+	}
+
+	/**
+	 * A thread that cannot start ends the carrier: its timers are cancelled, and
+	 * schedule does not throw.
+	 */
+	@Test
+	void aWheelThreadThatCannotStartCancelsTheTimers() {
+		ThreadFactory refusing = task -> {
+			throw new IllegalStateException("no thread");
+		};
+		MpscQueue<Timer> inbox = unboundedInbox();
+		CarrierTimer carrierTimer = new CarrierTimer(refusing, inbox, unboundedInbox(), TICK);
+		Timer first = timerIn(carrierTimer, new CountingRef(), 60_000, 0);
+		carrierTimer.schedule(first);
+		Timer second = timerIn(carrierTimer, new CountingRef(), 60_000, 0);
+		carrierTimer.schedule(second);
+
+		assertTrue(first.isCancelled());
+		assertTrue(second.isCancelled());
+		assertTrue(inbox.isEmpty());
+	}
+
+	/**
+	 * A round that throws does not end the wheel thread: a timer armed afterwards
+	 * still fires.
+	 */
+	@Test
+	void aRoundThatThrowsDoesNotStopTheWheel() throws Exception {
+		AtomicBoolean failNextPoll = new AtomicBoolean(true);
+		ConcurrentLinkedQueue<Timer> queue = new ConcurrentLinkedQueue<>();
+		MpscQueue<Timer> failingOnce = new MpscQueue<>() {
+			@Override
+			public boolean offer(Timer item) {
+				return queue.offer(item);
+			}
+
+			@Override
+			public Timer poll() {
+				if (failNextPoll.compareAndSet(true, false)) {
+					throw new OutOfMemoryError("test");
+				}
+				return queue.poll();
+			}
+
+			@Override
+			public boolean isEmpty() {
+				return queue.isEmpty();
+			}
+		};
+		CarrierTimer carrierTimer = new CarrierTimer(Thread.ofVirtual().factory(), failingOnce, unboundedInbox(), TICK);
+		CountingRef target = new CountingRef();
+		Timer timer = timerIn(carrierTimer, target, 1, 0);
+		carrierTimer.schedule(timer);
+		timer.get(5, TimeUnit.SECONDS);
+
+		assertEquals(1, target.tells.get());
+		carrierTimer.stop();
+	}
+
+	/** On its own carrier, an arm after stop is cancelled at once. */
+	@Test
+	void aLocalArmAfterStopIsCancelled() {
+		CarrierTimer carrierTimer = newCarrierTimer(IDLE);
+		Timer started = timerIn(carrierTimer, new CountingRef(), 60_000, 0);
+		carrierTimer.schedule(started);
+		carrierTimer.stop();
+		Timer late = timerIn(carrierTimer, new CountingRef(), 60_000, 0);
+
+		CarrierTimer.runOnCarrier(carrierTimer, () -> carrierTimer.schedule(late));
+
+		assertTrue(late.isCancelled());
+	}
+
+	/**
+	 * Periodic timers on a running wheel, cancelled from several threads at once:
+	 * each one stops, at most one message after its cancel, and none is left.
+	 */
+	@Test
+	void periodicTimersCancelledFromManyThreadsAllStop() throws Exception {
+		CarrierTimer carrierTimer = newCarrierTimer(Thread.ofVirtual().factory());
+		var targets = IntStream.range(0, 200).mapToObj(i -> new CountingRef()).toList();
+		var timers = targets.stream().map(target -> timerIn(carrierTimer, target, 1, 1)).toList();
+		timers.forEach(carrierTimer::schedule);
+		Thread.sleep(20);
+
+		var cancellers = IntStream.range(0, 4).mapToObj(part -> Thread.ofVirtual().start(() -> IntStream
+				.range(0, timers.size()).filter(i -> i % 4 == part).forEach(i -> timers.get(i).cancel(false))))
+				.toList();
+		for (Thread canceller : cancellers) {
+			canceller.join();
+		}
+		var afterCancel = targets.stream().mapToInt(target -> target.tells.get()).toArray();
+		Thread.sleep(30);
+
+		assertTrue(timers.stream().allMatch(Timer::isCancelled));
+		assertTrue(IntStream.range(0, targets.size()).allMatch(i -> targets.get(i).tells.get() <= afterCancel[i] + 1),
+				"a periodic timer kept sending after its cancel");
+		awaitTrue(() -> carrierTimer.pending() == 0);
+		carrierTimer.stop();
+	}
+
+	/**
+	 * A periodic timer whose target is stopping leaves the wheel when its slot
+	 * comes up, before its period.
+	 */
+	@Test
+	void aPeriodicTimerOfAStoppedTargetLeavesBeforeItsPeriod() throws Exception {
+		CarrierTimer carrierTimer = newCarrierTimer(Thread.ofVirtual().factory());
+		AtomicBoolean stopped = new AtomicBoolean();
+		long deadline = System.nanoTime() + TimeUnit.HOURS.toNanos(1);
+		Timer timer = new Timer(new CountingRef(), MESSAGE, null, deadline, TimeUnit.HOURS.toNanos(1), stopped::get,
+				carrierTimer);
+		carrierTimer.schedule(timer);
+		awaitTrue(() -> carrierTimer.pending() == 1);
+		stopped.set(true);
+
+		// The wheel passes every slot within one turn: 512 ticks of 1 ms.
+		awaitTrue(() -> carrierTimer.pending() == 0);
+		assertTrue(timer.isCancelled());
+		carrierTimer.stop();
 	}
 
 	private static void await(CountDownLatch latch) {

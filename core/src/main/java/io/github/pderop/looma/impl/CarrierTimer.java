@@ -20,6 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.Supplier;
 
 import io.github.pderop.looma.ActorRef;
 import io.github.pderop.looma.Message;
@@ -72,11 +73,12 @@ final class CarrierTimer {
 	private final long tickNanos;
 	/** The system this wheel belongs to, or null in tests. */
 	private final Object system;
+	/** The name of the wheel thread. */
+	private final String name;
 	private final AtomicInteger state = new AtomicInteger(NEW);
 	/** True from the first refused offer until the next accepted one. */
 	private final AtomicBoolean fullWarned = new AtomicBoolean();
 	private final LongAdder refused = new LongAdder();
-	private final AtomicInteger warnings = new AtomicInteger();
 	/** True while the wheel thread is about to park with no timer to wait for. */
 	private volatile boolean sleeping;
 	private volatile Thread wheelThread;
@@ -91,11 +93,11 @@ final class CarrierTimer {
 
 	/** A wheel of no system, for tests. */
 	CarrierTimer(ThreadFactory rawFactory, MpscQueue<Timer> inbox, MpscQueue<Timer> cancelled, long tickNanos) {
-		this(rawFactory, inbox, cancelled, tickNanos, null);
+		this(rawFactory, inbox, cancelled, tickNanos, null, "looma-timer");
 	}
 
 	CarrierTimer(ThreadFactory rawFactory, MpscQueue<Timer> inbox, MpscQueue<Timer> cancelled, long tickNanos,
-			Object system) {
+			Object system, String name) {
 		if (tickNanos <= 0) {
 			throw new IllegalArgumentException("tickNanos must be positive: " + tickNanos);
 		}
@@ -104,6 +106,7 @@ final class CarrierTimer {
 		this.cancelled = cancelled;
 		this.tickNanos = tickNanos;
 		this.system = system;
+		this.name = name;
 		this.wheel = new TimerWheel(System.nanoTime(), tickNanos);
 	}
 
@@ -181,8 +184,7 @@ final class CarrierTimer {
 		if (!inbox.offer(timer)) {
 			refused.increment();
 			if (fullWarned.compareAndSet(false, true)) {
-				warnings.incrementAndGet();
-				LOG.log(Level.WARNING, () -> "timer inbox full: " + refused.sum() + " timers cancelled so far");
+				warn(() -> "timer inbox full: " + refused.sum() + " timers cancelled so far", null);
 			}
 			timer.discard();
 			return;
@@ -215,17 +217,12 @@ final class CarrierTimer {
 		}
 	}
 
-	/** The number of warnings logged for a full inbox. */
-	int warningCount() {
-		return warnings.get();
-	}
-
 	/** The number of timers refused because the inbox was full. */
 	long refusedCount() {
 		return refused.sum();
 	}
 
-	/** The number of timers in the wheel. For tests. */
+	/** The number of timers in the wheel. For tests, from any thread. */
 	int pending() {
 		return wheel.size();
 	}
@@ -238,18 +235,39 @@ final class CarrierTimer {
 		}
 	}
 
-	/** Only the thread that moves NEW to RUNNING starts the wheel thread. */
+	/**
+	 * Only the thread that moves NEW to RUNNING starts the wheel thread. If the
+	 * thread cannot start, no thread would ever drain the queues: the carrier ends
+	 * as after stop, and its timers are cancelled. Never throws.
+	 */
 	private void start() {
-		if (state.compareAndSet(NEW, RUNNING)) {
+		if (!state.compareAndSet(NEW, RUNNING)) {
+			return;
+		}
+		try {
 			Thread thread = rawFactory.newThread(this::run);
+			thread.setName(name);
 			wheelThread = thread;
 			thread.start();
+		} catch (Throwable e) {
+			state.set(STOPPED);
+			for (Timer timer = inbox.poll(); timer != null; timer = inbox.poll()) {
+				timer.discard();
+			}
+			warn(() -> "the timer thread " + name + " could not start: its timers are cancelled", e);
 		}
 	}
 
+	/**
+	 * A round that throws must not end the thread, or no timer would fire again.
+	 */
 	private void run() {
 		while (state.get() != STOPPED) {
-			step(System.nanoTime());
+			try {
+				step(System.nanoTime());
+			} catch (Throwable e) {
+				warn(() -> "a round of the timer thread " + name + " failed", e);
+			}
 			if (!wheel.isEmpty()) {
 				LockSupport.parkNanos(wheel.nextTickNanos(System.nanoTime()));
 			} else if (inbox.isEmpty()) {
@@ -292,10 +310,7 @@ final class CarrierTimer {
 		}
 	}
 
-	/**
-	 * A tell that throws must not stop the wheel: an Error too, or the thread would
-	 * end and no timer of this carrier would ever fire again.
-	 */
+	/** A tell that throws, an Error too, is logged: the next timers still fire. */
 	private void fire(Timer timer) {
 		ActorRef sender = timer.sender;
 		ActorRef target = timer.target;
@@ -316,7 +331,7 @@ final class CarrierTimer {
 			}
 			target.tell(message, sender);
 		} catch (Throwable e) {
-			LOG.log(Level.WARNING, "timer tell to " + target.path() + " failed", e);
+			warn(() -> "timer tell to " + target.path() + " failed", e);
 		} finally {
 			if (!timer.isPeriodic()) {
 				timer.completeSent();
@@ -325,6 +340,15 @@ final class CarrierTimer {
 		if (timer.isPeriodic() && !timer.isCancelled()) {
 			timer.rearm();
 			wheel.add(timer);
+		}
+	}
+
+	/** Logs a warning. A logger that throws must not stop the wheel either. */
+	private static void warn(Supplier<String> message, Throwable error) {
+		try {
+			LOG.log(Level.WARNING, message, error);
+		} catch (Throwable ignored) {
+			// Nothing else to do: the timers must go on.
 		}
 	}
 }

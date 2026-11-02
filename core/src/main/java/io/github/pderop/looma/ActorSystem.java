@@ -127,12 +127,13 @@ public interface ActorSystem {
 		/**
 		 * Sets the tick of the timer wheels. A delayed tell fires with a precision of
 		 * one tick when the carrier is free. It never fires early. The default is 10
-		 * ms.
+		 * ms, the minimum 1 ms: while it holds a timer, a wheel wakes at every tick on
+		 * the carrier of its actors.
 		 *
 		 * @throws NullPointerException
 		 *             if {@code tick} is {@code null}
 		 * @throws IllegalArgumentException
-		 *             if {@code tick} is zero or negative
+		 *             if {@code tick} is shorter than 1 ms
 		 */
 		Builder timerTick(Duration tick);
 

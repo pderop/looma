@@ -131,9 +131,9 @@ public final class DefaultActorSystem implements ActorSystem {
 			dispatchers[i] = new CarrierDispatcher(scheduler.vThreadFactory(i), scheduler.mailboxThreadFactory(i), i);
 		}
 		this.runtime = new ActorRuntime(new Dispatchers(), mpscQueueFactory, this::afterTermination);
-		this.timers = IntStream
-				.range(0, dispatchers.length).mapToObj(i -> new CarrierTimer(scheduler.mailboxThreadFactory(i),
-						mpscQueueFactory.create(), mpscQueueFactory.create(), timerTick.toNanos(), runtime))
+		this.timers = IntStream.range(0, dispatchers.length)
+				.mapToObj(i -> new CarrierTimer(scheduler.mailboxThreadFactory(i), mpscQueueFactory.create(),
+						mpscQueueFactory.create(), timerTick.toNanos(), runtime, "looma-timer-" + i))
 				.toArray(CarrierTimer[]::new);
 		// Only a scheduler that says so gets the local path. Elsewhere the mailbox
 		// threads can move between OS threads, so they do not touch the wheel.
@@ -258,6 +258,8 @@ public final class DefaultActorSystem implements ActorSystem {
 
 		private MpscQueueFactory mpscQueueFactory;
 
+		private static final Duration MIN_TIMER_TICK = Duration.ofMillis(1);
+
 		private Duration timerTick = Duration.ofMillis(10);
 
 		private Builder() {
@@ -289,8 +291,8 @@ public final class DefaultActorSystem implements ActorSystem {
 			if (timerTick == null) {
 				throw new NullPointerException("timerTick");
 			}
-			if (timerTick.isZero() || timerTick.isNegative()) {
-				throw new IllegalArgumentException("timerTick must be positive: " + timerTick);
+			if (timerTick.compareTo(MIN_TIMER_TICK) < 0) {
+				throw new IllegalArgumentException("timerTick must be at least 1 ms: " + timerTick);
 			}
 			this.timerTick = timerTick;
 			return this;

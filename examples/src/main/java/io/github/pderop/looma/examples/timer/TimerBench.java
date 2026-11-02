@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
+import java.util.stream.IntStream;
 
 import org.HdrHistogram.Histogram;
 import org.HdrHistogram.Recorder;
@@ -213,10 +214,8 @@ public final class TimerBench {
 	 * starts a whole slot late, or more, is counted as missed.
 	 */
 	private static void drive(Shared shared, List<ActorRef> drivers, long rate, AtomicBoolean stop) {
-		long[] rates = new long[drivers.size()];
-		for (int i = 0; i < rates.length; i++) {
-			rates[i] = carrierRate(rate, rates.length, i);
-		}
+		int carriers = drivers.size();
+		long[] rates = IntStream.range(0, carriers).mapToLong(i -> carrierRate(rate, carriers, i)).toArray();
 		long next = System.nanoTime();
 		long slot = 0;
 		while (!stop.get()) {

@@ -208,10 +208,10 @@ class TimerWheelTest {
 	}
 
 	@Test
-	void timerCancelIsIdempotent() {
+	void onlyTheFirstCancelReturnsTrue() {
 		Timer timer = addAfterTicks(1);
 		assertTrue(timer.cancel(false));
-		assertTrue(timer.cancel(false));
+		assertFalse(timer.cancel(false));
 		assertTrue(timer.isCancelled());
 	}
 

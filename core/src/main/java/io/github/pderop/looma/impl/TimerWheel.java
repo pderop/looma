@@ -13,6 +13,8 @@
  */
 package io.github.pderop.looma.impl;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -31,6 +33,20 @@ import java.util.function.Consumer;
 final class TimerWheel {
 
 	static final int SLOTS = 512;
+	/**
+	 * A due list bigger than this is dropped after the firing, to give back its
+	 * memory.
+	 */
+	private static final int DUE_KEPT = 4096;
+	private static final VarHandle SIZE;
+
+	static {
+		try {
+			SIZE = MethodHandles.lookup().findVarHandle(TimerWheel.class, "size", int.class);
+		} catch (ReflectiveOperationException e) {
+			throw new ExceptionInInitializerError(e);
+		}
+	}
 
 	private final long startNanos;
 	private final long tickNanos;
@@ -38,12 +54,10 @@ final class TimerWheel {
 	private final Timer[] tails = new Timer[SLOTS];
 	/** The last tick already processed. */
 	private long currentTick;
-	private int size;
 	/**
-	 * A due list bigger than this is dropped after the firing, to give back its
-	 * memory.
+	 * Written by the wheel's thread only. Read with {@link #size()} from anywhere.
 	 */
-	private static final int DUE_KEPT = 4096;
+	private int size;
 	/** Due timers of one expire call. Cleared after the firing. */
 	private List<Timer> due = new ArrayList<>();
 
@@ -120,20 +134,21 @@ final class TimerWheel {
 		long firstTick = currentTick + 1;
 		long visited = Math.min(targetTick - currentTick, SLOTS);
 		currentTick = targetTick;
-		for (long i = 0; i < visited; i++) {
-			collectDue((int) ((firstTick + i) & (SLOTS - 1)), targetTick, due);
-		}
 		// The consumer may re-add timers to the wheel, never to this list.
 		int fired = 0;
 		try {
+			for (long i = 0; i < visited; i++) {
+				collectDue((int) ((firstTick + i) & (SLOTS - 1)), targetTick, due);
+			}
 			for (; fired < due.size(); fired++) {
 				fire.accept(due.get(fired));
 			}
 		} catch (Throwable t) {
-			// The timers after the failing one were not fired: they end cancelled, so no
-			// future waits forever. Those before were fired, and a periodic one is back
-			// in the wheel: it must not be touched.
-			for (int i = fired + 1; i < due.size(); i++) {
+			// The failing timer and those after it are out of the wheel and may never
+			// fire: they end cancelled, so no future waits forever. A one-shot already
+			// sent stays done. Those before were fired, and a periodic one is back in
+			// the wheel: it must not be touched.
+			for (int i = fired; i < due.size(); i++) {
 				due.get(i).discard();
 			}
 			throw t;
@@ -146,13 +161,20 @@ final class TimerWheel {
 		}
 	}
 
-	/** Moves the due timers out of the slot and drops the cancelled ones. */
+	/**
+	 * Moves the due timers out of the slot, and drops the cancelled ones and the
+	 * periodic ones whose target is stopping, so they do not wait for their next
+	 * period.
+	 */
 	private void collectDue(int index, long targetTick, List<Timer> due) {
 		Timer timer = heads[index];
 		while (timer != null) {
 			Timer following = timer.next;
 			if (timer.isCancelled()) {
 				remove(timer);
+			} else if (timer.isPeriodic() && timer.isTargetStopped()) {
+				remove(timer);
+				timer.discard();
 			} else if (timer.deadlineTick <= targetTick) {
 				remove(timer);
 				due.add(timer);
@@ -172,9 +194,12 @@ final class TimerWheel {
 		return size == 0;
 	}
 
-	/** The number of timers in the wheel. */
+	/**
+	 * The number of timers in the wheel. A thread other than the wheel's may see an
+	 * older value.
+	 */
 	int size() {
-		return size;
+		return (int) SIZE.getOpaque(this);
 	}
 
 	/** Cancels every timer and empties the wheel. */

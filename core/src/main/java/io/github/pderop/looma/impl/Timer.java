@@ -41,9 +41,10 @@ import io.github.pderop.looma.Message;
  * once. The links and the slot belong to the wheel, which is used by one
  * thread.
  * <p>
- * Cancel creates no object and no exception. The exception of {@link #get()} is
- * created in get. The waiting latch is created by the first caller of get that
- * has to wait.
+ * Cancel creates no exception. On the carrier of the wheel it creates nothing;
+ * from elsewhere the cancelled queue may create a node. The exception of
+ * {@link #get()} is created in get. The waiting latch is created by the first
+ * caller of get that has to wait.
  */
 final class Timer implements ScheduledFuture<Void> {
 
@@ -175,8 +176,10 @@ final class Timer implements ScheduledFuture<Void> {
 	}
 
 	/**
-	 * Cancels the timer. {@code true} if it is cancelled, also when it already was.
-	 * {@code false} once the message has been sent.
+	 * Cancels the timer. {@code true} only if this call cancelled it, as
+	 * {@code FutureTask} does: {@code false} once the message has been sent, and
+	 * {@code false} if the timer was already cancelled, by a caller or by the
+	 * system (shutdown, a full inbox).
 	 */
 	@Override
 	public boolean cancel(boolean mayInterruptIfRunning) {
@@ -186,7 +189,7 @@ final class Timer implements ScheduledFuture<Void> {
 				return false;
 			}
 			if (current == CANCELLED) {
-				return true;
+				return false;
 			}
 			if (STATE.compareAndSet(this, current, CANCELLED)) {
 				release();
