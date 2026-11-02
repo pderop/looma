@@ -6,8 +6,9 @@
 # JAVA_HOME at it. The runner's preinstalled Maven is used as-is.
 #
 # There is no binary of that JDK. The job builds it once per commit of the pull request and keeps
-# it in the Actions cache: the first run takes about an hour, the next ones a few minutes. The
-# boot JDK is the Loom build of builds.shipilev.net, a JDK 28.
+# it in the Actions cache: the first run builds it, the next ones restore it. A cache saved on main
+# serves every pull request. GitHub drops a cache that no run has read for 7 days; the next run
+# then builds it again. The boot JDK is the Loom build of builds.shipilev.net, a JDK 28.
 name: Build
 
 on:
@@ -27,11 +28,15 @@ jobs:
     env:
       # The commit of openjdk/loom pull request 227, the same as in the README.
       PR227_SHA: 731930db54a052cc4549db7361816f16a0119835
-      LOOM_JDK: ${{ github.workspace }}/../loom-jdk-pr227
       BOOT_JDK_URL: https://builds.shipilev.net/openjdk-jdk-loom/openjdk-jdk-loom-linux-x86_64-server.tar.xz
 
     steps:
       - uses: actions/checkout@v7
+
+      # The cache refuses a path with "." or "..", so the JDK lives in the runner's temp
+      # directory, an absolute path. It is set here because the job's env cannot read it.
+      - name: Choose where the Loom JDK lives
+        run: echo "LOOM_JDK=$RUNNER_TEMP/loom-jdk-pr227" >> "$GITHUB_ENV"
 
       - name: Restore the Loom JDK
         id: jdk-cache

@@ -57,7 +57,7 @@ public interface SupervisionStrategy {
 	 *            the throwable that was caught — a {@link Throwable}, not a
 	 *            {@code RuntimeException}, so that a checked exception (declared by
 	 *            {@link Actor#onReceive}) or an {@link Error} also reaches
-	 *            supervision instead of silently ending the actor's burst.
+	 *            supervision instead of silently ending the actor's mailbox thread.
 	 */
 	Directive decide(Throwable cause);
 }

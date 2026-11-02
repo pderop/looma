@@ -16,6 +16,8 @@ package io.github.pderop.looma.impl;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import io.github.pderop.looma.ActorRef;
@@ -28,10 +30,10 @@ import io.github.pderop.looma.SpawnOptions;
  * actors, spreading every {@code tell} and {@code ask} across them round-robin.
  *
  * <p>
- * <b>This reference owns no mailbox, no burst and no actor instance of its
- * own.</b> It is a plain fan-out over {@link ActorRefImpl}s, so a message pays
- * exactly one hop, the same as to a single actor: there is no router actor in
- * the middle to relay it, and therefore no extra queue and no extra virtual
+ * <b>This reference owns no mailbox, no mailbox thread and no actor instance of
+ * its own.</b> It is a plain fan-out over {@link ActorRefImpl}s, so a message
+ * pays exactly one hop, the same as to a single actor: there is no router actor
+ * in the middle to relay it, and therefore no extra queue and no extra virtual
  * thread. Every routee is an ordinary actor — registered at its own path,
  * visible in its parent's {@code children()}, supervised on its own, stopped by
  * the same cascade — and the only thing this class adds is which one a given
@@ -152,6 +154,35 @@ final class PoolRef implements ActorRef {
 	@Override
 	public void tell(Message message, ActorRef sender) {
 		next().tell(message, sender);
+	}
+
+	/**
+	 * Hands the timer to a wheel of the caller: the wheel of its carrier for an
+	 * actor's mailbox thread, else a wheel chosen from its thread. The routee is
+	 * chosen when the timer expires, by the normal
+	 * {@link #tell(Message, ActorRef)}, so the message may be sent from another
+	 * carrier.
+	 */
+	@Override
+	public ScheduledFuture<?> tell(Message message, ActorRef sender, long delay, TimeUnit unit) {
+		ActorRuntime runtime = routees[0].cell().runtime();
+		return runtime.scheduleTell(runtime.timerForCaller(), this, message, sender, delay, unit);
+	}
+
+	/**
+	 * Like the delayed tell, but repeating. It cancels itself once all routees are
+	 * terminating or stopped.
+	 */
+	@Override
+	public ScheduledFuture<?> tellAtFixedRate(Message message, ActorRef sender, long initialDelay, long period,
+			TimeUnit unit) {
+		ActorRuntime runtime = routees[0].cell().runtime();
+		return runtime.scheduleTellAtFixedRate(runtime.timerForCaller(), this, message, sender, initialDelay, period,
+				unit, this::allStopped);
+	}
+
+	private boolean allStopped() {
+		return Arrays.stream(routees).allMatch(routee -> routee.cell().isTerminatingOrStopped());
 	}
 
 	/**

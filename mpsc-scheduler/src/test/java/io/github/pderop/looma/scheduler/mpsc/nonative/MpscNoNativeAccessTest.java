@@ -38,7 +38,8 @@ class MpscNoNativeAccessTest {
 		assertEquals(2, system.carrierCount());
 		assertEquals(OptionalInt.empty(), system.scheduler().clusterOf(0));
 		CompletableFuture<OptionalInt> cpu = new CompletableFuture<>();
-		system.scheduler().actorLoopFactory(0).newThread(() -> cpu.complete(system.scheduler().pinnedCpu())).start();
+		system.scheduler().mailboxThreadFactory(0).newThread(() -> cpu.complete(system.scheduler().pinnedCpu()))
+				.start();
 		assertEquals(OptionalInt.empty(), cpu.get(5, TimeUnit.SECONDS));
 		system.shutdown();
 	}

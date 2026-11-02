@@ -13,11 +13,14 @@
  */
 package io.github.pderop.looma.impl;
 
+import java.time.Duration;
+import java.util.Arrays;
 import java.util.Optional;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
+import java.util.stream.IntStream;
 
 import io.github.pderop.looma.Actor;
 import io.github.pderop.looma.ActorContext;
@@ -28,7 +31,7 @@ import io.github.pderop.looma.Placement;
 import io.github.pderop.looma.SpawnOptions;
 import io.github.pderop.looma.spi.ActorScheduler;
 import io.github.pderop.looma.spi.ActorSchedulerProvider;
-import io.github.pderop.looma.spi.MailboxQueueFactory;
+import io.github.pderop.looma.spi.MpscQueueFactory;
 
 /**
  * The one {@link ActorSystem} implementation this project ships: an actor
@@ -46,15 +49,15 @@ import io.github.pderop.looma.spi.MailboxQueueFactory;
  * cannot span without a {@code module-info.java}.
  *
  * <p>
- * The actor engine itself — mailboxes, one virtual thread per burst, hierarchy,
- * supervision, {@code ask}, the graceful cascading stop — lives in
- * {@link ActorRuntime} and {@link ActorCell} and never differs between the two
- * schedulers. This class contributes only placement: which carrier an actor
- * lands on, according to whichever {@link ActorScheduler} it was built with.
- * Every actor then starts its bursts from that carrier's
- * {@link ActorScheduler#actorLoopFactory(int)}. It exposes its dispatcher array
- * to {@link ActorRuntime} through the {@link Dispatchers} seam, which is what
- * lets {@link ActorRuntime#dispatcherFor(Placement, ActorCell)} resolve a
+ * The actor engine itself — mailboxes, a mailbox thread per actor while it has
+ * messages, hierarchy, supervision, {@code ask}, the graceful cascading stop —
+ * lives in {@link ActorRuntime} and {@link ActorCell} and never differs between
+ * the two schedulers. This class contributes only placement: which carrier an
+ * actor lands on, according to whichever {@link ActorScheduler} it was built
+ * with. Every actor then starts its mailbox threads from that carrier's
+ * {@link ActorScheduler#mailboxThreadFactory(int)}. It exposes its dispatcher
+ * array to {@link ActorRuntime} through the {@link Dispatchers} seam, which is
+ * what lets {@link ActorRuntime#dispatcherFor(Placement, ActorCell)} resolve a
  * {@link Placement} without this class implementing the engine's own
  * {@code spawn} logic a second time.
  *
@@ -105,6 +108,12 @@ public final class DefaultActorSystem implements ActorSystem {
 	 */
 	private final AtomicInteger nextCarrier = new AtomicInteger();
 
+	/** One timer per carrier, indexed by carrier id. No thread runs until used. */
+	private final CarrierTimer[] timers;
+
+	/** True when a mailbox thread stays on its home carrier. */
+	private final boolean affine;
+
 	private final ActorRuntime runtime;
 
 	/**
@@ -115,13 +124,25 @@ public final class DefaultActorSystem implements ActorSystem {
 	 *            spawn's {@link Placement} against, per the class javadoc's two
 	 *            default rules
 	 */
-	DefaultActorSystem(ActorScheduler scheduler, MailboxQueueFactory mailboxQueueFactory) {
+	DefaultActorSystem(ActorScheduler scheduler, MpscQueueFactory mpscQueueFactory, Duration timerTick) {
 		this.scheduler = scheduler;
 		this.dispatchers = new CarrierDispatcher[scheduler.carrierCount()];
 		for (int i = 0; i < dispatchers.length; i++) {
-			dispatchers[i] = new CarrierDispatcher(scheduler.vThreadFactory(i), scheduler.actorLoopFactory(i), i);
+			dispatchers[i] = new CarrierDispatcher(scheduler.vThreadFactory(i), scheduler.mailboxThreadFactory(i), i);
 		}
-		this.runtime = new ActorRuntime(new Dispatchers(), mailboxQueueFactory, this::afterTermination);
+		this.runtime = new ActorRuntime(new Dispatchers(), mpscQueueFactory, this::afterTermination);
+		this.timers = IntStream.range(0, dispatchers.length)
+				.mapToObj(i -> new CarrierTimer(scheduler.mailboxThreadFactory(i), mpscQueueFactory.create(),
+						mpscQueueFactory.create(), timerTick.toNanos(), runtime, "looma-timer-" + i))
+				.toArray(CarrierTimer[]::new);
+		// Only a scheduler that says so gets the local path. Elsewhere the mailbox
+		// threads can move between OS threads, so they do not touch the wheel.
+		this.affine = scheduler.mailboxThreadsStayOnCarrier();
+	}
+
+	/** The number of timers waiting in the wheels. For tests. */
+	int pendingTimers() {
+		return Arrays.stream(timers).mapToInt(CarrierTimer::pending).sum();
 	}
 
 	/**
@@ -169,6 +190,7 @@ public final class DefaultActorSystem implements ActorSystem {
 	 */
 	@Override
 	public void shutdown() {
+		Arrays.stream(timers).forEach(CarrierTimer::stop);
 		runtime.beginShutdown();
 	}
 
@@ -224,9 +246,9 @@ public final class DefaultActorSystem implements ActorSystem {
 	 * ({@code ActorSchedulers.install()}); else discovery
 	 * ({@code ActorSchedulers.discover()}) is tried, falling back to
 	 * {@link JdkActorScheduler} if nothing is found. Setting both of the first two
-	 * is refused at {@link #build()}. The mailbox queue factory defaults to
-	 * {@link ConcurrentLinkedMailboxQueue#factory()} unless
-	 * {@link #mailboxQueueFactory} was set.
+	 * is refused at {@link #build()}. The queue factory serves the mailboxes and
+	 * the timer queues. It defaults to {@link ConcurrentLinkedMpscQueue#factory()}
+	 * unless {@link #mpscQueueFactory} was set.
 	 */
 	static final class Builder implements ActorSystem.Builder {
 
@@ -234,7 +256,11 @@ public final class DefaultActorSystem implements ActorSystem {
 
 		private Carriers carriers;
 
-		private MailboxQueueFactory mailboxQueueFactory;
+		private MpscQueueFactory mpscQueueFactory;
+
+		private static final Duration MIN_TIMER_TICK = Duration.ofMillis(1);
+
+		private Duration timerTick = Duration.ofMillis(10);
 
 		private Builder() {
 		}
@@ -255,17 +281,27 @@ public final class DefaultActorSystem implements ActorSystem {
 		}
 
 		@Override
-		public Builder mailboxQueueFactory(MailboxQueueFactory mailboxQueueFactory) {
-			this.mailboxQueueFactory = mailboxQueueFactory;
+		public Builder mpscQueueFactory(MpscQueueFactory mpscQueueFactory) {
+			this.mpscQueueFactory = mpscQueueFactory;
+			return this;
+		}
+
+		@Override
+		public Builder timerTick(Duration timerTick) {
+			if (timerTick == null) {
+				throw new NullPointerException("timerTick");
+			}
+			if (timerTick.compareTo(MIN_TIMER_TICK) < 0) {
+				throw new IllegalArgumentException("timerTick must be at least 1 ms: " + timerTick);
+			}
+			this.timerTick = timerTick;
 			return this;
 		}
 
 		@Override
 		public DefaultActorSystem build() {
-			MailboxQueueFactory queues = mailboxQueueFactory != null
-					? mailboxQueueFactory
-					: ConcurrentLinkedMailboxQueue.factory();
-			return new DefaultActorSystem(resolveScheduler(), queues);
+			MpscQueueFactory queues = mpscQueueFactory != null ? mpscQueueFactory : ConcurrentLinkedMpscQueue.factory();
+			return new DefaultActorSystem(resolveScheduler(), queues, timerTick);
 		}
 
 		private ActorScheduler resolveScheduler() {
@@ -318,6 +354,16 @@ public final class DefaultActorSystem implements ActorSystem {
 			// called; an out-of-range index here is an engine bug, not a user-facing one.
 			return dispatchers[carrierId];
 		}
+
+		@Override
+		public CarrierTimer timer(int carrierId) {
+			return timers[carrierId];
+		}
+
+		@Override
+		public CarrierTimer mailboxThreadTimer(int carrierId) {
+			return affine ? timers[carrierId] : null;
+		}
 	}
 
 	// ================================================================
@@ -325,13 +371,13 @@ public final class DefaultActorSystem implements ActorSystem {
 	// ================================================================
 
 	/**
-	 * Places an actor on one carrier: its bursts, and the threads it creates
-	 * through {@link ActorContext#vThreadFactory()}, come from that carrier's own
-	 * factories.
+	 * Places an actor on one carrier: its mailbox threads, and the threads it
+	 * creates through {@link ActorContext#vThreadFactory()}, come from that
+	 * carrier's own factories.
 	 *
 	 * <p>
 	 * The factories are cached at construction, from
-	 * {@link ActorScheduler#actorLoopFactory(int)} and
+	 * {@link ActorScheduler#mailboxThreadFactory(int)} and
 	 * {@link ActorScheduler#vThreadFactory(int)} — nothing is looked up on the
 	 * spawn path beyond the array index.
 	 */
@@ -339,13 +385,13 @@ public final class DefaultActorSystem implements ActorSystem {
 
 		private final ThreadFactory vThreadFactory;
 
-		private final ThreadFactory loopThreadFactory;
+		private final ThreadFactory mailboxThreadFactory;
 
 		private final int carrierId;
 
-		private CarrierDispatcher(ThreadFactory vThreadFactory, ThreadFactory loopThreadFactory, int carrierId) {
+		private CarrierDispatcher(ThreadFactory vThreadFactory, ThreadFactory mailboxThreadFactory, int carrierId) {
 			this.vThreadFactory = vThreadFactory;
-			this.loopThreadFactory = loopThreadFactory;
+			this.mailboxThreadFactory = mailboxThreadFactory;
 			this.carrierId = carrierId;
 		}
 
@@ -355,8 +401,8 @@ public final class DefaultActorSystem implements ActorSystem {
 		}
 
 		@Override
-		public ThreadFactory loopThreadFactory() {
-			return loopThreadFactory;
+		public ThreadFactory mailboxThreadFactory() {
+			return mailboxThreadFactory;
 		}
 
 		@Override

@@ -14,6 +14,8 @@
 package io.github.pderop.looma;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * An opaque, thread-safe handle to an actor, obtained from
@@ -128,11 +130,10 @@ public interface ActorRef {
 	 * orTimeout} (or {@code get} with a timeout) if you need one.
 	 *
 	 * <p>
-	 * <b>The reply completes the future on the thread of the actor that
-	 * replies</b>, inside its burst. A stage chained with {@code thenApply} or
-	 * {@code thenAccept} runs there too, and the replying actor handles nothing
-	 * else meanwhile. Chain slow work with {@code thenApplyAsync} or
-	 * {@code thenAcceptAsync} instead.
+	 * <b>The reply completes the future on the mailbox thread of the actor that
+	 * replies</b>. A stage chained with {@code thenApply} or {@code thenAccept}
+	 * runs there too, and the replying actor handles nothing else meanwhile. Chain
+	 * slow work with {@code thenApplyAsync} or {@code thenAcceptAsync} instead.
 	 *
 	 * @param <R>
 	 *            the reply type, inferred from {@code replyType} — so the caller
@@ -165,5 +166,91 @@ public interface ActorRef {
 	 */
 	default CompletableFuture<Message> ask(Message message) {
 		return ask(message, Message.class);
+	}
+
+	/**
+	 * Equivalent to {@code tell(message, null, delay, unit)}.
+	 */
+	default ScheduledFuture<?> tell(Message message, long delay, TimeUnit unit) {
+		return tell(message, null, delay, unit);
+	}
+
+	/**
+	 * Sends {@code message} to this actor once, after {@code delay}.
+	 *
+	 * <p>
+	 * The precision is one tick of the timer wheel, set with
+	 * {@code ActorSystem.Builder#timerTick}. The message never goes early. It goes
+	 * about one tick late when the carrier is free, later when it is busy. A delay
+	 * of zero or less sends at the next tick.
+	 *
+	 * <p>
+	 * The returned future is done from the start of the send, and {@code get}
+	 * returns once the send has returned. {@code cancel} stops the send and returns
+	 * {@code false} if the message has already gone, or if the timer was already
+	 * cancelled. When it returns {@code true}, nothing is sent. If the actor has
+	 * stopped when the delay ends, the message is dropped, as for any {@code tell}.
+	 *
+	 * <p>
+	 * After {@code shutdown} the message is not sent and the future comes back
+	 * cancelled. A timer pending at {@code shutdown} is cancelled soon after, by
+	 * the timer thread; {@code awaitTermination} does not wait for it.
+	 *
+	 * @param message
+	 *            the message to send
+	 * @param sender
+	 *            the actor to attribute the message to; {@code null} if there is no
+	 *            actor to reply to
+	 * @param delay
+	 *            how long to wait before sending
+	 * @param unit
+	 *            the unit of {@code delay}
+	 * @return a future to cancel the send
+	 * @throws NullPointerException
+	 *             if {@code message} or {@code unit} is {@code null}
+	 * @throws UnsupportedOperationException
+	 *             if this reference does not support timers
+	 */
+	default ScheduledFuture<?> tell(Message message, ActorRef sender, long delay, TimeUnit unit) {
+		throw new UnsupportedOperationException("timers are not supported by " + getClass().getName());
+	}
+
+	/**
+	 * Sends {@code message} to this actor first after {@code initialDelay}, then
+	 * once every {@code period}.
+	 *
+	 * <p>
+	 * The precision is one tick of the timer wheel. A message never goes early.
+	 * Each deadline is one period after the previous deadline. When the sends fall
+	 * behind, after a pause or with a period shorter than the tick, the missed ones
+	 * go one per tick, so the sends never go more than once per tick. The sends
+	 * stop when the future is cancelled, once the actor is stopping, or at
+	 * {@code shutdown}. A pool stops them once all its actors are stopping. The
+	 * future is never done otherwise, so {@code get} blocks until the cancel. A
+	 * cancel that races a send may return {@code true} while that one message still
+	 * goes.
+	 *
+	 * @param message
+	 *            the message to send
+	 * @param sender
+	 *            the actor to attribute the message to; {@code null} if there is no
+	 *            actor to reply to
+	 * @param initialDelay
+	 *            how long to wait before the first send
+	 * @param period
+	 *            the time between two sends
+	 * @param unit
+	 *            the unit of both times
+	 * @return a future to cancel the sends
+	 * @throws NullPointerException
+	 *             if {@code message} or {@code unit} is {@code null}
+	 * @throws IllegalArgumentException
+	 *             if {@code period} is zero or negative
+	 * @throws UnsupportedOperationException
+	 *             if this reference does not support timers
+	 */
+	default ScheduledFuture<?> tellAtFixedRate(Message message, ActorRef sender, long initialDelay, long period,
+			TimeUnit unit) {
+		throw new UnsupportedOperationException("timers are not supported by " + getClass().getName());
 	}
 }

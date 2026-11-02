@@ -19,19 +19,22 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import io.github.pderop.looma.Actor;
 import io.github.pderop.looma.ActorRef;
+import io.github.pderop.looma.Message;
 import io.github.pderop.looma.Placement;
 import io.github.pderop.looma.SpawnOptions;
 import io.github.pderop.looma.SupervisionStrategy;
-import io.github.pderop.looma.spi.MailboxQueueFactory;
+import io.github.pderop.looma.spi.MpscQueueFactory;
 
 /**
  * The state one {@code ActorSystem} instance shares across every actor it
@@ -42,9 +45,9 @@ import io.github.pderop.looma.spi.MailboxQueueFactory;
  *
  * <p>
  * Everything in this class is scheduler-agnostic — it never runs a task itself,
- * only counts and bookkeeps around an {@link ActorCell}'s bursts and the
- * threads {@link #countedThreadFactory(ThreadFactory)} wraps. This is what lets
- * it stay identical regardless of which
+ * only counts and bookkeeps around an {@link ActorCell}'s mailbox threads and
+ * the threads {@link #countedThreadFactory(ThreadFactory)} wraps. This is what
+ * lets it stay identical regardless of which
  * {@code io.github.pderop.looma.spi.ActorScheduler} placed the actors it hosts:
  * a bug fixed here is fixed for every scheduler at once.
  */
@@ -73,17 +76,18 @@ final class ActorRuntime {
 	 * scheduler), a specific carrier id, or the parent's own carrier id for
 	 * {@link Placement#inherit()} — and only then asks this seam to turn that id
 	 * into an actual {@link ActorDispatcher}. {@link Placement#inherit()} inherits
-	 * its parent's <b>carrier</b> (the factory that starts the child's own bursts),
-	 * never a shared run loop: every actor has bursts of its own.
+	 * its parent's <b>carrier</b> (the factory that starts the child's own mailbox
+	 * threads), never a shared run loop: every actor has mailbox threads of its
+	 * own.
 	 */
 	private final DispatcherSource dispatchers;
 
-	private final MailboxQueueFactory mailboxQueueFactory;
+	private final MpscQueueFactory mpscQueueFactory;
 
 	/**
-	 * Every unit of work currently spawned or running: an actor's burst and every
-	 * thread created through {@link #countedThreadFactory(ThreadFactory)} count
-	 * once from the moment they are created (not started) until their body
+	 * Every unit of work currently spawned or running: an actor's mailbox thread
+	 * and every thread created through {@link #countedThreadFactory(ThreadFactory)}
+	 * count once from the moment they are created (not started) until their body
 	 * finishes. Reaching zero while {@link #shuttingDown} is set and
 	 * {@link #registry} is empty is what {@link #awaitTermination} and
 	 * {@link #afterTermination} both wait for.
@@ -122,25 +126,25 @@ final class ActorRuntime {
 	 * @param dispatchers
 	 *            the seam to whoever owns the dispatcher array, used to resolve
 	 *            every {@link Placement} into an {@link ActorDispatcher}
-	 * @param mailboxQueueFactory
-	 *            creates one mailbox queue per spawned actor
+	 * @param mpscQueueFactory
+	 *            creates the mailbox queue of every actor and the timer queues
 	 * @param afterTermination
 	 *            invoked exactly once, after {@link #beginShutdown()} has been
 	 *            called and every actor and every in-flight unit of work has
 	 *            finished
 	 */
-	public ActorRuntime(DispatcherSource dispatchers, MailboxQueueFactory mailboxQueueFactory,
-			Runnable afterTermination) {
+	public ActorRuntime(DispatcherSource dispatchers, MpscQueueFactory mpscQueueFactory, Runnable afterTermination) {
 		this.dispatchers = dispatchers;
-		this.mailboxQueueFactory = mailboxQueueFactory;
+		this.mpscQueueFactory = mpscQueueFactory;
 		this.afterTermination = afterTermination;
 	}
 
 	/**
-	 * Returns the factory that creates one mailbox queue per actor, at spawn.
+	 * Returns the factory that creates the mailbox queue of every actor, at spawn.
+	 * The same factory makes the queues of the timers.
 	 */
-	MailboxQueueFactory mailboxQueueFactory() {
-		return mailboxQueueFactory;
+	MpscQueueFactory mpscQueueFactory() {
+		return mpscQueueFactory;
 	}
 
 	// ================================================================
@@ -209,6 +213,81 @@ final class ActorRuntime {
 	 */
 	public int carrierCount() {
 		return dispatchers.carrierCount();
+	}
+
+	/** Returns the timers of one carrier. */
+	CarrierTimer timer(int carrierId) {
+		return dispatchers.timer(carrierId);
+	}
+
+	/**
+	 * Returns the timers of the carrier a mailbox thread of this carrier runs on,
+	 * or null if the scheduler does not keep mailbox threads on their carrier. A
+	 * mailbox thread publishes it, so that a timer for the same carrier skips the
+	 * queues.
+	 */
+	CarrierTimer mailboxThreadTimer(int carrierId) {
+		return dispatchers.mailboxThreadTimer(carrierId);
+	}
+
+	/**
+	 * Returns the timers for a caller that has no target carrier, a pool. A mailbox
+	 * thread that has bound a wheel of this system gets that wheel, and arms with
+	 * no queue. A wheel of another system in the same JVM does not count. Any other
+	 * caller arms through an inbox anyway, so it gets a wheel chosen from its
+	 * thread id: the same thread always gets the same wheel, and the callers spread
+	 * over the carriers.
+	 */
+	CarrierTimer timerForCaller() {
+		CarrierTimer marked = CarrierTimer.callerCarrier();
+		if (marked != null && marked.belongsTo(this)) {
+			return marked;
+		}
+		long threadId = Thread.currentThread().threadId();
+		return dispatchers.timer((int) Math.floorMod(threadId, (long) dispatchers.carrierCount()));
+	}
+
+	/**
+	 * Hands a delayed tell to {@code wheel}. After shutdown the returned future is
+	 * already cancelled and nothing is sent.
+	 */
+	ScheduledFuture<?> scheduleTell(CarrierTimer wheel, ActorRef target, Message message, ActorRef sender, long delay,
+			TimeUnit unit) {
+		Objects.requireNonNull(unit, "unit");
+		return schedule(wheel, target, message, sender, delay, 0L, unit, () -> false);
+	}
+
+	/**
+	 * Hands a periodic tell to {@code wheel}. The timer cancels itself once
+	 * {@code targetStopped} says so. The period is capped like the delay.
+	 */
+	ScheduledFuture<?> scheduleTellAtFixedRate(CarrierTimer wheel, ActorRef target, Message message, ActorRef sender,
+			long initialDelay, long period, TimeUnit unit, BooleanSupplier targetStopped) {
+		Objects.requireNonNull(unit, "unit");
+		if (period <= 0) {
+			throw new IllegalArgumentException("period must be positive: " + period);
+		}
+		return schedule(wheel, target, message, sender, initialDelay, cappedNanos(period, unit), unit, targetStopped);
+	}
+
+	/**
+	 * Never negative, and small enough that adding it to a clock cannot overflow.
+	 */
+	private static long cappedNanos(long amount, TimeUnit unit) {
+		return Math.min(Math.max(0L, unit.toNanos(amount)), Long.MAX_VALUE / 4);
+	}
+
+	private ScheduledFuture<?> schedule(CarrierTimer wheel, ActorRef target, Message message, ActorRef sender,
+			long delay, long periodNanos, TimeUnit unit, BooleanSupplier targetStopped) {
+		Objects.requireNonNull(message, "message");
+		long deadline = System.nanoTime() + cappedNanos(delay, unit);
+		Timer timer = new Timer(target, message, sender, deadline, Math.max(periodNanos, 0L), targetStopped, wheel);
+		if (isShuttingDown()) {
+			timer.discard();
+		} else {
+			wheel.schedule(timer);
+		}
+		return timer;
 	}
 
 	/**
@@ -319,9 +398,9 @@ final class ActorRuntime {
 	 * Spawns a root actor: resolves {@code options}' placement (defaulting to
 	 * {@link Placement#roundRobin()}) through
 	 * {@link #dispatcherFor(Placement, ActorCell)}, registers it, adds it to
-	 * {@link #roots()}, and starts its first burst ({@code preStart} is the first
-	 * envelope). {@code DefaultActorSystem}'s {@code spawn} methods are exactly
-	 * this one call, and never implement any of it a second time.
+	 * {@link #roots()}, and starts its first mailbox thread ({@code preStart} is
+	 * the first envelope). {@code DefaultActorSystem}'s {@code spawn} methods are
+	 * exactly this one call, and never implement any of it a second time.
 	 *
 	 * <p>
 	 * A spawn that races {@link #beginShutdown()} closely enough to pass the
@@ -392,8 +471,8 @@ final class ActorRuntime {
 	 * already created are started and immediately stopped, so they run their own
 	 * cascade and unregister, and the original failure is rethrown to the caller.
 	 * Starting them first is load-bearing: a cell that is stopped without ever
-	 * having been started owns no burst to run that cascade, and would sit in the
-	 * registry forever, wedging {@code awaitTermination}.
+	 * having been started owns no mailbox thread to run that cascade, and would sit
+	 * in the registry forever, wedging {@code awaitTermination}.
 	 *
 	 * @param name
 	 *            the pool's (or the single actor's) simple name, validated here
@@ -491,8 +570,8 @@ final class ActorRuntime {
 
 	/**
 	 * Starts a cell only to stop it immediately — the cleanup a partially created
-	 * pool needs. The start is what gives the cell the burst that runs its own stop
-	 * cascade and finally unregisters it; {@code beginStop} alone on a
+	 * pool needs. The start is what gives the cell the mailbox thread that runs its
+	 * own stop cascade and finally unregisters it; {@code beginStop} alone on a
 	 * never-started cell would leave it registered forever.
 	 */
 	private static void startThenStop(ActorCell cell) {
@@ -522,9 +601,9 @@ final class ActorRuntime {
 	/**
 	 * Wraps {@code raw} into the counting factory an {@code ActorContext} hands out
 	 * as {@code vThreadFactory()} — and that {@code ActorCell.start()} uses for the
-	 * bursts themselves: {@code newThread(r)} counts one unit of in-flight work
-	 * from the moment the thread is created — not from when it starts running —
-	 * until {@code r} finishes.
+	 * mailbox threads themselves: {@code newThread(r)} counts one unit of in-flight
+	 * work from the moment the thread is created — not from when it starts running
+	 * — until {@code r} finishes.
 	 *
 	 * <p>
 	 * Two consequences worth stating plainly, since neither is enforced by this

@@ -34,7 +34,7 @@ import io.github.pderop.looma.Message;
 import io.github.pderop.looma.Placement;
 import io.github.pderop.looma.SpawnOptions;
 import io.github.pderop.looma.SupervisionStrategy;
-import io.github.pderop.looma.spi.MailboxQueue;
+import io.github.pderop.looma.spi.MpscQueue;
 
 /**
  * One actor's whole state: its POJO instance, its mailbox, its place in the
@@ -47,12 +47,13 @@ import io.github.pderop.looma.spi.MailboxQueue;
  * An actor has a virtual thread only while it has envelopes to run.
  * {@code tell} offers an envelope and counts it in {@link #pending}. When the
  * count goes from 0 to 1, it starts a virtual thread from its dispatcher's
- * burst factory: a <em>burst</em>. The burst runs the envelopes until the count
+ * factory: the <em>mailbox thread</em>. It runs the envelopes until the count
  * is back to 0, then ends. An idle actor therefore holds no virtual thread, and
  * no stack. Serialization is the count itself: only the {@code tell} that takes
- * it from 0 starts a burst, so two bursts never run at once. Virtual threads
- * are not time-sliced, and a burst never yields: an actor whose mailbox never
- * empties holds its carrier for as long as it keeps receiving.
+ * it from 0 starts a mailbox thread, so two mailbox threads never run at once.
+ * Virtual threads are not time-sliced, and a mailbox thread never yields: an
+ * actor whose mailbox never empties holds its carrier for as long as it keeps
+ * receiving.
  *
  * <p>
  * The first {@code preStart} and the final {@code postStop} are threaded
@@ -60,7 +61,7 @@ import io.github.pderop.looma.spi.MailboxQueue;
  * lifecycle envelopes}: this is what guarantees {@code preStart} always
  * completes before the first message and that a graceful stop can never run
  * concurrently with a message being delivered. A restart's hooks need no
- * envelope: they run in the burst that caught the failure, between two
+ * envelope: they run in the mailbox thread that caught the failure, between two
  * messages.
  */
 final class ActorCell implements ActorContext {
@@ -91,8 +92,8 @@ final class ActorCell implements ActorContext {
 		TERMINATING,
 
 		/**
-		 * Fully stopped and unregistered. A burst no longer runs envelopes once it
-		 * observes this.
+		 * Fully stopped and unregistered. A mailbox thread no longer runs envelopes
+		 * once it observes this.
 		 */
 		STOPPED
 	}
@@ -122,7 +123,7 @@ final class ActorCell implements ActorContext {
 	 */
 	private final SupervisionStrategy explicitStrategy;
 
-	private final MailboxQueue<Envelope> mailbox;
+	private final MpscQueue<Envelope> mailbox;
 
 	private final AtomicReference<State> state = new AtomicReference<>(State.STARTING);
 
@@ -130,10 +131,10 @@ final class ActorCell implements ActorContext {
 	 * Guards the one-time transition from "draining finished" to actually running
 	 * the stop cascade (stopping every child, then scheduling {@code postStop}).
 	 * More than one caller can observe "{@link State#TERMINATING}, mailbox empty"
-	 * for the same cell — the burst that just finished the last message, and a
-	 * completion callback chained from a sibling event, for instance — and only the
-	 * first one through this compare-and-set may proceed; a second run would stop
-	 * every child a second time and run {@code postStop} twice.
+	 * for the same cell — the mailbox thread that just finished the last message,
+	 * and a completion callback chained from a sibling event, for instance — and
+	 * only the first one through this compare-and-set may proceed; a second run
+	 * would stop every child a second time and run {@code postStop} twice.
 	 */
 	private final AtomicBoolean cascadeStarted = new AtomicBoolean();
 
@@ -149,21 +150,30 @@ final class ActorCell implements ActorContext {
 
 	private final ActorRefImpl self;
 
-	/** The name of this actor's bursts, built once rather than at every burst. */
-	private final String burstName;
-
 	/**
-	 * The factory of this actor's bursts, counted as in-flight work, built once
-	 * rather than at every burst.
+	 * The name of this actor's mailbox threads, built once rather than for every
+	 * mailbox thread.
 	 */
-	private final ThreadFactory burstFactory;
+	private final String mailboxThreadName;
 
 	/**
-	 * The envelopes offered and not yet counted down by a burst. A {@code tell}
-	 * that takes it from 0 to 1 starts a burst; the burst ends when it counts it
-	 * back to 0. It starts at 1, a count that {@link #start()} holds: a
-	 * {@code tell} before {@link #start()} only offers, and the first burst,
-	 * started by {@link #start()}, runs it.
+	 * The factory of this actor's mailbox threads, counted as in-flight work, built
+	 * once rather than for every mailbox thread.
+	 */
+	private final ThreadFactory mailboxThreadFactory;
+
+	/**
+	 * The body of a mailbox thread, built once rather than for every mailbox
+	 * thread.
+	 */
+	private final Runnable runEnvelopes = this::runEnvelopes;
+
+	/**
+	 * The envelopes offered and not yet counted down by a mailbox thread. A
+	 * {@code tell} that takes it from 0 to 1 starts a mailbox thread; the mailbox
+	 * thread ends when it counts it back to 0. It starts at 1, a count that
+	 * {@link #start()} holds: a {@code tell} before {@link #start()} only offers,
+	 * and the first mailbox thread, started by {@link #start()}, runs it.
 	 */
 	private final AtomicInteger pending = new AtomicInteger(1);
 
@@ -183,7 +193,8 @@ final class ActorCell implements ActorContext {
 	 *            the strategy supplied at spawn time, or {@code null} to use the
 	 *            instance's own
 	 * @param dispatcher
-	 *            where this cell's bursts and extra virtual threads are placed
+	 *            where this cell's mailbox threads and extra virtual threads are
+	 *            placed
 	 * @param runtime
 	 *            the shared engine state this cell's actor system was built with
 	 */
@@ -196,15 +207,15 @@ final class ActorCell implements ActorContext {
 		this.explicitStrategy = explicitStrategy;
 		this.dispatcher = dispatcher;
 		this.runtime = runtime;
-		this.mailbox = runtime.mailboxQueueFactory().create();
+		this.mailbox = runtime.mpscQueueFactory().create();
 		Actor first = factory.get();
 		if (first == null) {
 			throw new IllegalStateException("actor factory returned null for " + path);
 		}
 		this.actor = first;
 		this.self = new ActorRefImpl(this);
-		this.burstName = "looma-" + path;
-		this.burstFactory = runtime.countedThreadFactory(dispatcher.loopThreadFactory());
+		this.mailboxThreadName = "looma-" + path;
+		this.mailboxThreadFactory = runtime.countedThreadFactory(dispatcher.mailboxThreadFactory());
 	}
 
 	// ================================================================
@@ -224,13 +235,13 @@ final class ActorCell implements ActorContext {
 	}
 
 	/**
-	 * Returns this cell's dispatcher — where its bursts and the threads from
-	 * {@link #vThreadFactory()} come from. {@link ActorRuntime}'s
+	 * Returns this cell's dispatcher — where its mailbox threads and the threads
+	 * from {@link #vThreadFactory()} come from. {@link ActorRuntime}'s
 	 * {@code homeCarrierIdOf} reaches it through {@link ActorRefImpl#cell()} to
 	 * resolve an actor's home carrier. A child spawned with
 	 * {@link Placement#inherit()} inherits this cell's
 	 * {@link ActorDispatcher#carrierId() carrier id}, not this dispatcher instance
-	 * — every actor has its own bursts; inherit is home-carrier only.
+	 * — every actor has its own mailbox threads; inherit is home-carrier only.
 	 */
 	public ActorDispatcher dispatcher() {
 		return dispatcher;
@@ -313,7 +324,7 @@ final class ActorCell implements ActorContext {
 	 * Creates and registers a new cell — a root actor when {@code parent} is
 	 * {@code null}, a child otherwise — and leaves it not yet running: the caller
 	 * finishes registering it and then calls {@link #start()}, which enqueues
-	 * {@code preStart} and starts the first burst, so {@code preStart} is
+	 * {@code preStart} and starts the first mailbox thread, so {@code preStart} is
 	 * guaranteed to run before this cell's first message even if no message is ever
 	 * sent.
 	 *
@@ -329,10 +340,10 @@ final class ActorCell implements ActorContext {
 	 * @param parent
 	 *            the parent cell, or {@code null} for a root actor
 	 * @param dispatcher
-	 *            where the new cell's bursts and extra virtual threads are placed —
-	 *            already resolved from the caller's {@link Placement} through
-	 *            {@link ActorRuntime#dispatcherFor(Placement, ActorCell)} before
-	 *            this method is called
+	 *            where the new cell's mailbox threads and extra virtual threads are
+	 *            placed — already resolved from the caller's {@link Placement}
+	 *            through {@link ActorRuntime#dispatcherFor(Placement, ActorCell)}
+	 *            before this method is called
 	 * @param runtime
 	 *            the shared engine state the new cell is registered into
 	 * @throws IllegalArgumentException
@@ -377,7 +388,7 @@ final class ActorCell implements ActorContext {
 	}
 
 	/**
-	 * Enqueues this cell's {@code preStart} and starts its first burst.
+	 * Enqueues this cell's {@code preStart} and starts its first mailbox thread.
 	 *
 	 * <p>
 	 * Separate from {@link #createCell} on purpose. {@code preStart} may fail, and
@@ -390,33 +401,34 @@ final class ActorCell implements ActorContext {
 	 * therefore register the cell fully, then call this.
 	 *
 	 * <p>
-	 * The first burst starts here, with the count that {@link #pending} holds from
-	 * construction: it runs every envelope offered so far, {@code preStart} among
-	 * them.
+	 * The first mailbox thread starts here, with the count that {@link #pending}
+	 * holds from construction: it runs every envelope offered so far,
+	 * {@code preStart} among them.
 	 */
 	void start() {
 		enqueue(Envelope.lifecycle(this::runPreStart));
-		startBurst();
+		startMailboxThread();
 	}
 
 	/**
-	 * Starts a burst, from this actor's burst factory, so on its home carrier. Each
-	 * burst is counted as in-flight work through
+	 * Starts a mailbox thread, from this actor's mailbox thread factory, so on its
+	 * home carrier. Each mailbox thread is counted as in-flight work through
 	 * {@link ActorRuntime#countedThreadFactory(ThreadFactory)}.
 	 *
 	 * <p>
-	 * If the JVM cannot start the thread, out of memory for instance, the burst is
-	 * no longer counted, and the error goes to the caller. This actor then runs
-	 * nothing more: its count stays above zero, so no later {@code tell} starts a
-	 * burst.
+	 * If the JVM cannot start the thread, out of memory for instance, the mailbox
+	 * thread is no longer counted, and the error goes to the caller. This actor
+	 * then runs nothing more: its count stays above zero, so no later {@code tell}
+	 * starts a mailbox thread.
 	 */
-	private void startBurst() {
-		Thread burst = burstFactory.newThread(this::runBurst);
+	private void startMailboxThread() {
+		Thread thread = mailboxThreadFactory.newThread(this::drainMailbox);
 		try {
-			burst.start();
+			thread.start();
 		} catch (Throwable error) {
 			runtime.notStarted();
-			LOG.log(Level.ERROR, () -> "actor " + path + " could not start a burst; it runs nothing more", error);
+			LOG.log(Level.ERROR, () -> "actor " + path + " could not start a mailbox thread; it runs nothing more",
+					error);
 			throw error;
 		}
 	}
@@ -500,12 +512,13 @@ final class ActorCell implements ActorContext {
 	}
 
 	// ================================================================
-	// Mailbox and bursts
+	// Mailbox and mailbox threads
 	// ================================================================
 
 	/**
-	 * Enqueues {@code envelope}, and starts a burst if none is running, unless
-	 * {@code envelope} carries a message and this cell is no longer accepting them.
+	 * Enqueues {@code envelope}, and starts a mailbox thread if none is running,
+	 * unless {@code envelope} carries a message and this cell is no longer
+	 * accepting them.
 	 *
 	 * <p>
 	 * A lifecycle envelope is exempt from that check: it is what runs this very
@@ -513,9 +526,9 @@ final class ActorCell implements ActorContext {
 	 * regardless of {@link #state}.
 	 *
 	 * <p>
-	 * The envelope is offered before it is counted, so a burst that counts it
-	 * always finds it. A {@code tell} that lands while a burst runs only adds to
-	 * the count, and that burst runs it before it ends.
+	 * The envelope is offered before it is counted, so a mailbox thread that counts
+	 * it always finds it. A {@code tell} that lands while a mailbox thread runs
+	 * only adds to the count, and that mailbox thread runs it before it ends.
 	 *
 	 * @return whether the envelope was accepted: {@code false} for a message this
 	 *         cell no longer accepts
@@ -529,27 +542,41 @@ final class ActorCell implements ActorContext {
 		}
 		mailbox.offer(envelope);
 		if (pending.getAndIncrement() == 0) {
-			startBurst();
+			startMailboxThread();
 		}
 		return true;
 	}
 
 	/**
-	 * One burst: runs one envelope per count of {@link #pending}, until the count
-	 * is back to 0, then ends. The count that {@link #start()} holds finds no
-	 * envelope of its own. Once this cell is {@link State#STOPPED}, the envelopes
-	 * are only counted down, not run. A throwing envelope does not end the burst —
-	 * {@link #runEnvelope} already contains every failure.
+	 * One mailbox thread: runs one envelope per count of {@link #pending}, until
+	 * the count is back to 0, then ends. The count that {@link #start()} holds
+	 * finds no envelope of its own. Once this cell is {@link State#STOPPED}, the
+	 * envelopes are only counted down, not run. A throwing envelope does not end
+	 * the mailbox thread — {@link #runEnvelope} already contains every failure.
 	 * {@link Thread#interrupted()} is cleared after every envelope.
 	 *
 	 * <p>
 	 * When the count is back to 0 and this cell is {@link State#TERMINATING}, its
-	 * mailbox holds no more message: the burst then starts the cascade. If a
-	 * {@code tell} has already started the next burst, that burst starts the
-	 * cascade when it ends, after its envelopes, as a single thread would.
+	 * mailbox holds no more message: the mailbox thread then starts the cascade. If
+	 * a {@code tell} has already started the next mailbox thread, that mailbox
+	 * thread starts the cascade when it ends, after its envelopes, as a single
+	 * thread would.
+	 *
+	 * <p>
+	 * Once the wheel of its carrier has started, a mailbox thread binds that wheel,
+	 * so that its timers for this carrier skip the queues.
 	 */
-	private void runBurst() {
-		Thread.currentThread().setName(burstName);
+	private void drainMailbox() {
+		CarrierTimer carrierTimer = runtime.mailboxThreadTimer(dispatcher.carrierId());
+		if (carrierTimer == null || !carrierTimer.isStarted()) {
+			runEnvelopes();
+		} else {
+			CarrierTimer.runOnCarrier(carrierTimer, runEnvelopes);
+		}
+	}
+
+	private void runEnvelopes() {
+		Thread.currentThread().setName(mailboxThreadName);
 		do {
 			if (state.get() != State.STOPPED) {
 				Envelope envelope = mailbox.poll();
@@ -622,15 +649,15 @@ final class ActorCell implements ActorContext {
 	/**
 	 * Begins the graceful cascading stop protocol on this cell: idempotent (a
 	 * second call, or a call on an already-terminating or already-stopped cell, is
-	 * a silent no-op) and — critically — starts a burst unconditionally, even when
-	 * its mailbox is already empty and no burst runs.
+	 * a silent no-op) and — critically — starts a mailbox thread unconditionally,
+	 * even when its mailbox is already empty and no mailbox thread runs.
 	 *
 	 * <p>
 	 * That unconditional kick is not an edge case: stopping an <em>idle</em> actor
 	 * is the common case, and without it nothing would ever notice the state
-	 * change, since a burst only starts for an envelope that is actually queued.
-	 * Enqueuing a (no-op) lifecycle envelope here is what starts one, so its end
-	 * observes {@link State#TERMINATING} and proceeds to
+	 * change, since a mailbox thread only starts for an envelope that is actually
+	 * queued. Enqueuing a (no-op) lifecycle envelope here is what starts one, so
+	 * its end observes {@link State#TERMINATING} and proceeds to
 	 * {@link #tryFinishDraining()}.
 	 */
 	void beginStop() {
@@ -684,8 +711,8 @@ final class ActorCell implements ActorContext {
 	 * thread — that is how a parent's
 	 * {@code CompletableFuture.allOf(childrenTerminated)} cascade in
 	 * {@link #tryFinishDraining()} advances when this cell is the last child to
-	 * finish. Later bursts observe {@link State#STOPPED} and run nothing; there is
-	 * no dispatcher to release.
+	 * finish. Later mailbox threads observe {@link State#STOPPED} and run nothing;
+	 * there is no dispatcher to release.
 	 */
 	private void runFinalStop() {
 		try {
@@ -721,7 +748,7 @@ final class ActorCell implements ActorContext {
 	 * already caught it), not merely {@code RuntimeException}:
 	 * {@link Actor#onReceive} declares {@code throws Exception}, and an
 	 * {@link Error} deserves the same supervision treatment as any other failure
-	 * rather than a silent end of the burst.
+	 * rather than a silent end of the mailbox thread.
 	 */
 	private void handleFailure(Throwable error, Message message) {
 		if (isTerminatingOrStopped()) {
@@ -746,13 +773,14 @@ final class ActorCell implements ActorContext {
 	/**
 	 * Restarts this cell in place: runs {@code preRestart} on the failing instance,
 	 * obtains a fresh one from {@link #factory}, and runs {@code postRestart} on it
-	 * — all synchronously, inside the burst that caught the failure.
+	 * — all synchronously, inside the mailbox thread that caught the failure.
 	 *
 	 * <p>
-	 * Deliberately does not start a second burst: the same burst keeps draining.
-	 * The failed message is discarded, not retried; the pending mailbox resumes on
-	 * the new instance through the normal path. Children are left running,
-	 * untouched — unlike Akka, which stops them, and chosen here for simplicity.
+	 * Deliberately does not start a second mailbox thread: the same mailbox thread
+	 * keeps draining. The failed message is discarded, not retried; the pending
+	 * mailbox resumes on the new instance through the normal path. Children are
+	 * left running, untouched — unlike Akka, which stops them, and chosen here for
+	 * simplicity.
 	 *
 	 * <p>
 	 * <b>The consequence, for callers:</b> an actor that spawns its children in

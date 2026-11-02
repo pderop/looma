@@ -13,13 +13,14 @@
  */
 package io.github.pderop.looma;
 
+import java.time.Duration;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import io.github.pderop.looma.impl.DefaultActorSystem;
 import io.github.pderop.looma.spi.ActorScheduler;
-import io.github.pderop.looma.spi.MailboxQueueFactory;
+import io.github.pderop.looma.spi.MpscQueueFactory;
 
 /**
  * The root of an actor hierarchy: spawns root actors, resolves paths, and
@@ -29,7 +30,7 @@ import io.github.pderop.looma.spi.MailboxQueueFactory;
  * One implementation of this interface ships in this project, and
  * {@link #builder()} is the only way to reach it — a caller never names an
  * implementation type. It always runs the identical actor engine (spawn,
- * hierarchy, one virtual thread per burst of messages, supervision,
+ * hierarchy, a virtual thread per actor while it has messages, supervision,
  * {@code ask}, graceful stop). What varies is which
  * {@code io.github.pderop.looma.spi.ActorScheduler} supplies the factories that
  * start those threads — two ship in this project: a carrier-affine one,
@@ -69,8 +70,9 @@ public interface ActorSystem {
 	 * discovering whatever the JVM flags installed.
 	 * {@link #scheduler(ActorScheduler)} bypasses both and hands the system an
 	 * instance: what a test injecting a specific scheduler needs, and what an
-	 * application should not do. {@link #mailboxQueueFactory} is orthogonal: it
-	 * does not choose a scheduler, only the per-actor envelope queue.
+	 * application should not do. {@link #mpscQueueFactory} is orthogonal: it does
+	 * not choose a scheduler, only the queues: the per-actor envelope queue and the
+	 * timer queues.
 	 */
 	interface Builder {
 
@@ -116,11 +118,25 @@ public interface ActorSystem {
 		Builder carriers(Carriers carriers);
 
 		/**
-		 * Sets the factory that creates one mailbox queue per actor. When unset, each
-		 * actor gets a {@code ConcurrentLinkedQueue}. Not discovered through
-		 * {@code ServiceLoader}.
+		 * Sets the factory that provides every MPSC queue of the system. Today these
+		 * are the actor mailboxes and the timer queues. When unset, each queue is a
+		 * {@code ConcurrentLinkedQueue}. Each queue must be unbounded: the engine never
+		 * expects an offer to fail. Not discovered through {@code ServiceLoader}.
 		 */
-		Builder mailboxQueueFactory(MailboxQueueFactory mailboxQueueFactory);
+		Builder mpscQueueFactory(MpscQueueFactory mpscQueueFactory);
+
+		/**
+		 * Sets the tick of the timer wheels. A delayed tell fires with a precision of
+		 * one tick when the carrier is free. It never fires early. The default is 10
+		 * ms, the minimum 1 ms: while it holds a timer, a wheel wakes at every tick on
+		 * the carrier of its actors.
+		 *
+		 * @throws NullPointerException
+		 *             if {@code tick} is {@code null}
+		 * @throws IllegalArgumentException
+		 *             if {@code tick} is shorter than 1 ms
+		 */
+		Builder timerTick(Duration tick);
 
 		/** Builds the system. */
 		ActorSystem build();
@@ -141,8 +157,9 @@ public interface ActorSystem {
 
 	/**
 	 * Returns the id of the carrier {@code ref}'s actor calls home — the one its
-	 * bursts and its {@link ActorContext#vThreadFactory()} threads are placed on.
-	 * Always {@code 0} under a single-carrier scheduler such as the JDK builtin.
+	 * mailbox threads and its {@link ActorContext#vThreadFactory()} threads are
+	 * placed on. Always {@code 0} under a single-carrier scheduler such as the JDK
+	 * builtin.
 	 *
 	 * <p>
 	 * The home carrier is the only <em>deterministic</em> thing about an actor's
@@ -218,11 +235,11 @@ public interface ActorSystem {
 	 * many root actors from the same {@code factory}, named {@code name-0} …
 	 * {@code name-(poolSize-1)}, and one returned {@link ActorRef} that spreads
 	 * every {@code tell} and {@code ask} over them round-robin. Each is an ordinary
-	 * actor with its own mailbox, its own bursts and its own supervision, so one of
-	 * them blocking on I/O inside {@code onReceive} stalls only its own mailbox and
-	 * the pool keeps serving — which is what a pool is for. There is no router
-	 * actor in between: a message pays the same single hop it would to a lone
-	 * actor.
+	 * actor with its own mailbox, its own mailbox threads and its own supervision,
+	 * so one of them blocking on I/O inside {@code onReceive} stalls only its own
+	 * mailbox and the pool keeps serving — which is what a pool is for. There is no
+	 * router actor in between: a message pays the same single hop it would to a
+	 * lone actor.
 	 *
 	 * <pre>{@code
 	 * // four actors, load-balanced behind one reference
@@ -349,7 +366,7 @@ public interface ActorSystem {
 	 * work finished — or the timeout elapses.
 	 *
 	 * <p>
-	 * "In-flight work" means every burst and every thread created through
+	 * "In-flight work" means every mailbox thread and every thread created through
 	 * {@link ActorContext#vThreadFactory()} that has not yet finished, regardless
 	 * of which scheduler is in use: this is what keeps a caller from observing
 	 * termination while user-spawned blocking work is still running.

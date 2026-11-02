@@ -30,10 +30,10 @@
  * scheduler it wraps, {@code core}'s own JDK builtin scheduler is used instead.
  *
  * <p>
- * {@link io.github.pderop.looma.spi.MailboxQueue} /
- * {@link io.github.pderop.looma.spi.MailboxQueueFactory} are <em>not</em>
+ * {@link io.github.pderop.looma.spi.MpscQueue} /
+ * {@link io.github.pderop.looma.spi.MpscQueueFactory} are <em>not</em>
  * ServiceLoader-discovered: the default is always a
  * {@code ConcurrentLinkedQueue}, and a replacement is set with
- * {@code ActorSystem.Builder#mailboxQueueFactory}.
+ * {@code ActorSystem.Builder#mpscQueueFactory}.
  */
 package io.github.pderop.looma.spi;

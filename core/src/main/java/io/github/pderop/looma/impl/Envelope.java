@@ -31,10 +31,10 @@ import io.github.pderop.looma.Message;
  *
  * <p>
  * The lifecycle case is what lets an actor's first start and its final stop
- * share the exact same mailbox and bursts as an ordinary message (a restart
- * runs in the burst that caught the failure, and needs no envelope): a
- * lifecycle step is simply queued like any envelope and runs with the same
- * exclusivity guarantee. This is also why the two kinds must stay
+ * share the exact same mailbox and mailbox threads as an ordinary message (a
+ * restart runs in the mailbox thread that caught the failure, and needs no
+ * envelope): a lifecycle step is simply queued like any envelope and runs with
+ * the same exclusivity guarantee. This is also why the two kinds must stay
  * distinguishable at the point a cell decides whether to accept an incoming
  * envelope at all: an actor that is winding down stops accepting new messages,
  * but it must keep accepting (and must never drop) the lifecycle envelope that

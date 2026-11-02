@@ -39,7 +39,7 @@ final class LinuxThreads {
 	/** Runs {@code task} on a thread of {@code carrier}, and waits. */
 	static <T> T call(ActorScheduler scheduler, int carrier, Callable<T> task) throws Exception {
 		CompletableFuture<T> result = new CompletableFuture<>();
-		scheduler.actorLoopFactory(carrier).newThread(() -> {
+		scheduler.mailboxThreadFactory(carrier).newThread(() -> {
 			try {
 				result.complete(task.call());
 			} catch (Throwable e) {

@@ -19,16 +19,18 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * How an {@code ActorSystem} places actors on carriers: how many there are,
- * which virtual-thread factories create an actor's bursts and its offloaded
- * threads for a given carrier, and what the calling thread's own placement is.
+ * which virtual-thread factories create an actor's mailbox threads and its
+ * offloaded threads for a given carrier, and what the calling thread's own
+ * placement is.
  *
  * <p>
  * This interface is deliberately small. The engine no longer dispatches
- * per-message tasks onto an {@code Executor}: an actor runs on a virtual
- * thread, a burst, only while it has messages, started from
- * {@link #actorLoopFactory(int)}. Resist growing this interface. A concern that
- * is not placement or topology (topology probing aside, which is
- * diagnostics-only, see below) belongs somewhere else, never here.
+ * per-message tasks onto an {@code Executor}: an actor runs on a virtual thread
+ * only while it has messages, its mailbox thread. The first message of an empty
+ * mailbox starts it, from {@link #mailboxThreadFactory(int)}. Resist growing
+ * this interface. A concern that is not placement or topology (topology probing
+ * aside, which is diagnostics-only, see below) belongs somewhere else, never
+ * here.
  *
  * <p>
  * <b>{@link #pinnedCpu()} is current-thread; {@link #clusterOf(int)} is
@@ -69,20 +71,33 @@ public interface ActorScheduler extends AutoCloseable {
 
 	/**
 	 * Returns the factory that creates every extra virtual thread an actor hands
-	 * out through {@code ActorContext.vThreadFactory()} — and its bursts too,
-	 * unless {@link #actorLoopFactory(int)} says otherwise — placed on carrier
-	 * {@code index}, {@code 0 <= index < carrierCount()}.
+	 * out through {@code ActorContext.vThreadFactory()} — and its mailbox threads
+	 * too, unless {@link #mailboxThreadFactory(int)} says otherwise — placed on
+	 * carrier {@code index}, {@code 0 <= index < carrierCount()}.
 	 */
 	ThreadFactory vThreadFactory(int index);
 
 	/**
-	 * Returns the factory that creates an actor's bursts on carrier {@code index}.
-	 * By default the same as {@link #vThreadFactory(int)}; a scheduler that keeps
-	 * the bursts on their home carrier while letting the other virtual threads be
-	 * stolen returns a different one.
+	 * Returns the factory that creates an actor's mailbox threads on carrier
+	 * {@code index}. By default the same as {@link #vThreadFactory(int)}; a
+	 * scheduler that keeps the mailbox threads on their home carrier while letting
+	 * the other virtual threads be stolen returns a different one.
 	 */
-	default ThreadFactory actorLoopFactory(int index) {
+	default ThreadFactory mailboxThreadFactory(int index) {
 		return vThreadFactory(index);
+	}
+
+	/**
+	 * Returns {@code true} only if every thread from
+	 * {@link #mailboxThreadFactory(int)} for carrier {@code i} runs on carrier
+	 * {@code i} alone, one at a time with the other threads of that carrier from
+	 * the same factory, and is never stolen. These are the mailbox threads. Looma
+	 * also starts the timer thread of carrier {@code i} from this factory. Then
+	 * Looma may touch per-carrier state from those threads without a lock. Default
+	 * {@code false}.
+	 */
+	default boolean mailboxThreadsStayOnCarrier() {
+		return false;
 	}
 
 	/**
@@ -127,11 +142,11 @@ public interface ActorScheduler extends AutoCloseable {
 	 * <p>
 	 * The non-blocking contract is load-bearing, not stylistic:
 	 * {@code ActorRuntime.maybeFireAfterTermination()} — the caller that reaches
-	 * this method — runs from inside the burst whose completion just made the
-	 * in-flight counter hit zero, i.e. <b>on that actor's virtual thread</b>.
+	 * this method — runs from inside the mailbox thread whose completion just made
+	 * the in-flight counter hit zero, i.e. <b>on that actor's virtual thread</b>.
 	 * Blocking here would risk that thread waiting on its own exit. Waiting for the
 	 * release to complete is {@link #awaitClosed}'s job, called separately from
-	 * {@code ActorSystem.awaitTermination}, off the burst.
+	 * {@code ActorSystem.awaitTermination}, off the mailbox thread.
 	 */
 	@Override
 	void close();

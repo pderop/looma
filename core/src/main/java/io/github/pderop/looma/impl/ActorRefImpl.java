@@ -15,6 +15,8 @@ package io.github.pderop.looma.impl;
 
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 import io.github.pderop.looma.ActorRef;
 import io.github.pderop.looma.Message;
@@ -60,6 +62,28 @@ final class ActorRefImpl implements ActorRef {
 	public void tell(Message message, ActorRef sender) {
 		Objects.requireNonNull(message, "message");
 		cell.enqueue(Envelope.message(message, sender));
+	}
+
+	/**
+	 * Hands the timer to the wheel of this actor's home carrier, so the message is
+	 * sent from that carrier.
+	 */
+	@Override
+	public ScheduledFuture<?> tell(Message message, ActorRef sender, long delay, TimeUnit unit) {
+		ActorRuntime runtime = cell.runtime();
+		return runtime.scheduleTell(runtime.timer(cell.dispatcher().carrierId()), this, message, sender, delay, unit);
+	}
+
+	/**
+	 * Like the delayed tell, but repeating. It cancels itself once this actor is
+	 * terminating or stopped.
+	 */
+	@Override
+	public ScheduledFuture<?> tellAtFixedRate(Message message, ActorRef sender, long initialDelay, long period,
+			TimeUnit unit) {
+		ActorRuntime runtime = cell.runtime();
+		return runtime.scheduleTellAtFixedRate(runtime.timer(cell.dispatcher().carrierId()), this, message, sender,
+				initialDelay, period, unit, cell::isTerminatingOrStopped);
 	}
 
 	/**
