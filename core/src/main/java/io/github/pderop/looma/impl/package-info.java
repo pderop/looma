@@ -14,9 +14,9 @@
 
 /**
  * The one {@link io.github.pderop.looma.ActorSystem} implementation and the
- * actor engine it drives: the mailbox, one virtual thread per burst, the
- * hierarchy, supervision, {@code ask}, and the graceful cascading stop — all
- * implemented exactly once, and parameterised only by the small
+ * actor engine it drives: the mailbox, a mailbox thread per actor while it has
+ * messages, the hierarchy, supervision, {@code ask}, and the graceful cascading
+ * stop — all implemented exactly once, and parameterised only by the small
  * {@code ActorDispatcher} that {@code DefaultActorSystem} wraps an
  * {@link io.github.pderop.looma.spi.ActorScheduler} into.
  *

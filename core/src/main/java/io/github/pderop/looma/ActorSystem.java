@@ -30,7 +30,7 @@ import io.github.pderop.looma.spi.MpscQueueFactory;
  * One implementation of this interface ships in this project, and
  * {@link #builder()} is the only way to reach it — a caller never names an
  * implementation type. It always runs the identical actor engine (spawn,
- * hierarchy, one virtual thread per burst of messages, supervision,
+ * hierarchy, a virtual thread per actor while it has messages, supervision,
  * {@code ask}, graceful stop). What varies is which
  * {@code io.github.pderop.looma.spi.ActorScheduler} supplies the factories that
  * start those threads — two ship in this project: a carrier-affine one,
@@ -155,8 +155,9 @@ public interface ActorSystem {
 
 	/**
 	 * Returns the id of the carrier {@code ref}'s actor calls home — the one its
-	 * bursts and its {@link ActorContext#vThreadFactory()} threads are placed on.
-	 * Always {@code 0} under a single-carrier scheduler such as the JDK builtin.
+	 * mailbox threads and its {@link ActorContext#vThreadFactory()} threads are
+	 * placed on. Always {@code 0} under a single-carrier scheduler such as the JDK
+	 * builtin.
 	 *
 	 * <p>
 	 * The home carrier is the only <em>deterministic</em> thing about an actor's
@@ -232,11 +233,11 @@ public interface ActorSystem {
 	 * many root actors from the same {@code factory}, named {@code name-0} …
 	 * {@code name-(poolSize-1)}, and one returned {@link ActorRef} that spreads
 	 * every {@code tell} and {@code ask} over them round-robin. Each is an ordinary
-	 * actor with its own mailbox, its own bursts and its own supervision, so one of
-	 * them blocking on I/O inside {@code onReceive} stalls only its own mailbox and
-	 * the pool keeps serving — which is what a pool is for. There is no router
-	 * actor in between: a message pays the same single hop it would to a lone
-	 * actor.
+	 * actor with its own mailbox, its own mailbox threads and its own supervision,
+	 * so one of them blocking on I/O inside {@code onReceive} stalls only its own
+	 * mailbox and the pool keeps serving — which is what a pool is for. There is no
+	 * router actor in between: a message pays the same single hop it would to a
+	 * lone actor.
 	 *
 	 * <pre>{@code
 	 * // four actors, load-balanced behind one reference
@@ -363,7 +364,7 @@ public interface ActorSystem {
 	 * work finished — or the timeout elapses.
 	 *
 	 * <p>
-	 * "In-flight work" means every burst and every thread created through
+	 * "In-flight work" means every mailbox thread and every thread created through
 	 * {@link ActorContext#vThreadFactory()} that has not yet finished, regardless
 	 * of which scheduler is in use: this is what keeps a caller from observing
 	 * termination while user-spawned blocking work is still running.

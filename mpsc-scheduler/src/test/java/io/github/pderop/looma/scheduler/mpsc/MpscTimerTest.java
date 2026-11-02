@@ -121,12 +121,12 @@ class MpscTimerTest extends TimerTest {
 		}
 	}
 
-	/** A burst on a carrier whose wheel never started binds nothing. */
+	/** A mailbox thread on a carrier whose wheel never started binds nothing. */
 	@Test
 	void aCarrierWithoutTimersBindsNothing() throws Exception {
 		CompletableFuture<Boolean> bound = new CompletableFuture<>();
 		ActorRef ref = system().spawn("plain",
-				() -> (message, sender, context) -> bound.complete(TimerProbe.burstBindsItsCarrier()),
+				() -> (message, sender, context) -> bound.complete(TimerProbe.mailboxThreadBindsItsCarrier()),
 				SpawnOptions.placedOn(Placement.carrier(0)));
 		ref.tell(new Ping());
 
@@ -135,7 +135,7 @@ class MpscTimerTest extends TimerTest {
 
 	/**
 	 * Starts the wheel of carrier 0 with one timer, and waits until it is sent: an
-	 * actor spawned there afterwards binds that wheel in each burst.
+	 * actor spawned there afterwards binds that wheel in each mailbox thread.
 	 */
 	private void startWheelOfCarrierZero() throws Exception {
 		CompletableFuture<Void> fired = new CompletableFuture<>();

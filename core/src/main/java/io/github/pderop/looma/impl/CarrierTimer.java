@@ -30,10 +30,10 @@ import io.github.pderop.looma.spi.MpscQueue;
  * thread that runs the wheel.
  * <p>
  * Most callers of {@link #schedule} put the timer into the inbox, and the wheel
- * thread moves it into the wheel. A burst that has bound this carrier, and runs
- * on it, adds the timer to the wheel directly. That is safe only if the bursts
- * and the wheel thread of a carrier run on one OS thread, one at a time. The
- * scheduler promises this with
+ * thread moves it into the wheel. A mailbox thread that has bound this carrier,
+ * and runs on it, adds the timer to the wheel directly. That is safe only if
+ * the mailbox threads and the wheel thread of a carrier run on one OS thread,
+ * one at a time. The scheduler promises this with
  * {@code ActorScheduler.mailboxThreadsStayOnCarrier()}. A wheel call never
  * blocks, so it never lets another thread in.
  * <p>
@@ -56,11 +56,12 @@ final class CarrierTimer {
 	private static final int STOPPED = 2;
 
 	/**
-	 * The timers of the carrier the calling actor burst runs on. A burst binds it
-	 * for its whole run, only on a scheduler that keeps bursts on their carrier,
-	 * and only once the wheel of that carrier has started. A thread forked in a
-	 * {@code StructuredTaskScope} inherits it, and may run elsewhere: so the
-	 * binding counts only for the thread of the burst, see {@link #burstThread}.
+	 * The timers of the carrier the calling mailbox thread runs on. A mailbox
+	 * thread binds it for its whole run, only on a scheduler that keeps mailbox
+	 * threads on their carrier, and only once the wheel of that carrier has
+	 * started. A thread forked in a {@code StructuredTaskScope} inherits it, and
+	 * may run elsewhere: so the binding counts only for the mailbox thread itself,
+	 * see {@link #mailboxThread}.
 	 */
 	private static final ScopedValue<CarrierTimer> CALLER = ScopedValue.newInstance();
 
@@ -80,12 +81,13 @@ final class CarrierTimer {
 	private volatile boolean sleeping;
 	private volatile Thread wheelThread;
 	/**
-	 * The thread of the burst that bound this carrier last, or null. Only bursts of
-	 * this carrier write it, and they run on one OS thread. A thread compares it to
-	 * itself: only the burst that wrote it can match, never a forked thread. When
-	 * two bursts interleave, the first one no longer matches, and takes the queues.
+	 * The mailbox thread that bound this carrier last, or null. Only mailbox
+	 * threads of this carrier write it, and they run on one OS thread. A thread
+	 * compares it to itself: only the mailbox thread that wrote it can match, never
+	 * a forked thread. When two mailbox threads interleave, the first one no longer
+	 * matches, and takes the queues.
 	 */
-	private Thread burstThread;
+	private Thread mailboxThread;
 
 	/** A wheel of no system, for tests. */
 	CarrierTimer(ThreadFactory rawFactory, MpscQueue<Timer> inbox, MpscQueue<Timer> cancelled, long tickNanos) {
@@ -105,30 +107,33 @@ final class CarrierTimer {
 		this.wheel = new TimerWheel(System.nanoTime(), tickNanos);
 	}
 
-	/** Runs a burst that runs on {@code timer}'s carrier. */
-	static void runOnCarrier(CarrierTimer timer, Runnable burst) {
+	/**
+	 * Runs the messages of a mailbox thread of {@code timer}'s carrier, marked as
+	 * local to that wheel.
+	 */
+	static void runOnCarrier(CarrierTimer timer, Runnable messages) {
 		Thread self = Thread.currentThread();
-		timer.burstThread = self;
+		timer.mailboxThread = self;
 		try {
-			ScopedValue.where(CALLER, timer).run(burst);
+			ScopedValue.where(CALLER, timer).run(messages);
 		} finally {
-			if (timer.burstThread == self) {
-				timer.burstThread = null;
+			if (timer.mailboxThread == self) {
+				timer.mailboxThread = null;
 			}
 		}
 	}
 
 	/**
-	 * The timers of the carrier the calling burst runs on, or null. Null also for a
-	 * thread that inherited the binding, and for a burst another burst has
-	 * overtaken.
+	 * The timers of the carrier the calling mailbox thread runs on, or null. Null
+	 * also for a thread that inherited the binding, and for a mailbox thread
+	 * another mailbox thread has overtaken.
 	 */
 	static CarrierTimer callerCarrier() {
 		if (!CALLER.isBound()) {
 			return null;
 		}
 		CarrierTimer timer = CALLER.get();
-		return timer.burstThread == Thread.currentThread() ? timer : null;
+		return timer.mailboxThread == Thread.currentThread() ? timer : null;
 	}
 
 	/** True if this wheel belongs to {@code system}. */
@@ -138,8 +143,8 @@ final class CarrierTimer {
 
 	/**
 	 * True once a timer has started the wheel thread, until stop. Before that, a
-	 * burst does not bind its carrier: the first timer of the carrier takes the
-	 * inbox. Without timers a burst pays this one volatile read.
+	 * mailbox thread does not bind its carrier: the first timer of the carrier
+	 * takes the inbox. Without timers a mailbox thread pays this one volatile read.
 	 */
 	boolean isStarted() {
 		return state.get() == RUNNING;

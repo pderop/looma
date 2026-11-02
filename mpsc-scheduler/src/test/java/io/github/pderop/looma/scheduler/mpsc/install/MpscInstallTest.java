@@ -234,7 +234,7 @@ class MpscInstallTest {
 	 */
 	private static int[] onCarrier(ActorScheduler scheduler, int carrier) throws Exception {
 		CompletableFuture<int[]> seen = new CompletableFuture<>();
-		scheduler.actorLoopFactory(carrier)
+		scheduler.mailboxThreadFactory(carrier)
 				.newThread(
 						() -> seen.complete(new int[]{scheduler.currentCarrierId(), scheduler.pinnedCpu().orElse(-1)}))
 				.start();
@@ -247,7 +247,7 @@ class MpscInstallTest {
 	private static void readOnCarrier(ActorScheduler scheduler, int carrier) throws Exception {
 		try (ServerSocket server = new ServerSocket(0, 1, InetAddress.getLoopbackAddress())) {
 			CompletableFuture<Void> done = new CompletableFuture<>();
-			scheduler.actorLoopFactory(carrier).newThread(() -> {
+			scheduler.mailboxThreadFactory(carrier).newThread(() -> {
 				try (Socket socket = new Socket(server.getInetAddress(), server.getLocalPort())) {
 					socket.setSoTimeout(50);
 					socket.getInputStream().read();

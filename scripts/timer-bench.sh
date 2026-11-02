@@ -19,9 +19,10 @@ Usage: scripts/timer-bench.sh [options]
 Each run is one JVM, pinned with taskset. It warms up, then measures. perf counts the threads of
 the JVM during the measure, minus 2 s at each end. The benchmark is open loop: every millisecond
 a driver thread tells one driver actor per carrier how many timers to arm, at the rate asked,
-whatever happens to them. Each driver actor arms its timers in its burst, on its carrier. The runs, for each rate: the wheel with
-each tick, then the executor of the JDK. Then the guard scenario (arm a 30 s timer, cancel it at
-once): the wheel with the tick of --sentinel-tick, then the executor, at the rate of --sentinel.
+whatever happens to them. Each driver actor arms its timers while it handles that message, on
+its carrier. The runs, for each rate: the wheel with each tick, then the executor of the JDK.
+Then the guard scenario (arm a 30 s timer, cancel it at once): the wheel with the tick of
+--sentinel-tick, then the executor, at the rate of --sentinel.
 
 Default duration: 8 runs of about 25 s each, so about 3.5 minutes.
 
@@ -197,18 +198,18 @@ done
 {
 	echo "## Results"
 	echo
-	echo "The benchmark is open loop. A driver thread works on a fixed schedule, one slot every"
-	echo "millisecond: it tells one driver actor per carrier how many timers to arm, at the rate asked."
-	echo "Each driver actor arms its timers in its burst, on its carrier. A late timer does not slow the"
-	echo "next ones, so the rate asked is the same in every mode. rate asked, armed/s, received/s, missed driver slots, cpu and lateness: the"
-	echo "console of the run, runs/<run>.out. armed/s: timers armed per second in the measure. received/s:"
-	echo "timers that arrived (expire scenario only; 0 for the guards, which are cancelled). missed driver"
-	echo "slots: slots that started a whole slot late or more, out of all slots. kept up: NO when received"
-	echo "is under 99% of the rate asked (armed for the guards) or missed slots are over 1%. cpu: the CPU"
-	echo "time of the whole process over the measure, divided by the timers armed in it. This is the main"
-	echo "number. Lateness: from the time a timer was due to the time its target got the message, in us."
-	echo "Context switches and CPU ms: runs/<run>-stat.csv, perf stat --per-thread over $WINDOW s of the"
-	echo "measure, summed over the threads named in the column."
+	echo "The benchmark is open loop. A driver thread works on a fixed schedule, one slot every millisecond:"
+	echo "it tells one driver actor per carrier how many timers to arm, at the rate asked. Each driver actor"
+	echo "arms its timers while it handles that message, on its carrier. A late timer does not slow the next"
+	echo "ones, so the rate asked is the same in every mode. rate asked, armed/s, received/s, missed driver"
+	echo "slots, cpu and lateness: the console of the run, runs/<run>.out. armed/s: timers armed per second"
+	echo "in the measure. received/s: timers that arrived (expire scenario only; 0 for the guards, which are"
+	echo "cancelled). missed driver slots: slots that started a whole slot late or more, out of all slots."
+	echo "kept up: NO when received is under 99% of the rate asked (armed for the guards) or missed slots"
+	echo "are over 1%. cpu: the CPU time of the whole process over the measure, divided by the timers armed"
+	echo "in it. This is the main number. Lateness: from the time a timer was due to the time its target got"
+	echo "the message, in us. Context switches and CPU ms: runs/<run>-stat.csv, perf stat --per-thread over"
+	echo "$WINDOW s of the measure, summed over the threads named in the column."
 	echo
 	echo "- unparker ms: the VirtualThread-unparker threads of the JVM. They wake the wheel thread at each"
 	echo "  tick. About 0 in mode jdk: it is a control."

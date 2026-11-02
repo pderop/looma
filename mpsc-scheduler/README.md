@@ -9,8 +9,8 @@ says what the scheduler does.
   the carriers and pins them.
 - `MpscPool`: one `Thread.Affinity` per carrier, found by starting a virtual thread with each one
   and reading the name of its carrier.
-- `MpscActorScheduler`: an actor's bursts get the affinity of its carrier, its offloaded threads
-  get none.
+- `MpscActorScheduler`: an actor's mailbox threads get the affinity of its carrier, its offloaded
+  threads get none.
 - `LinuxCpus`: pins a carrier to one CPU with `sched_setaffinity`, and groups the CPUs by L3.
 - `AllCpus`: makes threads that run on every CPU, even when an actor starts them. It is the
   factory of the common pool, and of `platformThreadFactory()`.

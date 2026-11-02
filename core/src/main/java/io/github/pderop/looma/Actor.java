@@ -27,11 +27,12 @@ import java.util.Optional;
  * with it, and never concurrently with each other.
  *
  * <p>
- * An actor runs on a virtual thread only while it has messages: a burst. A
- * burst runs the messages and lifecycle hooks one at a time, and ends when the
- * mailbox is empty; the next {@code tell} starts a new one. See
- * {@link ActorContext#vThreadFactory()} for the per-scheduler affinity
- * guarantee of extra threads created for blocking work.
+ * An actor runs on a virtual thread only while it has messages: its mailbox
+ * thread. The first message of an empty mailbox starts it. It runs the messages
+ * and lifecycle hooks one at a time, and ends when the mailbox is empty; the
+ * next {@code tell} starts a new one. See {@link ActorContext#vThreadFactory()}
+ * for the per-scheduler affinity guarantee of extra threads created for
+ * blocking work.
  *
  * <p>
  * An actor's {@link ActorContext} is threaded through every hook's parameter
@@ -75,7 +76,7 @@ public interface Actor {
 	 * time gets the same context.
 	 *
 	 * <p>
-	 * Runs in the actor's first burst, through the same mailbox as
+	 * Runs in the actor's first mailbox thread, through the same mailbox as
 	 * {@link #onReceive}, so it is guaranteed to complete before any message is
 	 * delivered — even if no message is ever sent.
 	 *
@@ -145,13 +146,13 @@ public interface Actor {
 	 * Handles a single message.
 	 *
 	 * <p>
-	 * Blocking here <em>parks</em> this actor's burst — the carrier is released and
-	 * the machine keeps working — but the burst is the only consumer of this
-	 * actor's mailbox. So the actor answers nothing until the block returns;
-	 * neighbours, having bursts of their own, are unaffected. Block when there is
-	 * nothing else this actor could usefully do meanwhile; offload through
-	 * {@link ActorContext#vThreadFactory()} when it must stay responsive to its own
-	 * next message.
+	 * Blocking here <em>parks</em> this actor's mailbox thread — the carrier is
+	 * released and the machine keeps working — but the mailbox thread is the only
+	 * consumer of this actor's mailbox. So the actor answers nothing until the
+	 * block returns; neighbours, having mailbox threads of their own, are
+	 * unaffected. Block when there is nothing else this actor could usefully do
+	 * meanwhile; offload through {@link ActorContext#vThreadFactory()} when it must
+	 * stay responsive to its own next message.
 	 *
 	 * <p>
 	 * A <em>pin</em> (a JNI or foreign-function call on the stack) is the case that
@@ -177,7 +178,8 @@ public interface Actor {
 	 *             {@link #supervisorStrategy()}. The engine catches
 	 *             {@link Throwable}, not just {@code RuntimeException}: a checked
 	 *             exception or an {@link Error} goes through supervision exactly
-	 *             like a runtime one, rather than silently ending the actor's burst
+	 *             like a runtime one, rather than silently ending the actor's
+	 *             mailbox thread
 	 */
 	void onReceive(Message message, ActorRef sender, ActorContext context) throws Exception;
 

@@ -69,6 +69,10 @@ removes.
 
 ## 2. Writing an actor
 
+An actor runs on a virtual thread only while it has messages: its **mailbox thread**. The first
+message of an empty mailbox starts it; it runs the messages one at a time, then ends once the
+mailbox is empty. The next message starts a new one.
+
 ```java
 public class Account implements Actor {
 
@@ -114,7 +118,7 @@ public class Connection implements Actor {
 
     @Override
     public void preStart(ActorContext context) throws Exception {
-        socket = open();               // runs in this actor's first burst, before the first message
+        socket = open();               // runs in this actor's first mailbox thread, before the first message
     }
 
     @Override
@@ -239,7 +243,7 @@ receiving actor replies exactly as it would to anyone else:
 case AccountMessage.GetBalance ignored -> sender.tell(new Balance(balance), context.self());
 ```
 
-The reply completes the future on the thread of the actor that replies, inside its burst. A stage
+The reply completes the future on the mailbox thread of the actor that replies. A stage
 chained with `thenApply` or `thenAccept` runs there too, and that actor handles nothing else
 meanwhile: chain slow work with `thenApplyAsync`.
 
@@ -313,9 +317,10 @@ An actor runs on a virtual thread, so blocking inside `onReceive` **parks** it: 
 back, no OS thread is consumed, and the rest of the machine keeps working. Blocking is not a
 correctness problem here, and it is not a scheduler problem.
 
-What it costs is narrower: **an actor's burst is the only consumer of its own mailbox**, so for as
-long as `onReceive` sits inside a blocking call, that actor answers nothing. Neighbours have bursts
-of their own and keep running; this actor's messages queue up behind a thread that is only waiting.
+What it costs is narrower: **an actor's mailbox thread is the only consumer of its own mailbox**, so
+for as long as `onReceive` sits inside a blocking call, that actor answers nothing. Neighbours have
+mailbox threads of their own and keep running; this actor's messages queue up behind a thread that
+is only waiting.
 
 So:
 
@@ -386,11 +391,11 @@ the install covers.
 ### Pinning is the case that is genuinely bad
 
 A **native frame** on the stack — a JNI call, or a foreign-function downcall — cannot unmount the
-virtual thread at all, so it holds its **carrier** rather than merely its own burst. Under the JDK
-builtin scheduler that costs one `ForkJoinPool` worker and the pool compensates by growing; under
-`affine` the pool is fixed and there is nothing to grow, so every actor that calls that
-carrier home stops until the pin is released. Keep native calls out of an actor's bursts and out of
-anything forked from them.
+virtual thread at all, so it holds its **carrier** rather than merely its own mailbox thread. Under
+the JDK builtin scheduler that costs one `ForkJoinPool` worker and the pool compensates by growing;
+under `affine` the pool is fixed and there is nothing to grow, so every actor that calls that
+carrier home stops until the pin is released. Keep native calls out of an actor's mailbox threads
+and out of anything forked from them.
 
 `synchronized` is **not** a pin on the JDKs this project targets: [JEP 491](https://openjdk.org/jeps/491)
 (JDK 24) unmounts a virtual thread that blocks inside a monitor. `ReentrantLock` is still the better
@@ -538,12 +543,13 @@ system.stop(db);                                     // stops all four
 ActorRef io = context.spawn("io", BlockingIoActor::new, SpawnOptions.pooled(4));
 ```
 
-**The point is blocking work.** Each actor in a pool has its own mailbox and its own bursts, so one
-of them sitting in a blocking call stalls *its* mailbox and nothing else — the other
+**The point is blocking work.** Each actor in a pool has its own mailbox and its own mailbox
+threads, so one of them sitting in a blocking call stalls *its* mailbox and nothing else — the other
 `n-1` keep answering. That is the alternative to `vThreadFactory()` offloading in
 [§6](#6-blocking-work): the actor is free to just block. Note that this needs no spread across
-carriers to work — a virtual thread blocking on I/O unmounts from its carrier rather than holding it,
-so what buys the responsiveness is the `n` mailboxes. Spreading matters when the routees *compute*.
+carriers to work — a virtual thread blocking on I/O unmounts from its carrier rather than holding
+it, so what buys the responsiveness is the `n` mailboxes. Spreading matters when the routees
+*compute*.
 
 **Each actor of a pool is an ordinary actor.** It is registered at its own path (`/db-0` … `/db-3`),
 it shows up in its parent's `children()`, it gets its own instance from the factory, it is supervised
@@ -644,8 +650,9 @@ back up to the roots. Once it has begun, `ask` fails at once with `IllegalStateE
 descendant when the cascade reaches it, after its parent's mailbox has drained.
 
 `awaitTermination` returns `true` once every actor is unregistered **and** every unit of in-flight
-work has finished — the actors' bursts *and* every thread created through `vThreadFactory()`. That is what
-keeps a caller from observing termination while user-spawned blocking work is still running.
+work has finished — the actors' mailbox threads *and* every thread created through
+`vThreadFactory()`. That is what keeps a caller from observing termination while user-spawned
+blocking work is still running.
 
 Every scheduler drains identically. None owns a pool to stop: the JDK builtin owns nothing, and the
 carriers of `affine` are a permanent JVM-wide pool created during
@@ -692,11 +699,11 @@ The wheel's virtual thread starts at the first timer of its carrier. A carrier t
 timer has no such thread. While its wheel holds a timer, even one far in the future, the thread
 wakes at every tick. [`schedulers.md`](schedulers.md#the-wheel-thread) says more.
 
-An actor runs its messages on a virtual thread that starts when its mailbox gets a message, and
-ends when the mailbox is empty again. That thread checks the wheel of its carrier when it starts:
+An actor's mailbox thread ([§2](#2-writing-an-actor)) checks the wheel of its carrier when it
+starts:
 
 ```
-the actor's thread starts
+the mailbox thread starts
   -> the wheel of its carrier runs ?    no  -> its timers go through the queues
                                               (a carrier without timers pays one volatile read)
                                         yes -> its timers for that wheel go straight into it

@@ -22,9 +22,10 @@ import io.github.pderop.looma.spi.ActorScheduler;
  * The {@link ActorScheduler} view over the JDK's MPSC scheduler.
  *
  * <p>
- * An actor's bursts are created with the affinity of its carrier: they run
- * there, and are never stolen. The threads an actor offloads have no affinity:
- * they start on the actor's carrier, and an idle carrier may steal them.
+ * An actor's mailbox threads are created with the affinity of its carrier: they
+ * run there, and are never stolen. The threads an actor offloads have no
+ * affinity: they start on the actor's carrier, and an idle carrier may steal
+ * them.
  *
  * <p>
  * This class owns nothing: the carriers belong to the JDK. {@link #close()}
@@ -34,21 +35,21 @@ final class MpscActorScheduler implements ActorScheduler {
 
 	private final MpscPool pool;
 
-	private final ThreadFactory[] loopFactories;
+	private final ThreadFactory[] mailboxThreadFactories;
 
 	private final ThreadFactory offloadFactory = Thread.ofVirtual().factory();
 
 	MpscActorScheduler(MpscPool pool) {
 		this.pool = pool;
-		this.loopFactories = new ThreadFactory[pool.count()];
-		for (int i = 0; i < loopFactories.length; i++) {
-			loopFactories[i] = Thread.ofVirtual().affinity(pool.home(i)).factory();
+		this.mailboxThreadFactories = new ThreadFactory[pool.count()];
+		for (int i = 0; i < mailboxThreadFactories.length; i++) {
+			mailboxThreadFactories[i] = Thread.ofVirtual().affinity(pool.home(i)).factory();
 		}
 	}
 
 	@Override
 	public int carrierCount() {
-		return loopFactories.length;
+		return mailboxThreadFactories.length;
 	}
 
 	@Override
@@ -57,8 +58,8 @@ final class MpscActorScheduler implements ActorScheduler {
 	}
 
 	@Override
-	public ThreadFactory actorLoopFactory(int index) {
-		return loopFactories[index];
+	public ThreadFactory mailboxThreadFactory(int index) {
+		return mailboxThreadFactories[index];
 	}
 
 	@Override
@@ -70,8 +71,8 @@ final class MpscActorScheduler implements ActorScheduler {
 	 * {@inheritDoc}
 	 *
 	 * <p>
-	 * The carrier the calling thread runs on. For an actor's burst, it is its home:
-	 * it never moves.
+	 * The carrier the calling thread runs on. For an actor's mailbox thread, it is
+	 * its home: it never moves.
 	 */
 	@Override
 	public int currentCarrierId() {
@@ -91,7 +92,7 @@ final class MpscActorScheduler implements ActorScheduler {
 
 	@Override
 	public OptionalInt clusterOf(int index) {
-		if (index < 0 || index >= loopFactories.length) {
+		if (index < 0 || index >= mailboxThreadFactories.length) {
 			return OptionalInt.empty();
 		}
 		int cluster = pool.cluster(index);

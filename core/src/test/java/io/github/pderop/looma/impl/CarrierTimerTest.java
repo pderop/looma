@@ -307,12 +307,12 @@ class CarrierTimerTest {
 	}
 
 	/**
-	 * Two bursts of one carrier interleave: the first one parks, the second one
-	 * binds and ends. The first one no longer matches, so its arm takes the inbox.
-	 * A forked thread, which never binds, is in the same case.
+	 * Two mailbox threads of one carrier interleave: the first one parks, the
+	 * second one binds and ends. The first one no longer matches, so its arm takes
+	 * the inbox. A forked thread, which never binds, is in the same case.
 	 */
 	@Test
-	void aBurstOvertakenByAnotherUsesTheQueues() throws Exception {
+	void aMailboxThreadOvertakenByAnotherUsesTheQueues() throws Exception {
 		MpscQueue<Timer> inbox = unboundedInbox();
 		CarrierTimer carrierTimer = new CarrierTimer(IDLE, inbox, unboundedInbox(), TICK);
 		Timer timer = timerIn(carrierTimer, new CountingRef(), 60_000, 0);

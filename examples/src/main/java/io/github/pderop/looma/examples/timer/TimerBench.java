@@ -49,7 +49,8 @@ import io.github.pderop.looma.Message;
  * rate asked is the same in every mode.
  *
  * <p>
- * There is one driver actor per carrier. It arms its timers in one burst.
+ * There is one driver actor per carrier. It arms its timers while it handles
+ * one message.
  *
  * <ul>
  * <li>{@code -Dtimer.mode=wheel}: {@code target.tell(message, delay, unit)}.

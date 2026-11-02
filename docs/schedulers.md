@@ -1,12 +1,13 @@
 # The schedulers, and the engine
 
-One actor engine. An actor runs on a virtual thread only while it has messages: one virtual
-thread per burst. The scheduler picks the carrier. Looma ships two:
+One actor engine. An actor runs on a virtual thread only while it has messages: its **mailbox
+thread**. The first message of an empty mailbox starts it; it runs the messages one at a time, and
+ends once the mailbox is empty. The scheduler picks the carrier. Looma ships two:
 
 | In code | What it is | Carriers pinned | An actor moves | An idle carrier steals |
 | --- | --- | --- | --- | --- |
 | `Carriers.affine(n)` | the JDK's MPSC scheduler, from [openjdk/loom pull request 227](https://github.com/openjdk/loom/pull/227) | yes, one CPU each | never | the other threads, from any carrier |
-| `Carriers.builtin(n)` | the JDK's default scheduler, a `ForkJoinPool` | no | may, at every burst | anything |
+| `Carriers.builtin(n)` | the JDK's default scheduler, a `ForkJoinPool` | no | may, each time a mailbox thread starts | anything |
 
 - "The other threads": those an actor offloads through `ActorContext.vThreadFactory()`.
 - Pinning: Linux only. Elsewhere the carriers float.
@@ -83,7 +84,7 @@ A provider that fails to link (compiled for a newer JDK) is skipped.
 From the JDK of openjdk/loom pull request 227, a draft on Loom's `fibers` branch. On with
 `jdk.virtualThreadScheduler.useMpsc=true`. Each carrier, `mpsc-carrier-<id>`, has its own queue.
 
-- An actor's bursts have its carrier's `Thread.Affinity`: never stolen.
+- An actor's mailbox threads have its carrier's `Thread.Affinity`: never stolen.
 - Offloaded threads have none: they start on the actor's carrier, and an idle carrier may take them.
 - Pinning: one thread on each carrier calls `sched_setaffinity`, after the JDK's pollers and timers
   started. [What the install does](#what-the-install-does).
@@ -97,12 +98,12 @@ to them.
 
 ```
 carrier-0
-  queue        VTs with an affinity (an actor's bursts)  -> only carrier-0 takes them
-  stealQueue   VTs without one (offloaded threads)       -> carrier-0, or an idle carrier
+  queue        VTs with an affinity (an actor's mailbox threads)  -> only carrier-0 takes them
+  stealQueue   VTs without one (offloaded threads)                -> carrier-0, or an idle carrier
 
 a thread with an affinity  -> the queue of its carrier, at every start and every wake
 a thread without one       -> the stealQueue of the carrier that starts it
-an idle carrier steals     -> from another carrier's stealQueue only: never an actor's burst
+an idle carrier steals     -> from another carrier's stealQueue only: never an actor's mailbox thread
 ```
 
 **The loop of a carrier:**
@@ -208,7 +209,7 @@ ref.tell(msg, 50 ms)
        the timer goes to the inbox of the wheel of carrier-3, the home carrier of ref
        the wheel thread of carrier-3 moves it into its slot
   -> at the deadline the wheel thread calls ref.tell(msg): local to carrier-3
-  -> the envelope goes to the queue of carrier-3, and ref's burst runs there
+  -> the envelope goes to the queue of carrier-3, and ref's mailbox thread runs there
 ```
 
 **A cancel of that timer:**
@@ -227,12 +228,11 @@ No other carrier takes part. A tell to a pool has no single carrier: an actor us
 its own carrier, any other caller a wheel chosen from its thread id. The message may then go to
 a member on another carrier.
 
-An actor runs its messages on a virtual thread that starts when its mailbox gets a message, and
-ends when the mailbox is empty again: the code calls it a burst. On an MPSC carrier that thread
-never leaves its carrier, so it takes the direct paths:
+On an MPSC carrier an actor's mailbox thread never leaves its carrier, so it takes the direct
+paths:
 
 ```
-the actor's thread starts on carrier-3
+the mailbox thread starts on carrier-3
   -> the wheel of carrier-3 runs ?   no  -> one volatile read; its timers go through the queues
                                      yes -> it marks itself local to the wheel of carrier-3 (a ScopedValue)
 an arm or a cancel on the wheel of carrier-3
@@ -287,7 +287,7 @@ The delayScheduler is not made by the pool's factory: that is why step 6 starts 
 
 ## `builtin`: the JDK's default scheduler
 
-- Bursts and offloaded threads: plain `Thread.ofVirtual()`.
+- Mailbox threads and offloaded threads: plain `Thread.ofVirtual()`.
 - Chosen by `carriers(Carriers.builtin(n))`, or when no flag chooses another scheduler. Refused when
   `useMpsc` is set.
 - `carrierCount()` is 1: `Placement.carrier(i)` with `i > 0` throws at spawn.
@@ -320,7 +320,7 @@ The engine is in `io.github.pderop.looma.impl`, once, for both schedulers:
 
 - **`ActorRuntime`** — what one system shares: the path registry, the roots, in-flight accounting,
   shutdown and termination, the mailbox-queue factory.
-- **`ActorCell`** — one actor: mailbox, bursts, hierarchy, lifecycle hooks,
+- **`ActorCell`** — one actor: mailbox, mailbox threads, hierarchy, lifecycle hooks,
   supervision. It implements `ActorContext`.
 - **`ActorRefImpl`** — the reference to a live cell; **`PromiseRef`** — the single-use reply
   channel an `ask` passes as `sender`; **`PoolRef`** — a round-robin fan-out over a pool's actors,
@@ -331,8 +331,8 @@ The engine is in `io.github.pderop.looma.impl`, once, for both schedulers:
 ```
 tell
   1. mailbox.offer(envelope)
-  2. pending.getAndIncrement()   0 -> 1 ?  start a burst (a virtual thread, the carrier's burst factory)
-burst
+  2. pending.getAndIncrement()   0 -> 1 ?  start a mailbox thread (a virtual thread, the carrier's mailbox thread factory)
+mailbox thread
   runs one envelope per count, then ends
 ```
 
@@ -346,14 +346,15 @@ do {
 if (TERMINATING && !cascadeStarted && pending == 0) tryFinishDraining();
 ```
 
-- One burst at a time: only the `tell` from 0 starts one. An actor's fields need no lock.
+- One mailbox thread at a time: only the `tell` from 0 starts one. An actor's fields need no lock.
 - Idle actor: no virtual thread, no stack.
-- A burst never yields. An actor whose mailbox never empties keeps its carrier; the others on it
-  wait. Fairness is a non-goal.
-- Offer, then count: a counted envelope is always there. A `tell` during a burst only counts.
+- A mailbox thread never yields. An actor whose mailbox never empties keeps its carrier; the others
+  on it wait. Fairness is a non-goal.
+- Offer, then count: a counted envelope is always there. A `tell` while the mailbox thread runs only
+  counts.
 - The count starts at 1, held by `start()`: a `tell` before `start()` waits for it. `preStart` is
-  the first envelope, `runFinalStop` the last. A restart keeps the burst and the queue, with a new
-  actor instance.
+  the first envelope, `runFinalStop` the last. A restart keeps the mailbox thread and the queue,
+  with a new actor instance.
 
 ### Shutdown
 
@@ -361,7 +362,7 @@ if (TERMINATING && !cascadeStarted && pending == 0) tryFinishDraining();
 shutdown()
   -> stop every root -> drain each mailbox -> stop the children -> postStop back up
 awaitTermination
-  -> returns when every actor is gone and every burst and vThreadFactory() thread has ended
+  -> returns when every actor is gone and every mailbox thread and vThreadFactory() thread has ended
 ```
 
 No scheduler's `close()` stops anything: the carriers are JVM-wide daemon threads.
@@ -372,7 +373,7 @@ No scheduler's `close()` stops anything: the carriers are JVM-wide daemon thread
 public interface ActorScheduler extends AutoCloseable {
     int carrierCount();                          // builtin: 1 | affine: one per carrier
     ThreadFactory vThreadFactory(int i);         // the threads an actor offloads
-    default ThreadFactory actorLoopFactory(int i) { return vThreadFactory(i); }   // its bursts
+    default ThreadFactory mailboxThreadFactory(int i) { return vThreadFactory(i); }   // its mailbox threads
     default boolean mailboxThreadsStayOnCarrier() { return false; }   // affine: true; they never move
     int currentCarrierId();                      // the calling thread's carrier; builtin: -1
     OptionalInt pinnedCpu();
@@ -383,7 +384,7 @@ public interface ActorScheduler extends AutoCloseable {
 }
 ```
 
-- `mailboxThreadsStayOnCarrier()`: true only if every thread from `actorLoopFactory(i)`, the
+- `mailboxThreadsStayOnCarrier()`: true only if every thread from `mailboxThreadFactory(i)`, the
   threads that run the actors' messages, runs on carrier i alone, one at a time, never stolen.
   Looma then arms and cancels timers on that carrier without a queue.
 - `ActorSchedulerProvider`: creates one, `isAvailable()`, can install itself for `Carriers.Affine`.
@@ -421,7 +422,7 @@ pin (native frame)  -> holds the carrier
 ### Why carrier affinity
 
 An unparked virtual thread may run **anywhere**. An actor is its state, and it starts a new
-burst at every `tell` after an empty mailbox: each one is a chance to move.
+mailbox thread at every `tell` after an empty mailbox: each one is a chance to move.
 
 ```
     ┌── FJP worker 0 ─── CPU 0 ────────────────────────┐

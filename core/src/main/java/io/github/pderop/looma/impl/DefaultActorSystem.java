@@ -49,15 +49,15 @@ import io.github.pderop.looma.spi.MpscQueueFactory;
  * cannot span without a {@code module-info.java}.
  *
  * <p>
- * The actor engine itself — mailboxes, one virtual thread per burst, hierarchy,
- * supervision, {@code ask}, the graceful cascading stop — lives in
- * {@link ActorRuntime} and {@link ActorCell} and never differs between the two
- * schedulers. This class contributes only placement: which carrier an actor
- * lands on, according to whichever {@link ActorScheduler} it was built with.
- * Every actor then starts its bursts from that carrier's
- * {@link ActorScheduler#actorLoopFactory(int)}. It exposes its dispatcher array
- * to {@link ActorRuntime} through the {@link Dispatchers} seam, which is what
- * lets {@link ActorRuntime#dispatcherFor(Placement, ActorCell)} resolve a
+ * The actor engine itself — mailboxes, a mailbox thread per actor while it has
+ * messages, hierarchy, supervision, {@code ask}, the graceful cascading stop —
+ * lives in {@link ActorRuntime} and {@link ActorCell} and never differs between
+ * the two schedulers. This class contributes only placement: which carrier an
+ * actor lands on, according to whichever {@link ActorScheduler} it was built
+ * with. Every actor then starts its mailbox threads from that carrier's
+ * {@link ActorScheduler#mailboxThreadFactory(int)}. It exposes its dispatcher
+ * array to {@link ActorRuntime} through the {@link Dispatchers} seam, which is
+ * what lets {@link ActorRuntime#dispatcherFor(Placement, ActorCell)} resolve a
  * {@link Placement} without this class implementing the engine's own
  * {@code spawn} logic a second time.
  *
@@ -111,7 +111,7 @@ public final class DefaultActorSystem implements ActorSystem {
 	/** One timer per carrier, indexed by carrier id. No thread runs until used. */
 	private final CarrierTimer[] timers;
 
-	/** True when a burst stays on its home carrier. */
+	/** True when a mailbox thread stays on its home carrier. */
 	private final boolean affine;
 
 	private final ActorRuntime runtime;
@@ -128,15 +128,15 @@ public final class DefaultActorSystem implements ActorSystem {
 		this.scheduler = scheduler;
 		this.dispatchers = new CarrierDispatcher[scheduler.carrierCount()];
 		for (int i = 0; i < dispatchers.length; i++) {
-			dispatchers[i] = new CarrierDispatcher(scheduler.vThreadFactory(i), scheduler.actorLoopFactory(i), i);
+			dispatchers[i] = new CarrierDispatcher(scheduler.vThreadFactory(i), scheduler.mailboxThreadFactory(i), i);
 		}
 		this.runtime = new ActorRuntime(new Dispatchers(), mpscQueueFactory, this::afterTermination);
 		this.timers = IntStream
-				.range(0, dispatchers.length).mapToObj(i -> new CarrierTimer(scheduler.actorLoopFactory(i),
+				.range(0, dispatchers.length).mapToObj(i -> new CarrierTimer(scheduler.mailboxThreadFactory(i),
 						mpscQueueFactory.create(), mpscQueueFactory.create(), timerTick.toNanos(), runtime))
 				.toArray(CarrierTimer[]::new);
-		// Only a scheduler that says so gets the local path. Elsewhere the bursts
-		// can move between threads, so the wheel is not touched from a burst.
+		// Only a scheduler that says so gets the local path. Elsewhere the mailbox
+		// threads can move between OS threads, so they do not touch the wheel.
 		this.affine = scheduler.mailboxThreadsStayOnCarrier();
 	}
 
@@ -359,7 +359,7 @@ public final class DefaultActorSystem implements ActorSystem {
 		}
 
 		@Override
-		public CarrierTimer burstTimer(int carrierId) {
+		public CarrierTimer mailboxThreadTimer(int carrierId) {
 			return affine ? timers[carrierId] : null;
 		}
 	}
@@ -369,13 +369,13 @@ public final class DefaultActorSystem implements ActorSystem {
 	// ================================================================
 
 	/**
-	 * Places an actor on one carrier: its bursts, and the threads it creates
-	 * through {@link ActorContext#vThreadFactory()}, come from that carrier's own
-	 * factories.
+	 * Places an actor on one carrier: its mailbox threads, and the threads it
+	 * creates through {@link ActorContext#vThreadFactory()}, come from that
+	 * carrier's own factories.
 	 *
 	 * <p>
 	 * The factories are cached at construction, from
-	 * {@link ActorScheduler#actorLoopFactory(int)} and
+	 * {@link ActorScheduler#mailboxThreadFactory(int)} and
 	 * {@link ActorScheduler#vThreadFactory(int)} — nothing is looked up on the
 	 * spawn path beyond the array index.
 	 */
@@ -383,13 +383,13 @@ public final class DefaultActorSystem implements ActorSystem {
 
 		private final ThreadFactory vThreadFactory;
 
-		private final ThreadFactory loopThreadFactory;
+		private final ThreadFactory mailboxThreadFactory;
 
 		private final int carrierId;
 
-		private CarrierDispatcher(ThreadFactory vThreadFactory, ThreadFactory loopThreadFactory, int carrierId) {
+		private CarrierDispatcher(ThreadFactory vThreadFactory, ThreadFactory mailboxThreadFactory, int carrierId) {
 			this.vThreadFactory = vThreadFactory;
-			this.loopThreadFactory = loopThreadFactory;
+			this.mailboxThreadFactory = mailboxThreadFactory;
 			this.carrierId = carrierId;
 		}
 
@@ -399,8 +399,8 @@ public final class DefaultActorSystem implements ActorSystem {
 		}
 
 		@Override
-		public ThreadFactory loopThreadFactory() {
-			return loopThreadFactory;
+		public ThreadFactory mailboxThreadFactory() {
+			return mailboxThreadFactory;
 		}
 
 		@Override

@@ -52,17 +52,18 @@ interface ActorDispatcher {
 	 * <p>
 	 * Callers never see this factory directly — {@link ActorRuntime} wraps it into
 	 * the one an {@code ActorContext} hands out, so that every thread it creates is
-	 * counted as in-flight work. The bursts are started through the same wrapping.
+	 * counted as in-flight work. The mailbox threads are started through the same
+	 * wrapping.
 	 */
 	ThreadFactory vThreadFactory();
 
 	/**
-	 * Returns the raw factory for this carrier's bursts: the same as
-	 * {@link #vThreadFactory()} unless the scheduler keeps bursts apart (see
-	 * {@code ActorScheduler.actorLoopFactory}). Wrapped by {@link ActorRuntime}
-	 * like the other one.
+	 * Returns the raw factory for this carrier's mailbox threads: the same as
+	 * {@link #vThreadFactory()} unless the scheduler keeps mailbox threads apart
+	 * (see {@code ActorScheduler.mailboxThreadFactory}). Wrapped by
+	 * {@link ActorRuntime} like the other one.
 	 */
-	default ThreadFactory loopThreadFactory() {
+	default ThreadFactory mailboxThreadFactory() {
 		return vThreadFactory();
 	}
 

@@ -29,8 +29,8 @@ public final class TimerProbe {
 		return ((DefaultActorSystem) system).pendingTimers();
 	}
 
-	/** True if the calling burst has bound the wheel of its carrier. */
-	public static boolean burstBindsItsCarrier() {
+	/** True if the calling mailbox thread has bound the wheel of its carrier. */
+	public static boolean mailboxThreadBindsItsCarrier() {
 		return CarrierTimer.callerCarrier() != null;
 	}
 }

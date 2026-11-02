@@ -15,16 +15,16 @@ package io.github.pderop.looma.spi;
 
 /**
  * A queue with many producers and one consumer. The engine makes one for each
- * actor mailbox: {@code tell} from any thread offers, and that actor's burst
- * polls, one at a time. It also makes the queues of the timers, where any
- * thread offers and one timer thread polls.
+ * actor mailbox: {@code tell} from any thread offers, and that actor's mailbox
+ * thread polls, one at a time. It also makes the queues of the timers, where
+ * any thread offers and one timer thread polls.
  *
  * <p>
  * Implementations must be at least MPSC and must never block in {@link #offer}
- * or {@link #poll}. On an empty queue the burst ends, and the next {@code tell}
- * starts a new one; a blocking {@code take()} here would hold a virtual thread
- * that should have ended. Size, iterators and draining helpers are deliberately
- * absent — the engine does not need them.
+ * or {@link #poll}. On an empty queue the mailbox thread ends, and the next
+ * {@code tell} starts a new one; a blocking {@code take()} here would hold a
+ * virtual thread that should have ended. Size, iterators and draining helpers
+ * are deliberately absent — the engine does not need them.
  *
  * @param <E>
  *            the element type; the engine uses this for its internal envelope

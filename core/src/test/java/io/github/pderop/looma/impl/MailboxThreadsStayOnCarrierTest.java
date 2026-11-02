@@ -77,8 +77,8 @@ class MailboxThreadsStayOnCarrierTest {
 	}
 
 	/**
-	 * The same scheduler, but it says its bursts stay on carrier 0: the control
-	 * that shows the probe can see a binding.
+	 * The same scheduler, but it says its mailbox threads stay on carrier 0: the
+	 * control that shows the probe can see a binding.
 	 */
 	private static final class StayingScheduler extends FreshFactoryScheduler {
 		@Override
@@ -88,21 +88,22 @@ class MailboxThreadsStayOnCarrierTest {
 	}
 
 	@Test
-	void burstOfFreshFactorySchedulerHasNoCallerCarrier() throws Exception {
-		assertNull(callerCarrierSeenByABurst(new FreshFactoryScheduler()));
+	void mailboxThreadOfFreshFactorySchedulerHasNoCallerCarrier() throws Exception {
+		assertNull(callerCarrierSeenByAMailboxThread(new FreshFactoryScheduler()));
 	}
 
 	@Test
-	void burstOfAStayingSchedulerBindsItsCarrier() throws Exception {
-		assertNotNull(callerCarrierSeenByABurst(new StayingScheduler()));
+	void mailboxThreadOfAStayingSchedulerBindsItsCarrier() throws Exception {
+		assertNotNull(callerCarrierSeenByAMailboxThread(new StayingScheduler()));
 	}
 
 	/**
 	 * Starts the wheel with a timer to a first actor, then asks a second actor,
-	 * spawned after, what its burst sees. Each burst of that actor starts after the
-	 * wheel, so it binds the wheel if the scheduler allows it.
+	 * spawned after, what its mailbox thread sees. Each mailbox thread of that
+	 * actor starts after the wheel, so it binds the wheel if the scheduler allows
+	 * it.
 	 */
-	private static CarrierTimer callerCarrierSeenByABurst(ActorScheduler scheduler) throws Exception {
+	private static CarrierTimer callerCarrierSeenByAMailboxThread(ActorScheduler scheduler) throws Exception {
 		ActorSystem system = ActorSystem.builder().scheduler(scheduler).build();
 		CompletableFuture<CarrierTimer> seen = new CompletableFuture<>();
 		try {

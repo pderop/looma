@@ -24,8 +24,8 @@ package io.github.pderop.looma.impl;
  * carrier <b>id</b> first ({@link ActorRuntime#dispatcherFor}), and only then
  * is that id handed to {@link #dispatcherFor(int)} here — this is the one place
  * that turns a carrier id into the cached factory+id binding every actor on
- * that carrier shares (the bursts are still per-actor; only the factories are
- * shared).
+ * that carrier shares (the mailbox threads are still per-actor; only the
+ * factories are shared).
  *
  * <p>
  * Package-private, and not an SPI: it exists only so that {@link ActorRuntime}
@@ -51,8 +51,8 @@ interface DispatcherSource {
 	/**
 	 * Returns the cached dispatcher for a specific carrier id: that carrier's
 	 * virtual-thread factories and the id itself. Every actor placed on this
-	 * carrier gets the same instance; each still starts its own bursts from those
-	 * factories.
+	 * carrier gets the same instance; each still starts its own mailbox threads
+	 * from those factories.
 	 *
 	 * @param carrierId
 	 *            an id already known to be within {@code [0, carrierCount())} — the
@@ -65,9 +65,10 @@ interface DispatcherSource {
 	CarrierTimer timer(int carrierId);
 
 	/**
-	 * Returns the timers a burst on this carrier publishes, or null when the
-	 * scheduler does not keep bursts on their carrier. Only on a carrier-affine
-	 * scheduler may a burst use the wheel of its carrier without the queues.
+	 * Returns the timers a mailbox thread on this carrier publishes, or null when
+	 * the scheduler does not keep mailbox threads on their carrier. Only on a
+	 * carrier-affine scheduler may a mailbox thread use the wheel of its carrier
+	 * without the queues.
 	 */
-	CarrierTimer burstTimer(int carrierId);
+	CarrierTimer mailboxThreadTimer(int carrierId);
 }

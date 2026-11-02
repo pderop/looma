@@ -59,8 +59,8 @@ package io.github.pderop.looma;
  *
  * <p>
  * <b>{@link #inherit()} inherits the parent's home carrier</b> — the factory
- * that starts the child's own bursts — never a shared run loop. Every actor has
- * bursts of its own.
+ * that starts the child's own mailbox threads — never a shared run loop. Every
+ * actor has mailbox threads of its own.
  */
 public sealed interface Placement {
 

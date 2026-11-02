@@ -130,11 +130,10 @@ public interface ActorRef {
 	 * orTimeout} (or {@code get} with a timeout) if you need one.
 	 *
 	 * <p>
-	 * <b>The reply completes the future on the thread of the actor that
-	 * replies</b>, inside its burst. A stage chained with {@code thenApply} or
-	 * {@code thenAccept} runs there too, and the replying actor handles nothing
-	 * else meanwhile. Chain slow work with {@code thenApplyAsync} or
-	 * {@code thenAcceptAsync} instead.
+	 * <b>The reply completes the future on the mailbox thread of the actor that
+	 * replies</b>. A stage chained with {@code thenApply} or {@code thenAccept}
+	 * runs there too, and the replying actor handles nothing else meanwhile. Chain
+	 * slow work with {@code thenApplyAsync} or {@code thenAcceptAsync} instead.
 	 *
 	 * @param <R>
 	 *            the reply type, inferred from {@code replyType} — so the caller
