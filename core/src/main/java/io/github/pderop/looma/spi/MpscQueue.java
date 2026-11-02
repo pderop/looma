@@ -20,11 +20,11 @@ package io.github.pderop.looma.spi;
  * any thread offers and one timer thread polls.
  *
  * <p>
- * Implementations must be at least MPSC and must never block in {@link #offer}
- * or {@link #poll}. On an empty queue the mailbox thread ends, and the next
- * {@code tell} starts a new one; a blocking {@code take()} here would hold a
- * virtual thread that should have ended. Size, iterators and draining helpers
- * are deliberately absent — the engine does not need them.
+ * Implementations must be at least MPSC, unbounded, and must never block in
+ * {@link #offer} or {@link #poll}. On an empty queue the mailbox thread ends,
+ * and the next {@code tell} starts a new one; a blocking {@code take()} here
+ * would hold a virtual thread that should have ended. Size, iterators and
+ * draining helpers are deliberately absent — the engine does not need them.
  *
  * <p>
  * {@link #offer} must publish as a volatile write does, and {@link #isEmpty}
@@ -41,13 +41,10 @@ package io.github.pderop.looma.spi;
 public interface MpscQueue<E> {
 
 	/**
-	 * Enqueues {@code item}. Never blocks. Must be safe for concurrent callers.
-	 *
-	 * @return {@code true} if {@code item} was accepted; {@code false} only if this
-	 *         implementation is bounded and full — the engine treats that like any
-	 *         other dropped tell
+	 * Enqueues {@code item}. Always accepts it: the queue has no limit. Never
+	 * blocks. Must be safe for concurrent callers.
 	 */
-	boolean offer(E item);
+	void offer(E item);
 
 	/**
 	 * Removes and returns the head, or {@code null} if empty. Never blocks.

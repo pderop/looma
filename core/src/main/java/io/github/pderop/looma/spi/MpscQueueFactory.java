@@ -28,9 +28,9 @@ package io.github.pderop.looma.spi;
  * mailboxes.
  *
  * <p>
- * The returned queue must satisfy {@link MpscQueue}'s MPSC, non-blocking
- * contract. A later JCTools or carrier-MPSC implementation is a different
- * factory, not a change to the engine.
+ * The returned queue must satisfy {@link MpscQueue}'s MPSC, unbounded,
+ * non-blocking contract. A later JCTools or carrier-MPSC implementation is a
+ * different factory, not a change to the engine.
  */
 @FunctionalInterface
 public interface MpscQueueFactory {

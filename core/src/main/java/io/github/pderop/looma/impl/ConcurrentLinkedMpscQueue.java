@@ -28,8 +28,8 @@ final class ConcurrentLinkedMpscQueue<E> implements MpscQueue<E> {
 	private final ConcurrentLinkedQueue<E> queue = new ConcurrentLinkedQueue<>();
 
 	@Override
-	public boolean offer(E item) {
-		return queue.offer(item);
+	public void offer(E item) {
+		queue.offer(item);
 	}
 
 	@Override

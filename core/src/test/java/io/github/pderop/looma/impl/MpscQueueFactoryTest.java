@@ -64,9 +64,9 @@ class MpscQueueFactoryTest {
 				MpscQueue<E> inner = ConcurrentLinkedMpscQueue.factory().create();
 				return new MpscQueue<>() {
 					@Override
-					public boolean offer(E item) {
+					public void offer(E item) {
 						offers.incrementAndGet();
-						return inner.offer(item);
+						inner.offer(item);
 					}
 
 					@Override

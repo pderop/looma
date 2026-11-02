@@ -120,7 +120,8 @@ public interface ActorSystem {
 		/**
 		 * Sets the factory that provides every MPSC queue of the system. Today these
 		 * are the actor mailboxes and the timer queues. When unset, each queue is a
-		 * {@code ConcurrentLinkedQueue}. Not discovered through {@code ServiceLoader}.
+		 * {@code ConcurrentLinkedQueue}. Each queue must be unbounded: the engine never
+		 * expects an offer to fail. Not discovered through {@code ServiceLoader}.
 		 */
 		Builder mpscQueueFactory(MpscQueueFactory mpscQueueFactory);
 

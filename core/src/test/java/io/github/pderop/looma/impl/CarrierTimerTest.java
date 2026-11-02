@@ -26,9 +26,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Handler;
-import java.util.logging.LogRecord;
-import java.util.logging.Logger;
 import java.util.stream.IntStream;
 
 import org.junit.jupiter.api.Test;
@@ -173,32 +170,6 @@ class CarrierTimerTest {
 		CarrierTimer carrierTimer = newCarrierTimer(countingFactory);
 		carrierTimer.stop();
 		carrierTimer.stop();
-		assertEquals(0, threadsStarted.get());
-	}
-
-	@Test
-	void fullInboxCancelsTheTimer() {
-		MpscQueue<Timer> full = new MpscQueue<>() {
-			@Override
-			public boolean offer(Timer item) {
-				return false;
-			}
-
-			@Override
-			public Timer poll() {
-				return null;
-			}
-
-			@Override
-			public boolean isEmpty() {
-				return true;
-			}
-		};
-		CarrierTimer carrierTimer = new CarrierTimer(countingFactory, full, unboundedInbox(), TICK);
-		Timer timer = timerIn(carrierTimer, new CountingRef(), 1, 0);
-		carrierTimer.schedule(timer);
-
-		assertTrue(timer.isCancelled());
 		assertEquals(0, threadsStarted.get());
 	}
 
@@ -472,63 +443,6 @@ class CarrierTimerTest {
 		assertEquals(0, target.tells.get());
 	}
 
-	@Test
-	void aFullInboxWarnsOncePerEpisodeAndCountsTheTimers() {
-		AtomicBoolean accepting = new AtomicBoolean();
-		MpscQueue<Timer> flaky = new MpscQueue<>() {
-			@Override
-			public boolean offer(Timer item) {
-				return accepting.get();
-			}
-
-			@Override
-			public Timer poll() {
-				return null;
-			}
-
-			@Override
-			public boolean isEmpty() {
-				return true;
-			}
-		};
-		CarrierTimer carrierTimer = new CarrierTimer(IDLE, flaky, unboundedInbox(), TICK);
-		Runnable scheduleFive = () -> IntStream.range(0, 5)
-				.forEach(i -> carrierTimer.schedule(timerIn(carrierTimer, new CountingRef(), 1, 0)));
-		AtomicInteger warnings = new AtomicInteger();
-		Logger logger = Logger.getLogger(CarrierTimer.class.getName());
-		Handler counter = new Handler() {
-			@Override
-			public void publish(LogRecord record) {
-				if (record.getMessage().startsWith("timer inbox full")) {
-					warnings.incrementAndGet();
-				}
-			}
-
-			@Override
-			public void flush() {
-			}
-
-			@Override
-			public void close() {
-			}
-		};
-		logger.addHandler(counter);
-		try {
-			scheduleFive.run();
-			assertEquals(1, warnings.get());
-			assertEquals(5, carrierTimer.refusedCount());
-
-			accepting.set(true);
-			carrierTimer.schedule(timerIn(carrierTimer, new CountingRef(), 1, 0));
-			accepting.set(false);
-			scheduleFive.run();
-			assertEquals(2, warnings.get());
-			assertEquals(10, carrierTimer.refusedCount());
-		} finally {
-			logger.removeHandler(counter);
-		}
-	}
-
 	/**
 	 * A thread that cannot start ends the carrier: its timers are cancelled, and
 	 * schedule does not throw.
@@ -560,8 +474,8 @@ class CarrierTimerTest {
 		ConcurrentLinkedQueue<Timer> queue = new ConcurrentLinkedQueue<>();
 		MpscQueue<Timer> failingOnce = new MpscQueue<>() {
 			@Override
-			public boolean offer(Timer item) {
-				return queue.offer(item);
+			public void offer(Timer item) {
+				queue.offer(item);
 			}
 
 			@Override

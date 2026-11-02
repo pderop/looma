@@ -16,9 +16,7 @@ package io.github.pderop.looma.impl;
 import java.lang.System.Logger;
 import java.lang.System.Logger.Level;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.Supplier;
 
@@ -76,9 +74,6 @@ final class CarrierTimer {
 	/** The name of the wheel thread. */
 	private final String name;
 	private final AtomicInteger state = new AtomicInteger(NEW);
-	/** True from the first refused offer until the next accepted one. */
-	private final AtomicBoolean fullWarned = new AtomicBoolean();
-	private final LongAdder refused = new LongAdder();
 	/** True while the wheel thread is about to park with no timer to wait for. */
 	private volatile boolean sleeping;
 	private volatile Thread wheelThread;
@@ -181,17 +176,7 @@ final class CarrierTimer {
 	}
 
 	private void scheduleRemote(Timer timer) {
-		if (!inbox.offer(timer)) {
-			refused.increment();
-			if (fullWarned.compareAndSet(false, true)) {
-				warn(() -> "timer inbox full: " + refused.sum() + " timers cancelled so far", null);
-			}
-			timer.discard();
-			return;
-		}
-		if (fullWarned.get()) {
-			fullWarned.set(false);
-		}
+		inbox.offer(timer);
 		start();
 		// A stop between the first check and start() leaves no thread to drain the
 		// inbox, so check again. Cancelling twice is harmless.
@@ -206,8 +191,8 @@ final class CarrierTimer {
 
 	/**
 	 * Called when a scheduled timer was cancelled. On this carrier it leaves the
-	 * wheel now. Elsewhere it is queued, and if the queue is full the wheel drops
-	 * it when its slot comes up.
+	 * wheel now. Elsewhere it is queued, and the wheel thread removes it at the
+	 * next tick.
 	 */
 	void timerCancelled(Timer timer) {
 		if (callerCarrier() == this) {
@@ -215,11 +200,6 @@ final class CarrierTimer {
 		} else {
 			cancelled.offer(timer);
 		}
-	}
-
-	/** The number of timers refused because the inbox was full. */
-	long refusedCount() {
-		return refused.sum();
 	}
 
 	/** The number of timers in the wheel. For tests, from any thread. */

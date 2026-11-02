@@ -179,7 +179,7 @@ final class Timer implements ScheduledFuture<Void> {
 	 * Cancels the timer. {@code true} only if this call cancelled it, as
 	 * {@code FutureTask} does: {@code false} once the message has been sent, and
 	 * {@code false} if the timer was already cancelled, by a caller or by the
-	 * system (shutdown, a full inbox).
+	 * system (shutdown).
 	 */
 	@Override
 	public boolean cancel(boolean mayInterruptIfRunning) {
