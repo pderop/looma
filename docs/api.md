@@ -16,32 +16,19 @@ import io.github.pderop.looma.*;
 | `ActorContext` | An actor's view of itself, its children, and the system. |
 | `Message` | The marker interface every payload implements. |
 | `SupervisionStrategy` / `Directive` | What happens when `onReceive` throws. |
-| `Placement` / `SpawnOptions` | Optional home-carrier placement, supervision, and pool size at spawn time. |
+| `Placement` / `SpawnOptions` | At spawn: the actor's home carrier, its supervision, a pool size. |
 | `Carriers` | Which scheduler carries the process, and how it is sized, when chosen in code. |
 
-The scheduler SPI (`io.github.pderop.looma.spi`) is for people *implementing* a scheduler, not for
-people using actors — see [`schedulers.md`](schedulers.md).
+The scheduler SPI (`io.github.pderop.looma.spi`) is for people implementing a scheduler — see
+[`schedulers.md`](schedulers.md). An application uses one part of it: `system.scheduler()`, for
+`platformThreadFactory()` ([§6](#platform-threads-started-from-an-actor)).
 
 ---
 
 ## 1. Messages
 
-A message is any type implementing the `Message` marker. Records are the natural fit:
-
-```java
-public record Deposit(long cents) implements Message {}
-public record Withdraw(long cents) implements Message {}
-public record GetBalance() implements Message {}          // the request
-public record Balance(long cents) implements Message {}   // the reply
-```
-
-The marker exists only so `tell` and `ask` cannot be handed an arbitrary `Object`. A message carries
-no routing of its own: where it goes is decided entirely by the `ActorRef` it is sent through.
-
-`Message` itself is **not** sealed, and must not be: the engine is protocol-agnostic, and every actor
-has its own types. Grouping *one* actor's protocol under a sealed interface that extends `Message`
-is idiomatic, and is what makes `onReceive` exhaustive. Nested records are implicitly
-`permits`-listed, so the family lives in one type:
+A message is any type implementing the `Message` marker. Records fit. Group one actor's messages
+under a sealed interface: `switch` is then exhaustive.
 
 ```java
 public sealed interface AccountMessage extends Message {
@@ -53,19 +40,8 @@ public sealed interface AccountMessage extends Message {
 public record Balance(long cents) implements Message {}   // the reply — see ask() below
 ```
 
-`tell` and `ask` still take `Message`; a sealed subtype *is* a `Message`, so nothing else in the API
-changes. `onReceive` is still declared as `Message` — peel with `instanceof`, then `switch` on the
-sealed type, and the compiler requires every permitted case.
-
-A reply can sit in the same sealed family if you want one namespace; the actor's `switch` then has
-to name it. Putting outbound-only replies beside the family, as `Balance` is here, keeps the inbound
-`switch` to the messages the actor actually handles. When a reply legitimately has several shapes,
-give *those* a sealed supertype of their own — see
-[ask](#the-reply-type-is-declared-and-checked).
-
-Messages cross carriers, and therefore cores. **Treat them as immutable.** Nothing enforces it, and
-sending a mutable object you keep writing to reintroduces exactly the data race the actor model
-removes.
+A message carries no routing: where it goes is the `ActorRef` it is sent through. Messages cross
+carriers, so cores: **treat them as immutable.** Nothing enforces it.
 
 ## 2. Writing an actor
 
@@ -101,13 +77,11 @@ public class Account implements Actor {
 }
 ```
 
-`onReceive` is **never invoked concurrently for the same instance**, so mutable fields need no
-synchronization at all. The four lifecycle hooks run under the same guarantee — never concurrently
-with `onReceive`, and never concurrently with each other.
-
-The `sender` parameter is the reference given to `tell(message, sender)`. It is `null` only for
-`tell(message)`, which names no sender. For a message that arrived through `ask`, it is a single-use
-reference standing for the asker, and **replying to it is the only thing that completes the future**.
+- `onReceive` is **never invoked concurrently for the same instance**: fields need no
+  synchronization. The four lifecycle hooks run under the same guarantee.
+- `sender` is the reference given to `tell(message, sender)`, `null` for `tell(message)`. For an
+  `ask`, it stands for the asker, and **replying to it is the only thing that completes the
+  future**.
 
 ### Lifecycle hooks
 
@@ -118,7 +92,7 @@ public class Connection implements Actor {
 
     @Override
     public void preStart(ActorContext context) throws Exception {
-        socket = open();               // runs in this actor's first mailbox thread, before the first message
+        socket = open();               // before the first message
     }
 
     @Override
@@ -130,18 +104,14 @@ public class Connection implements Actor {
 
 | Hook | When | If it throws |
 | --- | --- | --- |
-| `preStart(context)` | once, before the first message — even if none is ever sent | the actor is stopped immediately; no strategy is consulted (it could only restart into the same failure) |
+| `preStart(context)` | once, before the first message — even if none is ever sent | the actor is stopped immediately; no strategy is consulted |
 | `postStop(context)` | once, after the mailbox is drained and every child has fully stopped | logged; termination completes anyway |
-| `preRestart(cause, message, context)` | on the failing instance, before it is discarded. Defaults to `postStop` | the restart escalates to a `STOP`, logged |
-| `postRestart(cause, context)` | on the fresh instance, before it resumes draining. Defaults to `preStart` | the restart escalates to a `STOP`, logged |
+| `preRestart(cause, message, context)` | on the failing instance, before it is discarded. Defaults to `postStop` | the restart becomes a `STOP`, logged |
+| `postRestart(cause, context)` | on the fresh instance, before it resumes. Defaults to `preStart` | the restart becomes a `STOP`, logged |
 
-`preStart` is enqueued as the first mailbox entry, so it is guaranteed to complete before any
-message is delivered — but not necessarily before `spawn` returns to the caller.
-
-Allocate per-actor state in `preStart`, not in the constructor: `preStart` already runs on the
-actor's home carrier, so, with carriers pinned to CPUs, its memory is **first touched by the core
-that will use it**. Under an affine scheduler that is the difference between state that starts hot
-and state that has to be migrated once.
+`preStart` is the first mailbox entry: it completes before any message, but not necessarily before
+`spawn` returns. Allocate per-actor state in `preStart`, not in the constructor
+([why](#12-why-it-is-built-this-way)).
 
 ## 3. Starting a system, spawning actors
 
@@ -151,8 +121,8 @@ ActorSystem system = ActorSystem.builder().build();
 ActorRef account = system.spawn("account", Account::new);
 ```
 
-`ActorSystem.builder()` is the only entry point; no caller ever names an implementation type. The
-builder has four knobs, and applications normally need at most the first:
+`ActorSystem.builder()` is the only entry point. It has three settings, all optional, plus
+`scheduler(...)` for tests:
 
 ```java
 ActorSystem system = ActorSystem.builder()
@@ -164,92 +134,37 @@ ActorSystem system = ActorSystem.builder()
 ActorSystem.builder().scheduler(someScheduler);    // bypasses everything — tests only
 ```
 
-`carriers(...)` is the code form of the scheduler's JVM flags: `Carriers.affine(n)` for a
-carrier-affine pool, today the JDK's MPSC scheduler, `Carriers.builtin(n)` for the JDK's default
-one with its parallelism fixed. They have no options.
-Without it, the system takes whatever the flags installed. Because the JDK resolves its scheduler
-once per process, `build()` must run **before the JVM's first virtual thread**, and throws rather
-than run on the wrong scheduler — see [`schedulers.md`](schedulers.md#in-code) for every case it
-refuses.
+`carriers(...)` is `Carriers.affine(n)` (an actor never leaves its home carrier) or
+`Carriers.builtin(n)` (the JDK's default scheduler). Without it, the system takes whatever the JVM
+flags chose. `build()` must run **before the JVM's first virtual thread**, and throws rather than
+run on the wrong scheduler: [`schedulers.md`](schedulers.md#in-code).
 
-With `affine`, an actor never leaves its home carrier, so its state stays in that
-core's cache. An idle carrier may steal only the threads actors create through
-`ActorContext.vThreadFactory()`.
+- `spawn` takes a `Supplier<Actor>`, not an instance: a `RESTART` calls it again for a fresh one.
+- Names must be non-blank, contain no `/`, and be unique among siblings.
+- One `spawn` can create **N actors of the same type** behind one reference:
+  [Pools](#pools-n-actors-of-one-type-behind-one-reference).
 
-The `factory` passed to `spawn` is a `Supplier<Actor>`, not an instance, because the engine calls it
-**again** to obtain a fresh instance after a `RESTART`.
-
-Names must be non-blank, contain no `/` (which would forge a path), and be unique among siblings.
-
-One `spawn` can also create **N actors of the same type** behind a single load-balancing reference —
-see [Pools](#pools-n-actors-of-one-type-behind-one-reference).
-
-## 4. The hierarchy
-
-A child is spawned from its parent's context — often in `preStart`, but then the parent cannot be
-restarted ([§7](#7-supervision)):
-
-```java
-public class Db implements Actor {
-
-    private ActorRef worker;
-
-    @Override
-    public void preStart(ActorContext context) {
-        worker = context.spawn("worker", Worker::new);   // path: /db/worker
-    }
-
-    @Override
-    public void onReceive(Message message, ActorRef sender, ActorContext context) {
-        worker.tell(message, context.self());            // same carrier: no cross-core hop
-    }
-}
-```
-
-```
-ActorSystem
- ├── /account
- └── /db          ← ActorSystem.spawn("db", Db::new)
-      └── /db/worker   ← context.spawn("worker", Worker::new)
-```
-
-- `ref.name()` is the simple name (`"worker"`); `ref.path()` is the full path (`"/db/worker"`).
-- `context.children()` is an immutable **point-in-time snapshot**, never a live view.
-- **`findActor` always resolves from the root, on both surfaces.** A worker at `/db/worker` calling
-  `context.findActor("sibling")` resolves `/sibling`, *not* `/db/sibling`. There is one resolution
-  rule everywhere; a path with no `/` is resolved as a root name.
-
-```java
-Optional<ActorRef> ref = system.findActor("/db/worker");
-Optional<ActorRef> db  = system.findActor("db");        // same as "/db"
-```
-
-## 5. `tell` and `ask`
+## 4. `tell` and `ask`
 
 ```java
 account.tell(new AccountMessage.Deposit(500), context.self());   // fire and forget, with a sender to reply to
 account.tell(new AccountMessage.Deposit(500));                   // no sender — from main(), a test, a callback
-account.tell(new AccountMessage.Deposit(500), 50, TimeUnit.MILLISECONDS);  // later — see Timers
 
 CompletableFuture<Balance> reply = account.ask(new AccountMessage.GetBalance(), Balance.class);
 ```
 
-A `tell` with a delay, or repeated, is in [§10 Timers](#10-timers).
-
-`ask` creates a single-use, unregistered reply channel and passes it as the message's `sender`. The
-receiving actor replies exactly as it would to anyone else:
+`ask` passes a single-use reply channel as the message's `sender`. The actor replies as it would to
+anyone:
 
 ```java
 case AccountMessage.GetBalance ignored -> sender.tell(new Balance(balance), context.self());
 ```
 
-The reply completes the future on the mailbox thread of the actor that replies. A stage
-chained with `thenApply` or `thenAccept` runs there too, and that actor handles nothing else
-meanwhile: chain slow work with `thenApplyAsync`.
-
-The returned future completes **at most once**: a second reply is silently dropped. There is no
-timeout on `ask` itself — an actor that never replies leaves the future open. Bound it with
-`CompletableFuture.orTimeout` (or `get` with a timeout) when you need one:
+- The reply completes the future on the mailbox thread of the actor that replies. A stage chained
+  with `thenApply` runs there too, and that actor handles nothing else meanwhile: chain slow work
+  with `thenApplyAsync`.
+- The future completes **at most once**: a second reply is dropped.
+- `ask` has no timeout of its own. Bound it with `orTimeout`:
 
 ```java
 account.ask(new AccountMessage.GetBalance(), Balance.class)
@@ -259,28 +174,11 @@ account.ask(new AccountMessage.GetBalance(), Balance.class)
 
 ### The reply type is declared, and checked
 
-The `Class<R>` is what spares the caller a cast — `ask` hands back a `CompletableFuture<Balance>`,
-not a `CompletableFuture<Message>` to pattern-match. It is also **enforced**: an actor that replies
-with something else fails the future with a `ClassCastException` naming both types, at the moment
-the wrong reply arrives.
+`ask(message, Balance.class)` returns a `CompletableFuture<Balance>`: no cast. A reply of another
+type fails the future with a `ClassCastException` naming both types, when it arrives. That wrong
+reply **settles** the future: a correct reply sent after it is dropped.
 
-That check is the whole reason the type is passed as a value rather than inferred from the
-assignment. An inferred `<R>` would compile just as prettily and cast unchecked, so a wrong reply
-would surface as a `ClassCastException` somewhere else entirely — or be quietly stored in a
-collection and blow up much later:
-
-```java
-// what an inferred type parameter would allow, and this API does not
-CompletableFuture<Balance> f = account.ask(new AccountMessage.GetBalance());
-List<Balance> all = List.of(f.join());   // fine at compile time; the object is a Rejected
-```
-
-A wrong-typed reply **settles** the promise: a correct reply the actor sends immediately afterwards
-is dropped like any other second reply. An actor whose first reply is a bug should not look healthy
-because it managed to send a second one.
-
-When a reply legitimately has several shapes, give them a common supertype — a `sealed interface` is
-the natural one — and `switch` over the result, still without a cast:
+When a reply has several shapes, give them a sealed supertype and `switch` over the result:
 
 ```java
 sealed interface LookupResult extends Message permits Found, NotFound {}
@@ -293,372 +191,19 @@ String value = switch (result) {              // exhaustive, no default needed
 };
 ```
 
-When there is no useful common supertype at all, the one-argument
-`ask(message)` is exactly `ask(message, Message.class)` and accepts anything.
+`ask(message)` is `ask(message, Message.class)`: it accepts any reply.
 
 | Situation | `tell` | `ask` |
 | --- | --- | --- |
-| target already stopped, or unknown | silently dropped (dead letter) | future fails synchronously with `IllegalStateException` |
-| system shutting down | dropped once that actor is stopping: a root at once, a descendant when the cascade reaches it | fails synchronously with `IllegalStateException` |
+| target already stopped, or unknown | silently dropped | the returned future is already failed with `IllegalStateException` |
+| system shutting down | dropped once that actor is stopping: a root at once, a descendant when the cascade reaches it | the returned future is already failed with `IllegalStateException` |
 | target accepted the request, then stopped without replying | — | future stays open — bound it with `orTimeout` |
 | no reply | — | future stays open — bound it with `orTimeout` |
 
-`ask` is stricter than `tell` on a request known to be unanswerable at call time: it fails
-immediately rather than being queued to a mailbox that will never deliver a reply. An accepted
-`ask` that never gets a reply is the caller's to time out; Looma adds no timeout to `ask`. A [timer](#10-timers) only sends a `tell`.
+An `ActorRef` is safe to share across threads, store in a message, or hold past the life of its
+actor. Two lookups of the same live actor return the same instance.
 
-An `ActorRef` is safe to share across threads, store in a message, or hold past the lifetime of the
-actor it points to. Identity is plain reference identity — two lookups of the same live actor return
-the same instance.
-
-## 6. Blocking work
-
-An actor runs on a virtual thread, so blocking inside `onReceive` **parks** it: the carrier is handed
-back, no OS thread is consumed, and the rest of the machine keeps working. Blocking is not a
-correctness problem here, and it is not a scheduler problem.
-
-What it costs is narrower: **an actor's mailbox thread is the only consumer of its own mailbox**, so
-for as long as `onReceive` sits inside a blocking call, that actor answers nothing. Neighbours have
-mailbox threads of their own and keep running; this actor's messages queue up behind a thread that
-is only waiting.
-
-So:
-
-- **Block, if there is nothing else the actor could usefully do meanwhile** — a strictly sequential
-  protocol has no line to be head-of-line-blocked, and forking would only add a hop.
-- **Block behind a [pool](#pools-n-actors-of-one-type-behind-one-reference), if the *work* is what
-  must stay responsive** — N actors of the same type behind one reference: a blocked one stalls only
-  its own mailbox and its `n-1` peers keep serving. No forking, no captured state, no fold-back
-  message; the price is that ordering is per actor rather than pool-wide.
-- **Fork, if the actor must stay responsive while it waits** — several conversations, a control
-  channel, a `Cancel` it must accept, an aggregation to keep feeding:
-
-```java
-@Override
-public void onReceive(Message message, ActorRef sender, ActorContext context) {
-    if (message instanceof Query query) {
-        // Capture what the forked thread needs BEFORE starting it: `sender` is a parameter of this
-        // call only, and the context must not be read concurrently with the next dispatch.
-        ActorRef self = context.self();
-        ActorRef replyTo = sender;
-
-        context.vThreadFactory().newThread(() -> {
-            Result result = blockingJdbcCall(query);        // parks; the carrier keeps working
-            replyTo.tell(new Answer(result), self);         // fold the answer back in as a message
-        }).start();
-    }
-}
-```
-
-`vThreadFactory()` is the only offload mechanism, and it is the one that carries the actor's
-affinity to the work:
-
-- under **`affine`**, the new virtual thread starts on this actor's home carrier,
-  so it runs on the same core the actor does, unless an idle carrier steals it;
-- under the **JDK builtin** scheduler, it is a plain virtual thread on the JDK's default scheduler.
-
-The engine counts every thread created through this factory as in-flight work, so `awaitTermination`
-will not report termination while one is still running. Two consequences: a thread that is created
-but never `start()`ed pins that counter forever — a caller bug, which surfaces as
-`awaitTermination` timing out — and the counting is a wrapper only, never a change to which carrier
-the thread is bound to.
-
-`ActorContext` is thread-safe and long-lived. Using it from a forked thread — `self().tell(...)` on
-completion, as above — is exactly what it is for. What the forked thread must **not** do is touch the
-actor's fields: take what it needs by value and hand the outcome back as a message, or the
-"one message at a time" guarantee that makes those fields safe is gone.
-
-### Platform threads started from an actor
-
-On Linux, a new thread runs only on the CPUs of the thread that starts it, and under `affine` a
-carrier runs on one CPU. A platform thread started from an actor would keep that one CPU. Under
-`affine`, Looma gives every CPU back to the threads the JDK starts: its timers, and the
-common pool behind `parallelStream` and `supplyAsync`. Your own threads and executors need a
-factory that does the same. Take it from the system, and give the executor to the actors that
-use it:
-
-```java
-ThreadFactory platform = system.scheduler().platformThreadFactory();
-ExecutorService workers = Executors.newFixedThreadPool(4, platform);
-```
-
-An executor starts its threads at its first tasks, so this matters even for one created in
-`main`, if an actor gives it its first tasks. Under the builtin scheduler, the factory is
-`Thread.ofPlatform().factory()`. The
-[`mpsc-scheduler` README](../mpsc-scheduler/README.md#threads-started-from-an-actor) lists what
-the install covers.
-
-### Pinning is the case that is genuinely bad
-
-A **native frame** on the stack — a JNI call, or a foreign-function downcall — cannot unmount the
-virtual thread at all, so it holds its **carrier** rather than merely its own mailbox thread. Under
-the JDK builtin scheduler that costs one `ForkJoinPool` worker and the pool compensates by growing;
-under `affine` the pool is fixed and there is nothing to grow, so every actor that calls that
-carrier home stops until the pin is released. Keep native calls out of an actor's mailbox threads
-and out of anything forked from them.
-
-`synchronized` is **not** a pin on the JDKs this project targets: [JEP 491](https://openjdk.org/jeps/491)
-(JDK 24) unmounts a virtual thread that blocks inside a monitor. `ReentrantLock` is still the better
-default for its `tryLock`/timeout surface, but no longer for pinning reasons.
-
-## 7. Supervision
-
-When `onReceive` throws, a `SupervisionStrategy` decides one of three things:
-
-| `Directive` | Effect |
-| --- | --- |
-| `RESUME` | Log, discard the message being processed, continue with the same instance and its state. **The default.** |
-| `RESTART` | Run `preRestart` on the failing instance, obtain a fresh one from the `Supplier`, run `postRestart`, resume draining. The failed message is discarded, not retried. Children are left running. |
-| `STOP` | Graceful cascading stop of the actor and its children, then unregister. |
-
-Two places to put a strategy:
-
-```java
-// (a) on the actor — called AFRESH ON EVERY FAILURE
-@Override
-public SupervisionStrategy supervisorStrategy() {
-    return cause -> cause instanceof IOException ? Directive.RESTART : Directive.STOP;
-}
-
-// (b) at spawn time — held for the life of the actor
-ActorRef worker = context.spawn("worker", Worker::new,
-        SpawnOptions.supervisedBy(new MaxRestarts(3)));
-```
-
-The difference matters and is a real trap. `supervisorStrategy()` is invoked again on every failure,
-so a strategy that **counts** must not be allocated there:
-
-```java
-// BROKEN: a fresh counter on every failure, so the limit never trips
-public SupervisionStrategy supervisorStrategy() {
-    return new MaxRestarts(3);
-}
-```
-
-Pass a counting strategy at spawn time instead, where it is held for the life of the actor — or keep
-the counter in a field of the actor.
-
-**Only `onReceive` is supervised.** No strategy is consulted for any lifecycle hook; each has the
-fixed policy in the table in §2. A strategy that itself throws, and a `RESTART` whose `Supplier`
-throws or returns `null`, are both treated as `STOP` and logged.
-
-Supervision here is **self-supervision only**: nothing escalates to a parent. Unlike Akka, `RESTART`
-does not stop the actor's children. So an actor that spawns its children in `preStart` cannot be
-restarted: the default `postRestart` calls `preStart`, which spawns at paths the old children
-still hold, and the restart turns into a `STOP`. If the actor must be restartable, spawn its
-children on a message, or give it a strategy that never restarts.
-
-## 8. Placement
-
-Every actor gets a **home carrier** at spawn time, fixed for its lifetime. Defaults:
-
-- `ActorSystem.spawn` → `Placement.roundRobin()`, the next carrier from a system-wide cursor;
-- `ActorContext.spawn` → `Placement.inherit()`, the parent's own carrier.
-
-Those defaults are what you want almost always: a subtree of actors and their offloaded work share
-one core's locality, and parent↔child messages never cross one.
-
-```java
-// a specific carrier — e.g. an acceptor spreading connections deterministically
-system.spawn("conn-" + n, ConnectionHandler::new,
-        SpawnOptions.placedOn(Placement.carrier(Math.floorMod(n, system.carrierCount()))));
-
-// co-locate a new actor with an existing one
-context.spawn("helper", Helper::new,
-        SpawnOptions.placedOn(Placement.carrier(context.homeCarrierIdOf(other))));
-
-// opt a child OUT of its parent's carrier
-context.spawn("independent", Worker::new,
-        SpawnOptions.placedOn(Placement.roundRobin()));
-```
-
-`SpawnOptions` is immutable and complete the moment it is built — there is no terminal call to
-forget. Every `placedOn` / `supervisedBy` / `withPlacement` / `withStrategy` returns a new instance:
-
-```java
-SpawnOptions options = SpawnOptions.placedOn(Placement.carrier(3))
-                                   .withStrategy(cause -> Directive.RESTART);
-```
-
-"Unset" is a third state, expressed only by *not* calling the method — never by passing `null`,
-which every setter rejects. An unset placement falls back to the surface's own default, an unset
-strategy to the actor's `supervisorStrategy()`.
-
-Rules and bounds:
-
-- `Placement.carrier(id)` is bounds-checked at spawn against `carrierCount()`; a negative id is
-  rejected by the record's own constructor.
-- `Placement.inherit()` on `ActorSystem.spawn` throws `IllegalArgumentException` — a root has no
-  parent.
-- Under the JDK builtin scheduler `carrierCount()` is `1`, so every valid placement resolves to that
-  one factory, and only `carrier(0)` is in bounds. Placement code therefore runs unchanged on every
-  scheduler.
-
-**Placing a child away from its parent is not free**: every parent↔child `tell` becomes a
-cross-carrier hop instead of the same-core delivery the default gives for nothing. Reach for an
-explicit placement when the actor's *own* workload wants a specific or spread-out assignment, not by
-default.
-
-### Placing by key
-
-An application whose work belongs to a key (a customer, a session, a tenant) keeps everything that
-serves one key on one carrier with `Placement.carrier` alone: the actor for key `k` on carrier
-`k % carrierCount()`, shard `i` of each service on carrier `i % carrierCount()`, and each message
-routed to shard `k % shards`.
-
-```java
-int carriers = system.carrierCount();
-ActorRef[] pricers = new ActorRef[64];
-for (int i = 0; i < pricers.length; i++) {
-    int index = i;
-    pricers[i] = system.spawn("pricing-" + i, () -> new Pricing(index),
-            SpawnOptions.placedOn(Placement.carrier(i % carriers)));
-}
-system.spawn("session-" + customer, () -> new Session(customer, pricers),
-        SpawnOptions.placedOn(Placement.carrier(customer % carriers)));
-
-// in Session: the session and its pricer share a carrier
-pricers[customer % pricers.length].tell(quote, context.self());
-```
-
-The pricer for `customer` is on carrier `(customer % 64) % carriers`, which is `customer % carriers`
-only when `carriers` divides `64`. With any other shard count some keys cross carriers; the mapping
-is the application's, and so is the choice of what to do about it.
-
-### Pools: N actors of one type behind one reference
-
-`SpawnOptions.pooled(n)` (or `.withPoolSize(n)`) makes one `spawn` create **n** actors from the same
-factory and hand back a single `ActorRef` that spreads `tell` and `ask` over them round-robin. Both
-spawning surfaces take it, and each keeps its own default placement — see [below](#placement-and-pools):
-
-```java
-// four actors, load-balanced behind one reference
-ActorRef db = system.spawn("db", DbActor::new, SpawnOptions.pooled(4));
-
-db.tell(new Query(id));                              // → one of /db-0 … /db-3
-Row row = db.ask(new Query(id), Row.class).join();   // answered once, by the routee it went to
-system.stop(db);                                     // stops all four
-
-// the same from inside an actor, for a child pool
-ActorRef io = context.spawn("io", BlockingIoActor::new, SpawnOptions.pooled(4));
-```
-
-**The point is blocking work.** Each actor in a pool has its own mailbox and its own mailbox
-threads, so one of them sitting in a blocking call stalls *its* mailbox and nothing else — the other
-`n-1` keep answering. That is the alternative to `vThreadFactory()` offloading in
-[§6](#6-blocking-work): the actor is free to just block. Note that this needs no spread across
-carriers to work — a virtual thread blocking on I/O unmounts from its carrier rather than holding
-it, so what buys the responsiveness is the `n` mailboxes. Spreading matters when the routees
-*compute*.
-
-**Each actor of a pool is an ordinary actor.** It is registered at its own path (`/db-0` … `/db-3`),
-it shows up in its parent's `children()`, it gets its own instance from the factory, it is supervised
-on its own terms, and it is stopped by the ordinary cascade. There is no router actor in the middle:
-the returned reference is a plain fan-out, so a message pays exactly the one hop it would to a lone
-actor.
-
-What that reference is *not*:
-
-- **It is not an actor.** `path()` reports the pool's path (`/db`), but nothing is registered there:
-  `findActor("/db")` is empty, and `findActor("/db-0")` is the live actor.
-- **It gives no pool-wide ordering.** Two messages sent through it land in two mailboxes and are
-  processed concurrently. Messages that must be ordered relative to each other, or that share mutable
-  state, belong to **one** actor — a pool is for independent units of work.
-- **It routes round-robin, and only round-robin.** No random, no smallest-mailbox; a stopped routee
-  is skipped rather than fed its share, so a dead one never silently swallows `1/n` of the traffic.
-
-#### Placement and pools
-
-**The placement applies to each actor of the pool** — a pool is exactly the actors you would have got
-by spawning them one at a time with these options. That one rule gives both shapes, because the
-placements already differ: `inherit()` and `carrier(i)` name *one* carrier, so the pool lands there
-whole, while `roundRobin()` means *the next* carrier, so applying it per actor spreads the pool one
-per carrier. Nothing extra to pass, and no default is touched:
-
-```java
-// child: the 4 on the parent's carrier (inherit, the default there)
-context.spawn("io", BlockingIoActor::new, SpawnOptions.pooled(4));
-
-// child: the same 4, spread one per carrier
-context.spawn("io", BlockingIoActor::new,
-        SpawnOptions.pooled(4).withPlacement(Placement.roundRobin()));
-
-// root: the 4 spread (roundRobin, the default there)
-system.spawn("db", DbActor::new, SpawnOptions.pooled(4));
-
-// root: the same 4, all on carrier 0
-system.spawn("db", DbActor::new,
-        SpawnOptions.pooled(4).withPlacement(Placement.carrier(0)));
-```
-
-A spread pool has no single home carrier, so **`homeCarrierIdOf(pool)` throws** — and it throws for a
-co-located pool too, rather than making the contract depend on a placement the reference no longer
-carries. Ask one of its actors, each an ordinary actor at its own path:
-
-```java
-int carrier = system.homeCarrierIdOf(system.findActor("/db-0").orElseThrow());
-```
-
-`poolSize` must be at least `1`, and a pool of `1` is exactly the single-actor spawn it always was —
-same path, no `-0` suffix. A pool whose name collides partway through (`/db-2` already taken) leaves
-nothing behind: the actors already created are started, then stopped, before the
-`IllegalStateException` reaches the caller. Their `preStart` and `postStop` run.
-
-### Asserting affinity
-
-`homeCarrierIdOf(ref)` is available on both `ActorSystem` and `ActorContext`, and it is the **only**
-sound basis for an affinity assertion:
-
-```java
-assertEquals(system.homeCarrierIdOf(parent), system.homeCarrierIdOf(child));
-```
-
-The home carrier is the only *deterministic* thing about placement. Under `affine` an
-actor always runs there, but a thread it offloads may be stolen, and under the builtin anything may
-run anywhere — asserting against the running carrier is a flaky test, not a bug in the
-scheduler. It throws `IllegalArgumentException`
-for any reference that is not one spawned actor: the single-use `sender` an `ask` produces, and a
-[pool](#pools-n-actors-of-one-type-behind-one-reference), which stands for `n` of them — assert on
-its actors, at `/db-0` and so on.
-
-## 9. Stopping
-
-```java
-system.stop(ref);       // from any thread — main(), a test, a callback
-context.stop(ref);      // from inside an actor
-```
-
-Both run the same graceful cascading stop: drain the target's mailbox, then stop and drain every
-descendant innermost-first, then run `postStop` on the way back up, then unregister. Stopping an
-already-stopped or unknown reference is a silent no-op.
-
-`ref` may be **any** live actor, not only a descendant of the caller — there is one uniform rule and
-no ownership check.
-
-Stopping the last actor does **not** shut the system down. Only `shutdown()` does:
-
-```java
-system.shutdown();                                   // does not block
-if (!system.awaitTermination(5, TimeUnit.SECONDS)) {
-    // something is still in flight — an actor blocked, or a vThreadFactory thread never finished
-}
-```
-
-`shutdown()` stops every root actor, each mailbox drains, the cascade descends, `postStop` unwinds
-back up to the roots. Once it has begun, `ask` fails at once with `IllegalStateException`, and
-`spawn` throws it. A `tell` is silently dropped once its actor is stopping: a root at once, a
-descendant when the cascade reaches it, after its parent's mailbox has drained.
-
-`awaitTermination` returns `true` once every actor is unregistered **and** every unit of in-flight
-work has finished — the actors' mailbox threads *and* every thread created through
-`vThreadFactory()`. That is what keeps a caller from observing termination while user-spawned
-blocking work is still running.
-
-Every scheduler drains identically. None owns a pool to stop: the JDK builtin owns nothing, and the
-carriers of `affine` are a permanent JVM-wide pool created during
-`VirtualThread.<clinit>` that outlives any single `ActorSystem`.
-
-## 10. Timers
+## 5. Timers
 
 Three methods on `ActorRef` send a message later. They return a `ScheduledFuture<?>`.
 
@@ -676,34 +221,27 @@ ScheduledFuture<?> repeat =
 repeat.cancel(false);                 // stops the sends
 ```
 
-Looma has no scheduler service and no task to run: a timer only does a `tell`.
+A timer only does a `tell`: there is no task to run later.
 
 ### How a timer runs
 
-Each carrier has one timer wheel. A wheel is a ring of slots, one slot per tick.
+Looma uses a timer wheel, one per carrier: less precise than a `ScheduledThreadPoolExecutor` (to
+one tick, 10 ms by default), but much cheaper when actors arm and cancel many timers.
 
 ```
 ref.tell(msg, 50 ms)                      ref's home carrier is carrier-3
   -> the timer goes to the wheel of carrier-3
   -> at the deadline, the wheel's virtual thread calls ref.tell(msg, sender)   (local to carrier-3)
-  -> a one-shot future is done
+  -> for a one-shot timer, the returned future then completes: the message is in the mailbox
 ```
 
-The wheel's virtual thread starts at the first timer of its carrier. A carrier that never gets a
-timer has no such thread. While its wheel holds a timer, even one far in the future, the thread
-wakes at every tick.
-
-Under `affine`, once a timer has run on its carrier, an actor arms and cancels the timers of its
-own carrier with no queue; any other caller goes through a queue of the wheel. [`schedulers.md`](schedulers.md#the-wheel-thread) shows
-both paths.
-
-The queues of the wheel are made by `Builder.mpscQueueFactory`, the same factory as the mailboxes.
-A bounded queue that is full cancels the timer: the future comes back cancelled, and a warning is
-logged.
-
-With `--enable-preview`, a `StructuredTaskScope` opened in `onReceive` must be closed before
-`onReceive` returns, as the JDK requires. Once a timer has run on the carrier, a scope left open
-makes the JDK throw `StructureViolationException` when the actor's mailbox thread ends.
+- The wheel's virtual thread starts at the first timer of its carrier. While the wheel holds a
+  timer, even one far in the future, the thread wakes at every tick.
+- Under `affine`, once a timer has run on its carrier, an actor arms and cancels the timers of its
+  own carrier with no queue; any other caller goes through a queue of the wheel:
+  [`schedulers.md`](schedulers.md#the-wheel-thread).
+- The queues of the wheel have no limit, like the mailboxes: an arm is never refused. A queue set
+  with `Builder.mpscQueueFactory` must have no limit either.
 
 ### The tick
 
@@ -720,33 +258,29 @@ precision      a timer fires on the first tick at or after its deadline
                -> about one tick late when the carrier is free; later when the carrier is busy,
                   since the wheel thread waits its turn on the carrier
 delay <= 0     -> fires at the next tick
-period < tick  -> fires once per tick, and falls further behind its deadlines
+period         -> each deadline is one period after the previous deadline, not after the send
+falling behind -> after a pause, or with a period shorter than the tick: the missed periods
+                  fire on the following ticks, one per tick
 ```
 
-A `null` message or unit throws `NullPointerException`. A period of zero or less throws
+A `null` message or unit throws `NullPointerException`; a period of zero or less,
 `IllegalArgumentException`.
-
-A periodic timer keeps its rhythm: each deadline is one period after the previous deadline, not
-after the previous send. If the sends fall behind, after a pause or with a period shorter than
-the tick, the missed periods fire on the following ticks, one per tick.
 
 ### Cancel and get
 
 ```
-future.cancel(...)  -> true, and nothing is sent        if this call cancels a one-shot not yet gone
-                    -> false                            if the message has gone, or the timer was
-                                                        already cancelled (by you, or by the system)
-future.get()        -> one-shot: returns after the send
-                    -> periodic: blocks until cancel, then throws CancellationException
+future.cancel(...)    -> true, and nothing is sent   if this call cancels a one-shot not yet gone
+                      -> false                       if the message has gone, or the timer was
+                                                     already cancelled (by you, or by the system)
+future.get()          -> one-shot: returns after the send
+                      -> periodic: blocks until cancel, then throws CancellationException
 future.getDelay(unit) -> time left to the next send
-future.isDone()     -> true from the start of the send; get() still waits until the send has returned
+future.isDone()       -> true from the start of the send; get() still waits until the send has returned
 ```
 
-A cancel that races the send of a periodic timer may return `true` and still let one message go.
-A cancel frees the message at once. The timer leaves the wheel at once when an actor of its carrier
-cancels it, else at the next tick.
-
-`cancel` ignores its argument: it never interrupts anything.
+- A cancel that races the send of a periodic timer may return `true` and still let one message go.
+- A cancel frees the message at once.
+- `cancel` ignores its argument: it never interrupts anything.
 
 ### Stopping
 
@@ -762,48 +296,36 @@ periodic, target stopping                  -> the timer cancels itself, at the l
                                               send or when the wheel passes its slot
 ```
 
-### Pools and promises
+### Timers on a pool, or on an ask's sender
 
 ```
 pool.tell(msg, delay)                     a pool has no single carrier
   -> from an actor: the wheel of the actor's carrier
   -> from any other thread: a wheel chosen from its thread id (the same thread, the same wheel)
   -> at the deadline, the pool picks a member, as for any tell
-  -> the message may be sent from another carrier than the member's home
 
 pool.tellAtFixedRate(...)  -> the timer cancels itself once all members are stopping
 ```
 
-The sender of an `ask` (a `PromiseRef`) refuses timers: it throws `UnsupportedOperationException`.
+The sender of an `ask` refuses timers: it throws `UnsupportedOperationException`.
 
 ### Timers with a `ScheduledExecutorService`
 
 The delayed `tell` is the preferred way to send a message later. For a task, or a finer precision,
-use your own `ScheduledExecutorService`. Build it from the platform thread factory of the system,
-as any executor an actor uses
-([Platform threads started from an actor](#platform-threads-started-from-an-actor)):
+use your own `ScheduledExecutorService`, built from the
+[platform thread factory](#platform-threads-started-from-an-actor) of the system:
 
 ```java
 ThreadFactory platform = system.scheduler().platformThreadFactory();
 ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1, platform);
-executor.setRemoveOnCancelPolicy(true);
+executor.setRemoveOnCancelPolicy(true);    // a cancelled task leaves the queue at once
 
 ScheduledFuture<?> guard = executor.schedule(() -> ref.tell(new Timeout()), 30, TimeUnit.SECONDS);
 guard.cancel(false);
 ```
 
-```
-executor.schedule(() -> ref.tell(msg), delay, unit)
-  -> a thread of the executor waits for the deadline
-  -> at the deadline, it calls ref.tell(msg)
-  -> the message is a hop: a cross-thread enqueue to the target's carrier, and maybe a wake-up
-
-setRemoveOnCancelPolicy(true)    -> a cancelled task leaves the queue at once,
-                                    not at its deadline
-executor.shutdown()              -> yours to call; the shutdown of the system does not
-```
-
-Which one:
+At the deadline a thread of the executor calls `ref.tell`: one hop to the target's carrier. Its
+`shutdown()` is yours to call.
 
 ```
 a guard, a timeout, or a periodic message to an actor  -> delayed tell
@@ -811,37 +333,357 @@ a precision finer than the tick                        -> executor
 a Runnable to run, not just a tell                     -> executor
 ```
 
-### Why it is built this way
+## 6. Blocking work
 
-- One wheel per carrier, run by a thread of that carrier, so the timer's `tell` needs no hand-over
-  between threads. This is the same reason actors keep to their home carrier.
-- A direct insert and a direct remove for an actor of the same carrier: after the first timer of
-  the carrier, a timeout that is armed and cancelled at once (the usual case) never touches a
-  queue, and holds no message after the cancel.
-- A tick, not an exact deadline: a wheel costs little per timer, and a tick of 10 ms suits timeouts
-  and heartbeats.
-- The delayed `tell` before an executor: Looma owns the wheel thread and stops it at shutdown; an
-  executor is one more thing for you to stop.
+Blocking inside `onReceive` **parks** the mailbox thread: the carrier is handed back, and the
+machine keeps working. But the mailbox thread is the only consumer of the mailbox, so the actor
+answers nothing until the call returns. Three choices:
+
+```
+nothing else to do meanwhile    -> block in onReceive
+the work must stay responsive   -> block behind a pool: one blocked member stalls only its own mailbox
+the actor must stay responsive  -> fork through context.vThreadFactory(), fold the answer back as a message
+```
+
+```java
+@Override
+public void onReceive(Message message, ActorRef sender, ActorContext context) {
+    if (message instanceof Query query) {
+        // Capture what the forked thread needs BEFORE starting it: `sender` is a parameter of this
+        // call only, and the actor's fields must not be read concurrently with the next message.
+        ActorRef self = context.self();
+        ActorRef replyTo = sender;
+
+        context.vThreadFactory().newThread(() -> {
+            Result result = blockingJdbcCall(query);        // parks; the carrier keeps working
+            replyTo.tell(new Answer(result), self);         // fold the answer back in as a message
+        }).start();
+    }
+}
+```
+
+`vThreadFactory()` is the only way to offload:
+
+```
+under affine     -> the thread starts on the actor's home carrier; an idle carrier may steal it
+under builtin    -> a plain virtual thread
+every thread     -> counted as in-flight work: awaitTermination waits for it
+created, never started -> the count never drops: awaitTermination times out (a caller bug)
+```
+
+`ActorContext` is thread-safe: a forked thread may use it, as above. It must **not** touch the
+actor's fields: take what it needs by value, and send the outcome back as a message.
+
+### Platform threads started from an actor
+
+Under `affine` on Linux, a carrier runs on one CPU, and a thread started from it would keep that
+CPU. Looma covers the threads the JDK starts. For your own threads and executors, take the factory
+from the system:
+
+```java
+ThreadFactory platform = system.scheduler().platformThreadFactory();
+ExecutorService workers = Executors.newFixedThreadPool(4, platform);
+```
+
+An executor starts its threads at its first tasks, so this matters even for one created in `main`.
+Under the builtin, the factory is `Thread.ofPlatform().factory()`. What the install covers:
+[`mpsc-scheduler/README.md`](../mpsc-scheduler/README.md#threads-started-from-an-actor).
+
+### Native calls hold the carrier
+
+A **native frame** on the stack — a JNI call, or a foreign-function downcall — cannot unmount the
+virtual thread, so it holds its carrier:
+
+```
+builtin -> that ForkJoinPool worker is lost until the call returns; the pool grows to compensate
+affine  -> the pool is fixed: every actor homed on that carrier waits
+```
+
+Keep native calls out of mailbox threads and out of anything forked from them. `synchronized` no
+longer pins ([JEP 491](https://openjdk.org/jeps/491), JDK 24).
+
+### StructuredTaskScope
+
+Under `affine`, a `StructuredTaskScope` opened in `onReceive` must be closed before `onReceive`
+returns, as the JDK requires. Once a timer has run on the carrier, a scope left open makes the JDK
+throw `StructureViolationException` when the mailbox thread ends.
+
+## 7. The hierarchy
+
+A child is spawned from its parent's context:
+
+```java
+public class Db implements Actor {
+
+    private ActorRef worker;
+
+    @Override
+    public void onReceive(Message message, ActorRef sender, ActorContext context) {
+        if (worker == null) {
+            worker = context.spawn("worker", Worker::new);   // path: /db/worker
+        }
+        worker.tell(message, context.self());            // same carrier under affine: no cross-core hop
+    }
+}
+```
+
+```
+ActorSystem
+ ├── /account
+ └── /db          ← ActorSystem.spawn("db", Db::new)
+      └── /db/worker   ← context.spawn("worker", Worker::new)
+```
+
+- `ref.name()` is the simple name (`"worker"`); `ref.path()` is the full path (`"/db/worker"`).
+- `context.children()` is an immutable **point-in-time snapshot**, never a live view.
+- **`findActor` always resolves from the root.** From `/db/worker`, `context.findActor("sibling")`
+  resolves `/sibling`, *not* `/db/sibling`. A path with no `/` is a root name.
+
+```java
+Optional<ActorRef> ref = system.findActor("/db/worker");
+Optional<ActorRef> db  = system.findActor("db");        // same as "/db"
+```
+
+## 8. Supervision
+
+When `onReceive` throws, a `SupervisionStrategy` decides one of three things:
+
+| `Directive` | Effect |
+| --- | --- |
+| `RESUME` | Log, discard the message being processed, continue with the same instance and its state. **The default.** |
+| `RESTART` | Run `preRestart` on the failing instance, obtain a fresh one from the `Supplier`, run `postRestart`, resume. The failed message is discarded, not retried. Children are left running. |
+| `STOP` | Graceful cascading stop of the actor and its children, then unregister. |
+
+Two places to put a strategy:
+
+```java
+// (a) on the actor — called AFRESH ON EVERY FAILURE
+@Override
+public SupervisionStrategy supervisorStrategy() {
+    return cause -> cause instanceof IOException ? Directive.RESTART : Directive.STOP;
+}
+
+// (b) at spawn time — held for the life of the actor
+ActorRef worker = context.spawn("worker", Worker::new,
+        SpawnOptions.supervisedBy(new MaxRestarts(3)));
+```
+
+A strategy that **counts** must not be allocated in `supervisorStrategy()`:
+
+```java
+// BROKEN: a fresh counter on every failure, so the limit never trips
+public SupervisionStrategy supervisorStrategy() {
+    return new MaxRestarts(3);
+}
+```
+
+Pass it at spawn time, or keep the counter in a field of the actor.
+
+- **Only `onReceive` is supervised.** Each lifecycle hook has the fixed policy of the table in §2.
+  A strategy that throws, and a `RESTART` whose `Supplier` throws or returns `null`, are a `STOP`,
+  logged.
+- **Self-supervision only**: nothing escalates to a parent, and `RESTART` keeps the children. So an
+  actor that spawns its children in `preStart` cannot be restarted: the default `postRestart` calls
+  `preStart`, which spawns at paths the old children still hold, and the restart becomes a `STOP`.
+  Spawn them on a message, or give the actor a strategy that never restarts.
+
+## 9. Placement
+
+Every actor gets a **home carrier** at spawn, fixed for its life. Under `affine`, its mailbox
+threads run only there. Defaults:
+
+- `ActorSystem.spawn` → `Placement.roundRobin()`, the next carrier from a system-wide cursor;
+- `ActorContext.spawn` → `Placement.inherit()`, the parent's carrier: messages between them stay
+  on one core.
+
+```java
+// a specific carrier — e.g. an acceptor spreading connections deterministically
+system.spawn("conn-" + n, ConnectionHandler::new,
+        SpawnOptions.placedOn(Placement.carrier(Math.floorMod(n, system.carrierCount()))));
+
+// co-locate a new actor with an existing one
+context.spawn("helper", Helper::new,
+        SpawnOptions.placedOn(Placement.carrier(context.homeCarrierIdOf(other))));
+
+// opt a child OUT of its parent's carrier: every parent↔child tell then crosses carriers
+context.spawn("independent", Worker::new,
+        SpawnOptions.placedOn(Placement.roundRobin()));
+```
+
+`SpawnOptions` is immutable: every `placedOn` / `supervisedBy` / `withPlacement` / `withStrategy`
+returns a new instance. "Unset" means not calling the method; `null` is rejected.
+
+```java
+SpawnOptions options = SpawnOptions.placedOn(Placement.carrier(3))
+                                   .withStrategy(cause -> Directive.RESTART);
+```
+
+- `Placement.carrier(id)` is bounds-checked at spawn against `carrierCount()`.
+- `Placement.inherit()` on `ActorSystem.spawn` throws `IllegalArgumentException`: a root has no
+  parent.
+- Under the builtin, `carrierCount()` is `1`: every actor's home is 0, and the same placement code
+  runs unchanged.
+
+### Placing by key
+
+To keep everything that serves one key (a customer, a session) on one carrier: the actor for key
+`k` on carrier `k % carrierCount()`, shard `i` of each service on carrier `i % carrierCount()`.
+
+```java
+int carriers = system.carrierCount();
+ActorRef[] pricers = new ActorRef[64];
+for (int i = 0; i < pricers.length; i++) {
+    int index = i;
+    pricers[i] = system.spawn("pricing-" + i, () -> new Pricing(index),
+            SpawnOptions.placedOn(Placement.carrier(i % carriers)));
+}
+system.spawn("session-" + customer, () -> new Session(customer, pricers),
+        SpawnOptions.placedOn(Placement.carrier(customer % carriers)));
+
+// in Session: the session and its pricer share a carrier
+pricers[customer % pricers.length].tell(quote, context.self());
+```
+
+The pricer of `customer` is on carrier `customer % carriers` only when `carriers` divides `64`.
+
+### Pools: N actors of one type behind one reference
+
+`SpawnOptions.pooled(n)` (or `.withPoolSize(n)`) makes one `spawn` create **n** actors from the same
+factory, behind one `ActorRef` that spreads `tell` and `ask` over them round-robin:
+
+```java
+ActorRef db = system.spawn("db", DbActor::new, SpawnOptions.pooled(4));
+
+db.tell(new Query(id));                              // → one of /db-0 … /db-3
+Row row = db.ask(new Query(id), Row.class).join();   // answered once, by the actor it went to
+system.stop(db);                                     // stops all four
+
+ActorRef io = context.spawn("io", BlockingIoActor::new, SpawnOptions.pooled(4));   // a child pool
+```
+
+- **The point is blocking work** ([§6](#6-blocking-work)): one member in a blocking call stalls only
+  its own mailbox.
+- **Each member is an ordinary actor**, at its own path (`/db-0` … `/db-3`), supervised and stopped
+  on its own. There is no router actor: a message pays the one hop it would to a lone actor.
+- **The reference is not an actor.** `path()` is `/db`, but nothing is registered there:
+  `findActor("/db")` is empty.
+- **No pool-wide ordering.** Two messages may run at once on two members.
+- **Round-robin only.** A stopped member is skipped.
+- `poolSize` is at least `1`; a pool of `1` is a plain spawn, with no `-0` suffix. A pool whose
+  name collides partway through leaves nothing behind: the members already made are started, then
+  stopped, before the `IllegalStateException`.
+
+#### Placement and pools
+
+The placement applies to **each member**:
+
+```java
+// child: the 4 on the parent's carrier (inherit, the default there)
+context.spawn("io", BlockingIoActor::new, SpawnOptions.pooled(4));
+
+// child: the same 4, spread one per carrier
+context.spawn("io", BlockingIoActor::new,
+        SpawnOptions.pooled(4).withPlacement(Placement.roundRobin()));
+
+// root: the 4 spread (roundRobin, the default there)
+system.spawn("db", DbActor::new, SpawnOptions.pooled(4));
+
+// root: the same 4, all on carrier 0
+system.spawn("db", DbActor::new,
+        SpawnOptions.pooled(4).withPlacement(Placement.carrier(0)));
+```
+
+### Asserting affinity
+
+`homeCarrierIdOf(ref)`, on `ActorSystem` and `ActorContext`, is the only sound basis for an
+affinity assertion:
+
+```java
+assertEquals(system.homeCarrierIdOf(parent), system.homeCarrierIdOf(child));
+```
+
+It throws `IllegalArgumentException` for anything that is not one spawned actor: an `ask`'s sender,
+and a pool. Ask one of its members:
+
+```java
+int carrier = system.homeCarrierIdOf(system.findActor("/db-0").orElseThrow());
+```
+
+## 10. Stopping
+
+```java
+system.stop(ref);       // from any thread — main(), a test, a callback
+context.stop(ref);      // from inside an actor
+```
+
+Both run the same graceful cascading stop:
+
+```
+stop(ref)
+  -> drain the target's mailbox
+  -> stop and drain every descendant, innermost first
+  -> postStop on the way back up
+  -> unregister
+```
+
+`ref` may be any live actor; stopping a stopped or unknown one does nothing. Stopping the last
+actor does **not** shut the system down. Only `shutdown()` does:
+
+```java
+system.shutdown();                                   // does not block
+if (!system.awaitTermination(5, TimeUnit.SECONDS)) {
+    // something is still in flight — an actor blocked, or a vThreadFactory thread never finished
+}
+```
+
+- `shutdown()` stops every root, and the cascade runs as above. From then on `spawn` throws
+  `IllegalStateException`; `tell` and `ask` follow the table of [§4](#4-tell-and-ask).
+- `awaitTermination` returns `true` once every actor is unregistered **and** every mailbox thread
+  and `vThreadFactory()` thread has ended.
+- The carriers are JVM-wide: the JDK creates them at the first virtual thread, and they outlive any
+  system.
 
 ## 11. What Looma does not do
-
-Stated plainly, so nothing is inferred from silence:
 
 - **No parent supervision, no escalation, no death watch.** Self-supervision only; there is no
   `Terminated` message.
 - **No remoting, no clustering, no persistence.** A system is one JVM.
-- **No typed actors.** `onReceive` takes `Message` and dispatches with `switch`; an unrecognised
-  message is the actor's own business.
+- **No typed actors.** `onReceive` takes `Message` and dispatches with `switch`.
 - **No stashing, no `become`/state machines.** Keep the state in a field.
 - **No mailbox bounds or priorities.** One `ConcurrentLinkedQueue` per actor by default;
-  `Builder.mpscQueueFactory` replaces it with anything MPSC and non-blocking.
-- **No scheduler service.** Timers only `tell` ([§10](#10-timers)); there is no task to run
-  later. For one, use your own executor
-  ([Timers with a `ScheduledExecutorService`](#timers-with-a-scheduledexecutorservice)).
+  `Builder.mpscQueueFactory` replaces it with anything MPSC, unbounded and non-blocking.
+- **No scheduler service.** Timers only `tell` ([§5](#5-timers)). For a task, use your own
+  executor.
 - **No dead-letter queue.** A `tell` to a stopped actor is dropped, not diverted.
+
+## 12. Why it is built this way
+
+- **`Message` is a marker, not sealed.** It only keeps an arbitrary `Object` out of `tell`. The
+  engine knows no protocol, and each actor has its own: one actor's sealed family is the place for
+  exhaustiveness. Replies outside that family keep the inbound `switch` to what the actor handles.
+- **State in `preStart`.** `preStart` runs on the actor's home carrier: with pinned carriers, the
+  state is first touched by the core that will use it, so it starts hot.
+- **A `Supplier`, not an instance**, so that a restart gets a fresh actor.
+- **The reply type is a `Class<R>`, not inferred.** An inferred `<R>` would cast unchecked: a wrong
+  reply would fail somewhere else, or be stored and fail much later. The `Class` lets `ask` check
+  the reply when it arrives. A wrong first reply settles the future, so that a buggy actor does not
+  look healthy because its second reply was right.
+- **`ask` fails at once on an unanswerable request** instead of queuing it to a mailbox that will
+  never reply.
+- **Placement defaults keep a subtree on one core.** Placing a child elsewhere turns every
+  parent↔child `tell` into a cross-carrier hop: do it only when the actor's own load wants it.
+- **A pool needs no spread for blocking work:** a blocked virtual thread unmounts, so the `n`
+  mailboxes are what buy the responsiveness. Spreading matters when the members compute.
+- **`homeCarrierIdOf`, not the running carrier, in tests:** under `affine` a thread an actor
+  offloads may be stolen, and under the builtin anything may run anywhere.
+- **One timer wheel per carrier, run by a thread of that carrier**: the timer's `tell` needs no
+  hand-over between threads, for the same reason actors keep to their home carrier. After the
+  first timer of the carrier, a timeout armed and cancelled at once never touches a queue, and
+  holds no message after the cancel.
+- **A tick, not an exact deadline:** a wheel costs little per timer, and 10 ms suits timeouts and
+  heartbeats. Looma owns the wheel thread and stops it; an executor is one more thing to stop.
 
 ## See also
 
-- [`schedulers.md`](schedulers.md) — the two schedulers, choosing one, work stealing, and the
-  engine internals, documented once.
-- The javadoc on every type above; it is the normative reference for the exact exception contracts.
+- [`schedulers.md`](schedulers.md) — the two schedulers, choosing one, and how a `tell` runs.
+- The javadoc of every type above: the reference for the exact exception contracts.

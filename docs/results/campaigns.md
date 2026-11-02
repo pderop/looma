@@ -10,23 +10,10 @@ One folder per campaign, `<date>-<cpu>`: its `summary.md`, and the files behind 
 | Campaign | Schedulers | JDK | Note |
 | --- | --- | --- | --- |
 | [`2026-11-01-ryzen9-9950x`](2026-11-01-ryzen9-9950x/summary.md) | `mpsc`, `jdk`, `jdk-pinned` | openjdk/loom pull request 227 | the latest; the client threads count their own answers |
-| [`2026-10-24-ryzen9-9950x`](2026-10-24-ryzen9-9950x/summary.md) | `stealing-local`, `stealing-local-home` ([older names](#older-campaigns)), `jdk`, `jdk-pinned` | builds.shipilev.net | after [#9](https://github.com/pderop/looma/pull/9); `stealing-local-home` spends less CPU per request than `stealing-local` in both cases |
+| [`2026-10-24-ryzen9-9950x`](2026-10-24-ryzen9-9950x/summary.md) | `stealing-local`, `stealing-local-home` ([older names](#older-campaigns)), `jdk`, `jdk-pinned` | builds.shipilev.net | after [#9](https://github.com/pderop/looma/pull/9) |
 | [`2026-10-22-ryzen9-9950x`](2026-10-22-ryzen9-9950x/summary.md) | the same four | builds.shipilev.net | before #9: the scan for an idle carrier started at a random one, not the first; #9 removed it |
 
 The machine and the layout: [`../benchmark.md`](../benchmark.md#amd-ryzen-9-9950x).
-
-## Older campaigns
-
-2026-10-22 and 2026-10-24 ran two setups of Looma's copy of the Netty-VirtualThread-Scheduler,
-then behind `Carriers.affine(n)`:
-
-| Name | What it was | Now |
-| --- | --- | --- |
-| `stealing-local-home` | stealing within an L3, actors never stolen | removed |
-| `stealing-local` | the same, but an idle carrier could also steal an actor | removed |
-
-Since 2026-10-31, the copy is no longer built, and `Carriers.affine(n)` runs the MPSC scheduler:
-its runs are named `mpsc`.
 
 ## What a campaign contains
 
@@ -34,17 +21,18 @@ its runs are named `mpsc`.
 copies it here:
 
 ```
-summary.md                                   the results
-<case>-c2c-<scheduler>.txt                   the perf c2c report
-runs/<case>-<run>-<scheduler>-<depth>.out    the console of a run, e.g. default-r1-mpsc-256.out,
-runs/<case>-<run>-<scheduler>-<depth>.gc.log   big-c2c-jdk-256.out, default-epsilon-mpsc-256.out;
-                                             and its GC log
-runs/<case>-stat-<scheduler>.csv             the perf stat counts, per thread
-runs/<case>-c2c-<scheduler>.data             the perf c2c data: stays in bench/, not copied
+summary.md                                     the results
+<case>-c2c-<scheduler>.txt                     the perf c2c report
+runs/<case>-<run>-<scheduler>-<depth>.out      the console of a run (default-r1-mpsc-256.out,
+                                               big-c2c-jdk-256.out, default-epsilon-mpsc-256.out)
+runs/<case>-<run>-<scheduler>-<depth>.gc.log   its GC log
+runs/<case>-stat-<scheduler>.csv               the perf stat counts, per thread
+runs/<case>-c2c-<scheduler>.data               the perf c2c data: stays in bench/, not copied
 ```
 
-`summary.md`: a header (date, machine, CPU, turbo, JDK, CPU lists, heap, command), then, with no
-reading of the numbers, these sections. Each one gives its table, then its formulas and its files:
+`summary.md`: a header (date, machine, CPU, turbo, JDK, CPU lists, heap, command), then these
+sections. They give numbers, no analysis. Each one gives its table, then its formulas and its
+files:
 
 | Section | Per | Gives |
 | --- | --- | --- |
@@ -56,8 +44,7 @@ reading of the numbers, these sections. Each one gives its table, then its formu
 | perf c2c | case, scheduler | from the c2c run |
 | Epsilon | case, scheduler | CPU with G1 and with Epsilon, heap used |
 
-What each column means ([Where the numbers come from](#where-the-numbers-come-from) gives the
-formulas):
+What each column means:
 
 | Column | What it is |
 | --- | --- |
@@ -80,8 +67,8 @@ formulas):
 
 ## Where the numbers come from
 
-Each number is read from a file of `runs/` or a c2c report, or computed from the same line. In the
-order of `summary.md`.
+The formulas of each column. Each number is read from a file of `runs/` or a c2c report, or
+computed from the same line. In the order of `summary.md`.
 
 ### In short and Controls
 
@@ -159,3 +146,16 @@ space 12582912K,  51% used [0x0000000500000000, 0x000000068b3379e0, 0x0000000800
                              start               top (next object)    end
 heap used = 0x68b3379e0 - 0x500000000 = 6,630,373,856 bytes = 6,323 MiB
 ```
+
+## Older campaigns
+
+2026-10-22 and 2026-10-24 ran two setups of Looma's copy of the Netty-VirtualThread-Scheduler,
+then behind `Carriers.affine(n)`, on the Loom JDK 28 of builds.shipilev.net (b59):
+
+| Name | What it was | Now |
+| --- | --- | --- |
+| `stealing-local-home` | stealing within an L3, actors never stolen | removed |
+| `stealing-local` | the same, but an idle carrier could also steal an actor | removed |
+
+Since 2026-10-31, the copy is no longer built, and `Carriers.affine(n)` runs the MPSC scheduler:
+its runs are named `mpsc`.

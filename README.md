@@ -1,6 +1,6 @@
 # Looma
 
-**Actors on Java virtual threads, pinned to a core.**
+**Actors on Java virtual threads, which can be kept on one CPU core.**
 
 Looma starts from Francesco Nigro's
 [**Netty-VirtualThread-Scheduler**](https://github.com/franz1981/Netty-VirtualThread-Scheduler): a
@@ -8,264 +8,115 @@ carrier-affine virtual-thread scheduler, where a pool of carrier threads replace
 `ForkJoinPool`, each carrier pinned to a CPU, and a virtual thread keeps resuming on the same
 carrier — so on the same core, with its data still in that core's caches. His
 [PERFORMANCE.md](https://github.com/franz1981/Netty-VirtualThread-Scheduler/blob/master/PERFORMANCE.md)
-shows what that is worth to a Netty event loop. Looma asks the next question:
+shows what that is worth to a Netty event loop. Then Looma asks the next question:
 
 > **Does a carrier-affine scheduler help an actor system?**
 
-An actor is defined by private state that only it touches, which is exactly what wants to stay on
-one core. Looma exists to measure whether it does.
+An actor owns private state that only it touches: exactly what wants to stay on one core. Looma
+is an actor library built to measure whether it helps. The same actors run on the JDK's default
+scheduler, or on a carrier-affine one, and a benchmark compares the two:
+[the answer](docs/benchmark.md).
 
-## What Looma is
+## Quick start
 
-- **A deliberately minimal actor API**: `tell` and `ask`, a parent/child hierarchy with paths,
-  supervision (resume / restart / stop), a graceful cascading stop, pools of N actors behind
-  one reference, and delayed or periodic `tell` from a timer wheel on each carrier. Ten types in
-  one package — enough to write a realistic workload against, small enough that a benchmark
-  compares schedulers rather than frameworks. See
-  [what it does not do](docs/api.md#11-what-looma-does-not-do).
-- **One engine, two schedulers.** The same actors run on the JDK's builtin scheduler, or on a
-  carrier-affine one, chosen by `ActorSystem.builder().carriers(...)` or by JVM flags — never by
-  the actor code. The carrier-affine one is the JDK's MPSC scheduler: Francesco Nigro's next
-  step after his Netty scheduler, proposed to the JDK itself as
-  [openjdk/loom pull request 227](https://github.com/openjdk/loom/pull/227), a draft. Each
-  carrier has its own queue, and a `Thread.Affinity` keeps a virtual thread on one carrier.
-  Looma first ran on a copy of the Netty scheduler, and now runs on this one.
-- **A benchmark** that runs the same workload under each scheduler and compares CPU per request,
-  latency and migrations.
-
-Looma is a lab, not a production framework.
-
-## Quickstart
+The whole API runs on a stock JDK 25: that and Maven are all you need here. The actors then run
+on the JDK's default scheduler, without carrier affinity: an actor may move from core to core.
+Carrier affinity needs a special JDK: [next section](#with-carrier-affinity).
 
 ```sh
-# 1. The Loom JDK of openjdk/loom pull request 227, built from source and registered in
-#    SDKMAN as 28-loom-pr227: see "Building the Loom JDK" below. Then, in this project:
-sdk env                                            # reads .sdkmanrc, picks 28-loom-pr227
-
-# 2. Build, and run every test under every scheduler configuration
-mvn clean install
-
-# 3. Carrier affinity in one trace: an actor and its child stay on one carrier, its offloaded work can move
-scripts/run-hello.sh
-
-# 4. The benchmark: the carrier-affine scheduler against the JDK builtin, same binary. One
-#    repetition of both cases, about 16 minutes; the results go to bench/<date>-<time>/summary.md.
-#    The default CPUs are those of an AMD Ryzen 9 9950X. On another machine, give yours:
-#    --cpus-carriers, --cpus-client and --cpus-backend (docs/benchmark.md, "Where things run").
-scripts/bench.sh --reps 1
+git clone https://github.com/pderop/looma && cd looma
+mvn -q install -DskipTests      # puts looma-core 1.0-SNAPSHOT in ~/.m2: it is not on Maven Central
 ```
 
-The benchmark pins with `taskset` and `sched_setaffinity`, so it measures something only on Linux.
-On macOS it runs unpinned: a smoke test, not a measurement. How to run and read it:
-[`docs/benchmark.md`](docs/benchmark.md).
-
-## Minimal example
-
-```xml
-<dependency>
-    <groupId>io.github.pderop</groupId>
-    <artifactId>looma-core</artifactId>
-    <version>1.0-SNAPSHOT</version>
-</dependency>
-```
+[`QuickStart.java`](examples/src/main/java/io/github/pderop/looma/examples/quickstart/QuickStart.java):
 
 ```java
 record Greet(String who) implements Message {}
 record Greeting(String text) implements Message {}
 
-class Greeter implements Actor {
-    private int greeted;                       // no synchronization: one message at a time
+static class Greeter implements Actor {
+    private int greeted;                    // no lock: the actor runs one message at a time
 
     @Override
     public void onReceive(Message message, ActorRef sender, ActorContext context) {
         if (message instanceof Greet greet) {
             greeted++;
-            sender.tell(new Greeting("hello " + greet.who()), context.self());
+            System.out.println("greeting " + greet.who() + " (#" + greeted + ") on " + Thread.currentThread());
+            if (sender != null) {
+                sender.tell(new Greeting("hello " + greet.who()), context.self());
+            }
         }
     }
 }
 
-ActorSystem system = ActorSystem.builder().build();
-ActorRef greeter = system.spawn("greeter", Greeter::new);
+public static void main(String[] args) throws Exception {
+    ActorSystem system = ActorSystem.builder().build();
+    ActorRef greeter = system.spawn("greeter", Greeter::new);
 
-Greeting reply = greeter.ask(new Greet("Pierre"), Greeting.class)
-        .orTimeout(1, TimeUnit.SECONDS)
-        .join();
+    greeter.tell(new Greet("Ann"));                                   // fire and forget
+    Greeting reply = greeter.ask(new Greet("Bob"), Greeting.class)    // request and reply
+            .orTimeout(1, TimeUnit.SECONDS).join();
+    System.out.println(reply.text());
+    greeter.tell(new Greet("Cid"), 100, TimeUnit.MILLISECONDS);       // in 100 ms
 
-system.shutdown();
-system.awaitTermination(5, TimeUnit.SECONDS);
+    Thread.sleep(300);
+    system.shutdown();
+    System.out.println("terminated: " + system.awaitTermination(5, TimeUnit.SECONDS));
+}
 ```
 
-Nothing there names a scheduler: `build()` takes whichever one the process has. To choose it in
-code instead — before the JVM's first virtual thread:
+```sh
+java -cp core/target/looma-core-1.0-SNAPSHOT.jar \
+     examples/src/main/java/io/github/pderop/looma/examples/quickstart/QuickStart.java
+```
+
+```
+greeting Ann (#1) on VirtualThread[#27,looma-/greeter]/runnable@ForkJoinPool-1-worker-1
+greeting Bob (#2) on VirtualThread[#27,looma-/greeter]/runnable@ForkJoinPool-1-worker-1
+hello Bob
+greeting Cid (#3) on VirtualThread[#33,looma-/greeter]/runnable@ForkJoinPool-1-worker-2
+terminated: true
+```
+
+How to read it:
+
+```
+Ann, Bob     -> one virtual thread, #27: it runs the actor's messages one at a time
+Cid (100 ms) -> a new virtual thread, #33: the mailbox was empty, so #27 had ended
+worker-1, -2 -> the JDK's scheduler may move the actor to another carrier
+                Carriers.affine stops that: next section
+```
+
+### With carrier affinity
+
+`Carriers.affine(n)` keeps each actor on one carrier for life, each carrier pinned to one CPU on
+Linux. It needs:
+
+- a special JDK: the Loom JDK 28 (in development), with the MPSC scheduler of
+  [openjdk/loom pull request 227](https://github.com/openjdk/loom/pull/227), Francesco Nigro's new
+  version of his scheduler. There is no binary: build it from source,
+  [how](mpsc-scheduler/README.md#the-jdk);
+- `looma-mpsc-scheduler` on the classpath;
+- the choice in code, before the JVM's first virtual thread:
 
 ```java
-ActorSystem system = ActorSystem.builder()
-        .carriers(Carriers.affine(8))   // or Carriers.builtin(8)
-        .build();
+ActorSystem system = ActorSystem.builder().carriers(Carriers.affine(2)).build();
 ```
 
-`affine(8)` keeps each actor on one carrier for life, each carrier pinned to one CPU on Linux. It
-has no options: it is the setup the benchmark found the fastest.
+Pinning a carrier is a native call. Add `--enable-native-access=ALL-UNNAMED` to the `java` command,
+or the JVM prints a warning; the carriers are pinned either way.
 
-`affine` runs the JDK's MPSC scheduler. It needs `looma-mpsc-scheduler` on the classpath, and the
-Loom JDK below.
-Everything else is in [`docs/api.md`](docs/api.md) and [`docs/schedulers.md`](docs/schedulers.md).
-
-## Documentation
-
-| | |
-| --- | --- |
-| [`docs/api.md`](docs/api.md) | The API: actors, messages, `tell`/`ask`, hierarchy, supervision, placement, pools, offloading, shutdown. |
-| [`docs/schedulers.md`](docs/schedulers.md) | The two schedulers (`affine`, `builtin`): what each one does, choosing one in code or by flags, placement, the engine and the SPI, and why carrier affinity. |
-| [`docs/benchmark.md`](docs/benchmark.md) | The benchmark: the question and the answer, the program, the schedulers it compares, running it, the machine, and why it is built this way. |
-| [`docs/results/campaigns.md`](docs/results/campaigns.md) | The published campaigns, what a campaign folder contains, and where each number of a `summary.md` comes from. |
-| [`netty-loom-scheduler/README.md`](netty-loom-scheduler/README.md) | The copy of the Netty scheduler, no longer built: upstream commit, Looma's two patches, refresh procedure. |
-| [`mpsc-scheduler/README.md`](mpsc-scheduler/README.md) | The adapter of the JDK's MPSC scheduler: its classes, its JDK, its tests. |
-
-## Modules
-
-| Directory | Artifact | Java | Contents |
-| --- | --- | --- | --- |
-| `core` | `looma-core` | 25 | The API (`io.github.pderop.looma`), the engine (`….impl`), the scheduler and mailbox SPIs (`….spi`). |
-| `mpsc-scheduler` | `looma-mpsc-scheduler` | 28 | `affine`: the adapter `….scheduler.mpsc` of the JDK's MPSC scheduler. |
-| `examples` | `looma-examples` | 25 | `….examples.hello` (the affinity trace) and `….examples.user` (the benchmark). |
-
-Everything depends on `looma-core`, never the reverse, and `looma-core` never names a scheduler
-class. Inside `core`, everything under `impl` but `DefaultActorSystem` is package-private.
-
-`netty-loom-scheduler`, Looma's copy of the Netty-VirtualThread-Scheduler, stays in the
-repository but is no longer built: see [its README](netty-loom-scheduler/README.md).
-
-## Prerequisites
-
-**A stock JDK 25 is enough to use Looma.** On one, `mvn verify` builds and tests `core` and
-`examples`, the scheduler module is not even in the reactor, and every `ActorSystem` runs on
-the JDK's builtin scheduler: a complete actor runtime, without carrier affinity.
-
-**The carrier-affine scheduler needs the Loom JDK of
-[openjdk/loom pull request 227](https://github.com/openjdk/loom/pull/227)**, at commit `731930db54`,
-on the [`fibers` branch of `openjdk/loom`](https://github.com/openjdk/loom/tree/fibers). It has
-what a stock JDK 28 does not: the MPSC scheduler and `Thread.Affinity`.
-
-On another JDK, Maven fails with `cannot find symbol`. There is no binary: build it from source,
-as below.
-
-`.sdkmanrc` names `28-loom-pr227`, a local SDKMAN identifier for that build. Without SDKMAN, export
-`JAVA_HOME`; Maven runs on that JDK itself, no toolchain. `LOOM_JDK_HOME` overrides it for the
-scripts, which all check for a Loom build before launching anything.
-
-### Building the Loom JDK
-
-About 15 minutes on 16 cores, and about 3 GB of disk.
-
-**1. The tools.** On Ubuntu or Debian:
+With that JDK in SDKMAN as `28-loom-pr227`:
 
 ```sh
-sudo apt-get install -y autoconf make zip unzip file gcc g++ \
-  libasound2-dev libcups2-dev libfontconfig1-dev \
-  libx11-dev libxext-dev libxrender-dev libxrandr-dev libxtst-dev libxt-dev
+sdk env                 # reads .sdkmanrc
+mvn clean install       # builds every module, runs every test
+java --enable-native-access=ALL-UNNAMED \
+     -cp core/target/looma-core-1.0-SNAPSHOT.jar:mpsc-scheduler/target/looma-mpsc-scheduler-1.0-SNAPSHOT.jar:examples/target/classes \
+     io.github.pderop.looma.examples.hello.Main       # the hello example, on two affine carriers
 ```
 
-On macOS: the Xcode command line tools (`xcode-select --install`) and `autoconf`
-(`brew install autoconf`).
-
-**2. A boot JDK**, a JDK 27 or 28. The Loom build of builds.shipilev.net is one (a JDK 28); CI
-uses it:
-
-```sh
-mkdir -p "$HOME/boot-jdk"
-curl -fsSL https://builds.shipilev.net/openjdk-jdk-loom/openjdk-jdk-loom-linux-x86_64-server.tar.xz \
-  | tar -xJ -C "$HOME/boot-jdk" --strip-components=1
-```
-
-Other systems have their tarball next to this one on builds.shipilev.net.
-
-**3. The sources** of the pull request, at the commit Looma uses:
-
-```sh
-mkdir -p "$HOME/openjdk-loom-pr227" && cd "$HOME/openjdk-loom-pr227"
-curl -fsSL https://github.com/franz1981/loom/archive/731930db54a052cc4549db7361816f16a0119835.tar.gz \
-  | tar -xz --strip-components=1
-```
-
-**4. The build.** On Linux:
-
-```sh
-bash configure --with-boot-jdk="$HOME/boot-jdk" --disable-warnings-as-errors \
-  --with-native-debug-symbols=none --with-version-opt=pr227-731930d
-make images
-```
-
-On macOS, `configure` also needs the Metal compiler, which recent Xcode versions no longer ship.
-Looma needs no graphics, so two stub scripts are enough. Create them once:
-
-```sh
-mkdir -p "$HOME/.metal-stubs"
-cat > "$HOME/.metal-stubs/metal" <<'STUB'
-#!/bin/bash
-# No Metal toolchain: writes an empty output file, so that the build goes on.
-out=""; prev=""
-for a in "$@"; do [ "$prev" = "-o" ] && out="$a"; prev="$a"; done
-[ -n "$out" ] && { mkdir -p "$(dirname "$out")"; : > "$out"; }
-exit 0
-STUB
-cp "$HOME/.metal-stubs/metal" "$HOME/.metal-stubs/metallib"
-chmod +x "$HOME/.metal-stubs/metal" "$HOME/.metal-stubs/metallib"
-```
-
-Then, with a macOS boot JDK in `$HOME/boot-jdk`:
-
-```sh
-bash configure --with-boot-jdk="$HOME/boot-jdk" --disable-warnings-as-errors \
-  --with-native-debug-symbols=none --with-version-opt=pr227-731930d \
-  METAL="$HOME/.metal-stubs/metal" METALLIB="$HOME/.metal-stubs/metallib"
-make images
-```
-
-`--with-version-opt` is not needed, but `java -version` then names the commit
-(`28-internal-pr227-731930d`), and the benchmark's `summary.md` copies that line.
-
-**5. SDKMAN.** Register the image under the name `.sdkmanrc` expects. The image is in
-`build/<os>-<arch>-server-release/images/jdk`, for example `linux-x86_64` or `macosx-aarch64`:
-
-```sh
-sdk install java 28-loom-pr227 "$HOME/openjdk-loom-pr227/build/linux-x86_64-server-release/images/jdk"
-```
-
-SDKMAN only links to that folder: keep it. Then check the JDK, in this project:
-
-```sh
-sdk env
-java -version                                      # ... (build 28-internal-pr227-731930d)
-javap 'java.lang.Thread$Affinity'                  # no error: this is the right JDK
-```
-
-## Build and test
-
-```sh
-mvn clean install            # local builds also apply Spotless formatting
-mvn -B verify -P '!dev'      # what CI runs: formatting checked, not applied
-```
-
-The scheduler is configured once per JVM, so the tests run in several Surefire executions, one per
-configuration: the contract suites over the builtin in `core`, then again over the MPSC scheduler,
-plus `carriers(...)` installing it in a fresh JVM per class. The table is in
-[`docs/schedulers.md`](docs/schedulers.md#tests). To run a single class, name the execution too —
-`-Dtest=` alone applies to every execution, with the wrong flags:
-
-```sh
-mvn -pl mpsc-scheduler test-compile surefire:test@install-test -Dtest=MpscInstallTest
-```
-
-## The hello example
-
-```sh
-scripts/run-hello.sh
-```
-
-`hello.Main` asks for two carrier-affine carriers, `carriers(Carriers.affine(2))`, which run the
-JDK's MPSC scheduler, so it needs no scheduler flag. Each line names the carrier it ran on:
+The JVM first prints `WARNING: Using experimental MPSC virtual thread scheduler`, then:
 
 ```
 [/hello] handling 'Pierre' on VirtualThread[#38,looma-/hello]/runnable@mpsc-carrier-0
@@ -276,19 +127,67 @@ JDK's MPSC scheduler, so it needs no scheduler flag. Each line names the carrier
 [/hello] blocking (simulated I/O) for 'Bob' on VirtualThread[#43]/runnable@mpsc-carrier-1
 [/hello/audit] audited Hello[name=Pierre] from /hello on VirtualThread[#39,looma-/hello/audit]/runnable@mpsc-carrier-0
 ...
-[/hello] greeting 'Pierre' on VirtualThread[#41]/runnable@mpsc-carrier-1
-Greeting[text=Greeting Pierre]
-...
 ```
 
-- The `/hello` actor, and the `/hello/audit` child it spawned, always run on `mpsc-carrier-0`:
-  an actor never leaves its carrier, and a child gets its parent's.
-- Each call `/hello` offloads through `vThreadFactory()`, to simulate a blocking call, starts on
-  `mpsc-carrier-0` too. The other carrier is idle, so it steals them: they run on
-  `mpsc-carrier-1`, and sometimes on `mpsc-carrier-0`.
-- An actor runs on a virtual thread only while it has messages: the three messages arrive
-  together, so one virtual thread of `/hello` (`#38`) handles them all, then ends. Each offloaded
-  call gets a fresh one (`#41` to `#43`).
+```
+/hello, /hello/audit -> always mpsc-carrier-0: an actor never leaves its carrier,
+                        and a child gets its parent's
+offloaded calls      -> start on carrier-0; carrier-1 is idle and may steal them
+3 messages at once   -> one virtual thread #38; each offloaded call -> a new thread, #41 to #43
+```
+
+### Where next
+
+- [`docs/api.md`](docs/api.md): the API.
+- [`docs/schedulers.md`](docs/schedulers.md): the two schedulers, and how a `tell` runs.
+- [`docs/benchmark.md`](docs/benchmark.md): the benchmark, its answer, and how to run it.
+
+## Words
+
+```
+carrier           an OS thread that runs virtual threads
+mailbox thread    the virtual thread that runs an actor's messages, one at a time;
+                  the first message of an empty mailbox starts it, it ends once the mailbox is empty
+home carrier      the carrier an actor gets at spawn
+affine            Carriers.affine(n): an actor's mailbox threads run only on its home carrier,
+                  each carrier pinned to one CPU on Linux. It is the JDK's MPSC scheduler
+                  (pull request 227). The benchmark calls it mpsc
+builtin           Carriers.builtin(n): the JDK's default scheduler, a ForkJoinPool.
+                  The benchmark calls it jdk
+offloaded thread  a thread from context.vThreadFactory(), for blocking work; an idle carrier may steal it
+```
+
+## Modules
+
+| Directory | Artifact | Java | Contents |
+| --- | --- | --- | --- |
+| `core` | `looma-core` | 25 | The API (`io.github.pderop.looma`), the engine (`….impl`), the SPI (`….spi`). |
+| `mpsc-scheduler` | `looma-mpsc-scheduler` | 28 | `affine`: the adapter of the JDK's MPSC scheduler. [README](mpsc-scheduler/README.md). |
+| `examples` | `looma-examples` | 25 | `quickstart`, `hello` (the affinity trace), `user` (the benchmark), `timer` (the timer benchmark). |
+
+Everything depends on `looma-core`, never the reverse, and `looma-core` never names a scheduler
+class. `mpsc-scheduler` joins the build only on a JDK 28 or newer. `netty-loom-scheduler` is no
+longer built (see Credit).
+
+## Build and test
+
+```sh
+mvn clean install            # local builds also apply Spotless formatting
+mvn -B verify -P '!dev'      # what CI runs: formatting checked, not applied
+```
+
+On a JDK 25 this builds and tests `core` and `examples`. With the Loom JDK it also builds
+`mpsc-scheduler` and runs its tests; on a JDK 28 or newer without pull request 227, Maven fails in
+`mpsc-scheduler` with `cannot find symbol`. Without SDKMAN, export `JAVA_HOME`; `LOOM_JDK_HOME`
+overrides it for the scripts.
+
+The tests run in several Surefire executions, one per scheduler setup:
+[`mpsc-scheduler/README.md`](mpsc-scheduler/README.md#tests). To run one class, name the execution
+too; `-Dtest=` alone applies to every execution, with the wrong flags:
+
+```sh
+mvn -pl mpsc-scheduler test-compile surefire:test@install-test -Dtest=MpscInstallTest
+```
 
 ## Not to be confused with
 
@@ -299,12 +198,12 @@ Greeting[text=Greeting Pierre]
 ## Credit
 
 `affine` runs the MPSC scheduler of
-[openjdk/loom pull request 227](https://github.com/openjdk/loom/pull/227), by Francesco Nigro.
+[openjdk/loom pull request 227](https://github.com/openjdk/loom/pull/227), by Francesco Nigro: a
+queue per carrier, and a `Thread.Affinity` that keeps a virtual thread on one carrier.
 
-Looma's first carrier-affine scheduler, in `netty-loom-scheduler/src/main/java/io/netty/loom`, is
-a copy of
-[franz1981/Netty-VirtualThread-Scheduler](https://github.com/franz1981/Netty-VirtualThread-Scheduler)
-(Apache-2.0), by Francesco Nigro too, with documented changes in two files — see
+Looma's first scheduler was a copy of his
+[Netty-VirtualThread-Scheduler](https://github.com/franz1981/Netty-VirtualThread-Scheduler)
+(Apache-2.0), in `netty-loom-scheduler`, with documented changes in two files — see
 [`netty-loom-scheduler/README.md`](netty-loom-scheduler/README.md) and [`NOTICE`](NOTICE). That
 module is no longer built.
 
