@@ -106,6 +106,7 @@ public final class Main {
 		// carrierCount() is 1: an actor cannot be placed on one of its workers.
 		System.out.printf(Locale.ROOT, "scheduler    %s, %d carriers%n", system.scheduler().getClass().getName(),
 				groups);
+		System.out.printf(Locale.ROOT, "poller mode  %s%n", System.getProperty("jdk.pollerMode", "not set"));
 		System.out.printf(Locale.ROOT, "groups       %d, %d users each (~%d KiB), depth %d%n", groups,
 				UserGroup.USERS_PER_GROUP, mapKiB, UserGroup.DEPTH);
 		System.out.printf(Locale.ROOT, "load         %,d req/s, %d connection(s) on CPUs %s%n", rate,
