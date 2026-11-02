@@ -9,14 +9,14 @@ actors moved.
 
 **The answer**, on an AMD Ryzen 9 9950X, in CPU µs per request (lower is better):
 
-| Case | `mpsc` (each actor stays on its core) | `jdk` (the JDK's default scheduler) | `jdk-pinned` |
-| --- | --- | --- | --- |
-| `default`: data fits in a core's L2 | **14.81** | 36.13 | 43.71 |
-| `big`: data does not fit in the caches | **62.82** | cannot keep up: not a measurement | 75.10 |
+| Case | `mpsc` (each actor stays on its core) | `mpsc-mode3` (the same, poller mode 3) | `jdk` (the JDK's default scheduler) | `jdk-pinned` |
+| --- | --- | --- | --- | --- |
+| `default`: data fits in a core's L2 | **15.26** | 20.51 | 35.92 | 43.63 |
+| `big`: data does not fit in the caches | **63.06** | 66.50 | cannot keep up: not a measurement | 75.54 |
 
-From [`results/2026-11-01-ryzen9-9950x/summary.md`](results/2026-11-01-ryzen9-9950x/summary.md),
-"At a glance": depth 256, the mean of 3 runs. In `default`, `mpsc` spends 59.0% less than `jdk`; in
-`big`, `jdk-pinned` spends 19.5% more than `mpsc`.
+From [`results/2026-11-02-ryzen9-9950x/summary.md`](results/2026-11-02-ryzen9-9950x/summary.md),
+"At a glance": depth 256, the mean of 3 runs. In `default`, `mpsc` spends 57.5% less than `jdk`, and
+`mpsc-mode3` 42.9% less; in `big`, `jdk-pinned` spends 19.8% more than `mpsc`.
 
 - Code: [`examples/…/examples/user`](../examples/src/main/java/io/github/pderop/looma/examples/user)
 - Scripts: [`scripts/bench.sh`](../scripts/bench.sh) runs it, [`scripts/publish.sh`](../scripts/publish.sh)
@@ -95,16 +95,17 @@ user is about 82 bytes.
 
 ### The schedulers
 
-Same jar, same JVM flags. Only `-Dbench.scheduler` changes: `mpsc` or `jdk`. `jdk-pinned` is a
-`jdk` run whose carriers the script pins.
+Same jar, same JVM flags. Only `-Dbench.scheduler` changes: `mpsc` or `jdk`. `mpsc-mode3` is an
+`mpsc` run with `-Djdk.pollerMode=3`. `jdk-pinned` is a `jdk` run whose carriers the script pins.
 
 | Scheduler | What it is |
 | --- | --- |
 | `mpsc` | `Carriers.affine(n)`: the JDK's MPSC scheduler (openjdk/loom pull request 227). Each carrier pinned to its CPU. An actor never leaves its carrier. An idle carrier steals only the GET threads. |
+| `mpsc-mode3` | `mpsc` with the JDK's poller mode 3. Each carrier has its own `Read-Poller`, a virtual thread. When it has nothing to read, it waits on the `Master-Poller`, a platform thread. `mpsc` sets no poller mode: on Linux, the JDK then picks mode 4, one epoll per carrier. |
 | `jdk` | `Carriers.builtin(n)`: the JDK's default scheduler, same carrier count, not pinned. |
 | `jdk-pinned` | `jdk`, each carrier pinned to one CPU by the script (Linux only). |
 
-`--schedulers` picks them, e.g. `scripts/bench.sh --schedulers mpsc,jdk`. Default: all three.
+`--schedulers` picks them, e.g. `scripts/bench.sh --schedulers mpsc,jdk`. Default: all four.
 [`schedulers.md`](schedulers.md) explains each one.
 
 ## The machine
@@ -251,7 +252,7 @@ first. The `perf c2c` data files are not copied. `publish.sh -n` shows what it w
 
 ## Results
 
-Latest: [`results/2026-11-01-ryzen9-9950x/summary.md`](results/2026-11-01-ryzen9-9950x/summary.md).
+Latest: [`results/2026-11-02-ryzen9-9950x/summary.md`](results/2026-11-02-ryzen9-9950x/summary.md).
 All the campaigns, the older ones too: [`results/campaigns.md`](results/campaigns.md).
 
 ## Why it is built this way
@@ -274,5 +275,7 @@ All the campaigns, the older ones too: [`results/campaigns.md`](results/campaign
 - **`taskset` on the JVM:** gives `mpsc` its CPU list, and keeps the GC and the JIT on the carrier
   CPUs, away from the clients and the backend.
 - **`jdk-pinned`:** tells whether pinning alone makes the difference.
+- **`mpsc-mode3`:** tells whether the gain of `mpsc` comes only from poller mode 4, or also from
+  keeping each actor on its carrier.
 - **StackChunks counted:** if parked stacks piled up on the heap, the GC would do more under some
   schedulers. Two counts show it.
