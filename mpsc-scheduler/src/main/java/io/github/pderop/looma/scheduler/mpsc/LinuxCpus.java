@@ -78,33 +78,36 @@ final class LinuxCpus {
 	}
 
 	/**
-	 * Pins the calling thread to the CPU of carrier {@code carrier}. Returns
-	 * whether it did.
+	 * Pins the calling thread to the CPU of home {@code home}. Returns whether it
+	 * did.
 	 */
-	boolean pin(int carrier) {
+	boolean pin(int home) {
 		if (SCHED_SET_AFFINITY == null) {
 			// No such call here, as on macOS, or no native access: nothing can be pinned.
 			return false;
 		}
-		if (carrier >= cpus.length) {
-			System.err.println("WARNING: mpsc-carrier-" + carrier + " has no CPU of its own (" + cpus.length
+		if (home >= cpus.length) {
+			System.err.println("WARNING: the carrier of home " + home + " has no CPU of its own (" + cpus.length
 					+ " CPUs). It runs on all of them.");
 			return false;
 		}
 		BitSet cpu = new BitSet();
-		cpu.set(cpus[carrier]);
+		cpu.set(cpus[home]);
 		if (!setAffinity(cpu)) {
-			System.err.println("WARNING: sched_setaffinity failed. mpsc-carrier-" + carrier + " is not pinned.");
+			System.err.println("WARNING: sched_setaffinity failed. The carrier of home " + home + " is not pinned.");
 			return false;
 		}
 		return true;
 	}
 
-	/**
-	 * The cluster of carrier {@code carrier}, or -1 if it has no CPU of its own.
-	 */
-	int cluster(int carrier) {
-		return carrier < cpus.length ? clusters[carrier] : -1;
+	/** The CPU of home {@code home}, or -1 if it has none of its own. */
+	int cpu(int home) {
+		return home < cpus.length ? cpus[home] : -1;
+	}
+
+	/** The cluster of home {@code home}, or -1 if it has no CPU of its own. */
+	int cluster(int home) {
+		return home < cpus.length ? clusters[home] : -1;
 	}
 
 	/** The CPUs the calling thread may run on, or null if unknown. */

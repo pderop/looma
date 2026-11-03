@@ -31,6 +31,7 @@ import io.github.pderop.looma.impl.TimerProbe;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Runs the shared {@link TimerTest} suite against the MPSC scheduler, chosen by
@@ -51,7 +52,7 @@ class MpscTimerTest extends TimerTest {
 
 	/**
 	 * The wheel of the target's carrier sends the message, and the actor handles it
-	 * on that same home carrier.
+	 * on that same home carrier: the carrier of a message told at once.
 	 */
 	@Test
 	void aDelayedMessageIsProcessedOnTheTargetsHomeCarrier() throws Exception {
@@ -60,17 +61,24 @@ class MpscTimerTest extends TimerTest {
 		for (int c = 0; c < carriers; c++) {
 			CompletableFuture<int[]> result = new CompletableFuture<>();
 			results.add(result);
-			ActorRef ref = system().spawn("home-" + c,
-					() -> (message, sender, context) -> result
-							.complete(new int[]{MpscPool.currentCarrier(), system().homeCarrierIdOf(context.self())}),
-					SpawnOptions.placedOn(Placement.carrier(c)));
+			int[] now = {-1};
+			ActorRef ref = system().spawn("home-" + c, () -> (message, sender, context) -> {
+				if (now[0] == -1) {
+					now[0] = MpscPool.currentCarrier();
+				} else {
+					result.complete(
+							new int[]{now[0], MpscPool.currentCarrier(), system().homeCarrierIdOf(context.self())});
+				}
+			}, SpawnOptions.placedOn(Placement.carrier(c)));
+			ref.tell(new Ping());
 			ref.tell(new Ping(), 20, TimeUnit.MILLISECONDS);
 		}
 
 		for (int c = 0; c < carriers; c++) {
 			int[] ran = results.get(c).get(10, TimeUnit.SECONDS);
-			assertEquals(c, ran[1]);
-			assertEquals(ran[1], ran[0], "handled away from the home carrier");
+			assertEquals(c, ran[2]);
+			assertTrue(ran[0] >= 0, "not on an MPSC carrier");
+			assertEquals(ran[0], ran[1], "handled away from the home carrier");
 		}
 	}
 

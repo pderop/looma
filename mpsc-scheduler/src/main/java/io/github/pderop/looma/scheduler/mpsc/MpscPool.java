@@ -22,15 +22,17 @@ import java.util.concurrent.locks.LockSupport;
  * carrier, and the CPU topology when the carriers are pinned.
  *
  * <p>
- * An affinity does not say which carrier it lands on. So the pool starts one
- * virtual thread per affinity and reads the name of its carrier.
+ * An affinity does not say which carrier it lands on, and Looma does not need
+ * to know. Home {@code i} is the {@code i}-th affinity of one group. The
+ * affinities of a group land on different carriers. When pinned, the carrier of
+ * home {@code i} is pinned to CPU {@code i}.
  */
 final class MpscPool {
 
 	/** The name the JDK gives each MPSC carrier, followed by its id. */
 	static final String CARRIER_PREFIX = "mpsc-carrier-";
 
-	/** Carrier id to the affinity that runs on it. */
+	/** Home index to its affinity: one affinity per carrier. */
 	private final Thread.Affinity[] homes;
 
 	/** The CPUs the carriers are pinned to, or null if any of them floats. */
@@ -57,33 +59,38 @@ final class MpscPool {
 	 * ends. If one of them changes, {@code MpscInstallTest} fails.
 	 *
 	 * @throws IllegalStateException
-	 *             if the scheduler in force is not the MPSC one, or has another
-	 *             number of carriers
+	 *             if two homes share a carrier once pinned
 	 */
 	static MpscPool probe(int count, boolean pinned) {
 		Thread.Affinity.Group group = Thread.Affinity.newGroup();
 		Thread.Affinity[] homes = new Thread.Affinity[count];
 		for (int i = 0; i < count; i++) {
-			Thread.Affinity affinity = group.newAffinity();
-			int id = carrierOf(affinity);
-			if (id < 0 || id >= count || homes[id] != null) {
-				throw new IllegalStateException("the MPSC scheduler does not have " + count + " carriers: affinity " + i
-						+ " ran on carrier " + id);
-			}
-			homes[id] = affinity;
+			homes[i] = group.newAffinity();
 		}
 		LinuxCpus cpus = null;
 		if (pinned) {
 			LinuxCpus found = LinuxCpus.discover();
-			for (int id = 0; id < count; id++) {
+			for (int i = 0; i < count; i++) {
 				// The JDK starts the timer thread of a carrier at its first timed park.
-				run(homes[id], () -> LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1)));
+				run(homes[i], () -> LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(1)));
 			}
 			boolean[] all = {true};
-			for (int id = 0; id < count; id++) {
-				int carrier = id;
+			for (int i = 0; i < count; i++) {
+				int home = i;
 				// Mounted on the carrier: sched_setaffinity(0) pins that carrier's own thread.
-				run(homes[id], () -> all[0] &= found.pin(carrier));
+				run(homes[i], () -> all[0] &= found.pin(home));
+			}
+			if (all[0]) {
+				// If two homes share a carrier, the second pin moved it: the first home is off
+				// its CPU.
+				for (int i = 0; i < count; i++) {
+					int[] cpu = {-1};
+					run(homes[i], () -> cpu[0] = LinuxCpus.pinnedCpu());
+					if (cpu[0] != found.cpu(i)) {
+						throw new IllegalStateException("the MPSC scheduler does not have " + count + " carriers: home "
+								+ i + " runs on CPU " + cpu[0] + ", not " + found.cpu(i));
+					}
+				}
 			}
 			// The clusters mean something only if every carrier stays on its CPU.
 			cpus = all[0] ? found : null;
@@ -104,16 +111,16 @@ final class MpscPool {
 		return homes.length;
 	}
 
-	Thread.Affinity home(int carrier) {
-		return homes[carrier];
+	Thread.Affinity home(int index) {
+		return homes[index];
 	}
 
 	/**
-	 * The last-level-cache cluster of a carrier, or -1 if the carriers are not all
-	 * pinned.
+	 * The last-level-cache cluster of the carrier of a home, or -1 if the carriers
+	 * are not all pinned.
 	 */
-	int cluster(int carrier) {
-		return cpus == null ? -1 : cpus.cluster(carrier);
+	int cluster(int index) {
+		return cpus == null ? -1 : cpus.cluster(index);
 	}
 
 	/**
