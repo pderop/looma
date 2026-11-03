@@ -7,8 +7,8 @@ guarantees; this page says how it works.
 
 - `MpscActorSchedulerProvider`: sets the properties, starts the JDK's pollers and timers, finds
   the carriers and pins them.
-- `MpscPool`: one `Thread.Affinity` per carrier, found by starting a virtual thread with each one
-  and reading the name of its carrier.
+- `MpscPool`: one `Thread.Affinity` per carrier, drawn from one group. Looma does not need to know
+  which carrier each one lands on: the carrier of affinity `i` is pinned to CPU `i`.
 - `MpscActorScheduler`: an actor's mailbox threads get the affinity of its carrier, its offloaded
   threads get none.
 - `LinuxCpus`: pins a carrier to one CPU with `sched_setaffinity`, and groups the CPUs by L3.

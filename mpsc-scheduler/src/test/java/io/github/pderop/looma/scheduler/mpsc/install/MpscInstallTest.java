@@ -40,6 +40,7 @@ import static io.github.pderop.looma.scheduler.mpsc.install.LinuxThreads.call;
 import static io.github.pderop.looma.scheduler.mpsc.install.LinuxThreads.cpusAllowed;
 import static io.github.pderop.looma.scheduler.mpsc.install.LinuxThreads.name;
 import static io.github.pderop.looma.scheduler.mpsc.install.LinuxThreads.tasks;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -126,15 +127,21 @@ class MpscInstallTest {
 		system = ActorSystem.builder().carriers(CARRIERS).build();
 		ActorScheduler scheduler = system.scheduler();
 
+		// A home index is not a carrier number: each index has a carrier of its own,
+		// on a CPU of its own.
+		Set<Integer> carriers = new HashSet<>();
 		Set<Integer> cpus = new HashSet<>();
-		for (int carrier = 0; carrier < 3; carrier++) {
-			int[] seen = onCarrier(scheduler, carrier);
-			assertEquals(carrier, seen[0], "the thread did not run on its carrier");
-			assertTrue(seen[1] >= 0, "carrier " + carrier + " is not pinned");
+		for (int index = 0; index < 3; index++) {
+			int[] seen = onCarrier(scheduler, index);
+			assertTrue(seen[0] >= 0, "index " + index + " did not run on an MPSC carrier");
+			assertTrue(seen[1] >= 0, "the carrier of index " + index + " is not pinned");
+			assertArrayEquals(seen, onCarrier(scheduler, index), "index " + index + " moved");
+			carriers.add(seen[0]);
 			cpus.add(seen[1]);
-			assertTrue(scheduler.clusterOf(carrier).isPresent(), "carrier " + carrier + " has no cluster");
+			assertTrue(scheduler.clusterOf(index).isPresent(), "index " + index + " has no cluster");
 		}
-		assertEquals(3, cpus.size(), "two carriers share a CPU: " + cpus);
+		assertEquals(3, carriers.size(), "two indexes share a carrier: " + carriers);
+		assertEquals(3, cpus.size(), "two indexes share a CPU: " + cpus);
 	}
 
 	/**

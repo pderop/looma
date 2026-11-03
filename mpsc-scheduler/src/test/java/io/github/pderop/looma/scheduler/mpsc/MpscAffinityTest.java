@@ -39,16 +39,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * only on its home carrier, while the threads it offloads can be stolen.
  *
  * <p>
- * The carrier is the one the thread runs on, read from its name. Under stealing
- * it is not always the home carrier: that is what is tested.
+ * The carrier is the one the thread runs on, read from its name. A home index
+ * is not a carrier number: each test compares carriers seen by threads, never a
+ * carrier with a home index.
  */
 class MpscAffinityTest {
 
 	private record Ping() implements Message {
 	}
 
-	/** Offloads a thread, then keeps the carrier busy until the thread ran. */
-	private record OffloadAndSpin(CompletableFuture<Integer> ranOn) implements Message {
+	/**
+	 * Offloads a thread, then keeps the carrier busy until the thread ran. Tells
+	 * the carrier of the actor and the one of the thread.
+	 */
+	private record OffloadAndSpin(CompletableFuture<Integer> actorOn,
+			CompletableFuture<Integer> ranOn) implements Message {
 	}
 
 	private ActorSystem system;
@@ -79,8 +84,9 @@ class MpscAffinityTest {
 
 				@Override
 				public void onReceive(Message message, ActorRef sender, ActorContext context) {
+					// The carrier of the first message is the home: the others must run there too.
 					if (home[0] == -2) {
-						home[0] = system.homeCarrierIdOf(context.self());
+						home[0] = MpscPool.currentCarrier();
 					}
 					if (MpscPool.currentCarrier() != home[0]) {
 						away.incrementAndGet();
@@ -109,7 +115,8 @@ class MpscAffinityTest {
 	@Test
 	void anOffloadedThreadCanBeStolen() throws Exception {
 		ActorRef ref = system.spawn("busy", () -> (message, sender, context) -> {
-			if (message instanceof OffloadAndSpin(CompletableFuture<Integer> ranOn)) {
+			if (message instanceof OffloadAndSpin(CompletableFuture<Integer> actorOn, CompletableFuture<Integer> ranOn)) {
+				actorOn.complete(MpscPool.currentCarrier());
 				context.vThreadFactory().newThread(() -> ranOn.complete(MpscPool.currentCarrier())).start();
 				// The actor never parks: only another carrier can run the thread.
 				long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(5);
@@ -118,12 +125,13 @@ class MpscAffinityTest {
 				}
 			}
 		});
+		CompletableFuture<Integer> actorOn = new CompletableFuture<>();
 		CompletableFuture<Integer> ranOn = new CompletableFuture<>();
 
-		ref.tell(new OffloadAndSpin(ranOn));
+		ref.tell(new OffloadAndSpin(actorOn, ranOn));
 
 		int carrier = ranOn.get(10, TimeUnit.SECONDS);
 		assertTrue(carrier >= 0, "the offloaded thread did not run on an MPSC carrier");
-		assertNotEquals(system.homeCarrierIdOf(ref), carrier, "the offloaded thread was not stolen");
+		assertNotEquals(actorOn.get(10, TimeUnit.SECONDS), carrier, "the offloaded thread was not stolen");
 	}
 }
