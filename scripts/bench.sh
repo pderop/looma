@@ -19,8 +19,8 @@ Each run is one JVM, with one scheduler: 5 seconds of warm-up, then 20 seconds m
 In each case (a size of the groups), for each repetition, it runs every scheduler at --depth and
 at depth 0. Then one more run per scheduler with perf c2c, one with perf stat, and one with perf
 record for the walk: on Linux, the script needs perf. All runs use the same jar and the same JVM
-flags: only -Dbench.scheduler changes, and mpsc-mode3 adds -Djdk.pollerMode=3. The walk run also
-keeps UserGroup.walk out of line, so that its cycles have a name of their own.
+flags: only -Dbench.scheduler changes. The walk run also keeps UserGroup.walk out of line, so that
+its cycles have a name of their own.
 
 The default CPUs are those of an AMD Ryzen 9 9950X. On another machine, give the three lists,
 with commas and ranges only (2-7,10-15), and no CPU in two lists:
@@ -33,8 +33,8 @@ with commas and ranges only (2-7,10-15), and no CPU in two lists:
   --users-per-group <list> The cases: users per actor group, ~82 bytes each, comma-separated.
                            8000 is named default, 200000 big. Default: 8000,200000.
   --reps <n>               Repetitions. Default: 3.
-  --schedulers <list>      The schedulers to run, comma-separated, among mpsc, mpsc-mode3, jdk
-                           and jdk-pinned. Default: all four.
+  --schedulers <list>      The schedulers to run, comma-separated, among mpsc, jdk and
+                           jdk-pinned. Default: all three.
   --out <dir>              Default: bench/<date>-<time>, in the project.
 USAGE
 }
@@ -54,7 +54,7 @@ REPS=3
 OUT=
 WARMUP=5
 MEASURE=20
-SCHEDULERS="mpsc mpsc-mode3 jdk jdk-pinned"
+SCHEDULERS="mpsc jdk jdk-pinned"
 KNOWN_SCHEDULERS=$SCHEDULERS
 COMMAND_LINE="$0 $*"
 
@@ -601,11 +601,8 @@ run() {
 	local heap=(-Xms2g -Xmx2g -Xlog:gc:file="$RUNS/$name.gc.log")
 	[ "$mode" != epsilon ] ||
 		heap=(-XX:+UnlockExperimentalVMOptions -XX:+UseEpsilonGC -Xms12g -Xmx12g -Xlog:gc*:file="$RUNS/$name.gc.log")
-	# mpsc-mode3 is mpsc with the JDK's poller mode 3. Without the flag, mpsc gets mode 4 on Linux.
-	local scheduler=${s%-pinned} poller=()
-	[ "$s" != mpsc-mode3 ] || { scheduler=mpsc poller=(-Djdk.pollerMode=3); }
-	local args=(--enable-native-access=ALL-UNNAMED "${heap[@]}" -XX:+AlwaysPreTouch "${poller[@]}"
-		-Dbench.scheduler="$scheduler" -Dbench.carriers="${#CARRIER_CPUS[@]}"
+	local args=(--enable-native-access=ALL-UNNAMED "${heap[@]}" -XX:+AlwaysPreTouch
+		-Dbench.scheduler="${s%-pinned}" -Dbench.carriers="${#CARRIER_CPUS[@]}"
 		-Dbench.rate="$RATE" -Dbench.clientCpus="$CLIENT_LIST" -Dbench.depth="$depth"
 		-Dbench.usersPerGroup="$CASE_USERS" -Dbench.warmupSeconds="$WARMUP" -Dbench.measureSeconds="$MEASURE")
 	[ "$mode" != c2c ] || args+=(-XX:+UnlockDiagnosticVMOptions -XX:+DumpPerfMapAtExit -Dbench.stackChunks=true)
@@ -703,8 +700,6 @@ done
 	echo "- mpsc: the MPSC scheduler of the JDK (openjdk/loom pull request 227), behind Carriers.affine."
 	echo "  Each carrier is pinned to one CPU, and an actor never moves to another carrier."
 	echo "  The JDK's poller mode is not set: on Linux, it is mode 4, one epoll per carrier."
-	echo "- mpsc-mode3: mpsc with -Djdk.pollerMode=3. Each carrier has its own Read-Poller, a virtual"
-	echo "  thread. When it has nothing to read, it waits on the Master-Poller, a platform thread."
 	echo "- Heap: -Xms2g -Xmx2g -XX:+AlwaysPreTouch, G1, and a GC log per run. The epsilon run:"
 	echo "  -XX:+UseEpsilonGC -Xms12g -Xmx12g -XX:+AlwaysPreTouch. Epsilon frees nothing, so no GC runs:"
 	echo "  each allocation takes new memory."
