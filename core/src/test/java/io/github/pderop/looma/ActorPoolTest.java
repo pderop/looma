@@ -15,6 +15,7 @@ package io.github.pderop.looma;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -290,6 +292,145 @@ public abstract class ActorPoolTest {
 		assertEquals(0, countFor("/worker-1"));
 		assertEquals(6, countFor("/worker-0") + countFor("/worker-2"),
 				"no message may be dropped on the stopped routee");
+	}
+
+	// ================================================================
+	// Routing by key
+	// ================================================================
+
+	/** The same key always gives the same member, and its messages all go there. */
+	@Test
+	void theSameKeyAlwaysGoesToTheSameMember() throws Exception {
+		ActorRef pool = system.spawn("sessions", RouteeActor::new, SpawnOptions.pooled(4));
+
+		ActorRef member = pool.forKey("session-1");
+		assertSame(member, pool.forKey("session-1"));
+		for (int seq = 0; seq < 5; seq++) {
+			pool.forKey("session-1").tell(new Ping(seq));
+		}
+		waitUntil(() -> totalReceived.get() == 5);
+
+		assertEquals(5, countFor(member.path()), "all the messages of one key go to one member");
+	}
+
+	/** The selector picks the member: its int is the member's index. */
+	@Test
+	void theSelectorPicksTheMember() throws Exception {
+		ActorRef pool = system.spawn("db", RouteeActor::new, SpawnOptions.pooled(4).withSelector(key -> (Integer) key));
+
+		assertEquals("/db-2", pool.forKey(2).path());
+		assertEquals(new Pong("/db-2", 1), ask(pool.forKey(2), new Ping(1)));
+	}
+
+	/** An int out of range, negative too, is mapped with floorMod. */
+	@Test
+	void aSelectorValueOutOfRangeIsMappedWithFloorMod() {
+		ActorRef pool = system.spawn("db", RouteeActor::new, SpawnOptions.pooled(4).withSelector(key -> (Integer) key));
+
+		assertEquals("/db-3", pool.forKey(-1).path());
+		assertEquals("/db-1", pool.forKey(9).path());
+	}
+
+	/**
+	 * Without a selector, the hash code is mixed before it picks the member. Keys
+	 * that are all multiples of the pool size would otherwise all go to one member.
+	 */
+	@Test
+	void withoutASelectorSimpleHashCodesSpreadOverEveryMember() {
+		ActorRef pool = system.spawn("db", RouteeActor::new, SpawnOptions.pooled(8));
+
+		Set<String> members = new HashSet<>();
+		Set<Integer> unmixed = new HashSet<>();
+		for (int key = 0; key < 8 * 64; key += 8) {
+			members.add(pool.forKey(key).path());
+			unmixed.add(Math.floorMod(Integer.valueOf(key).hashCode(), 8));
+		}
+
+		assertEquals(1, unmixed.size(), "unmixed, these keys would all go to one member");
+		assertEquals(8, members.size(), "mixed, they go to every member");
+	}
+
+	/** A single actor serves every key itself. */
+	@Test
+	void aSingleActorIsItsOwnMemberForEveryKey() {
+		ActorRef single = system.spawn("single", RouteeActor::new);
+
+		assertSame(single, single.forKey("a"));
+		assertSame(single, single.forKey(42));
+	}
+
+	/** A null key is rejected, on a pool and on a single actor. */
+	@Test
+	void aNullKeyIsRejected() {
+		ActorRef pool = system.spawn("db", RouteeActor::new, SpawnOptions.pooled(2));
+		ActorRef single = system.spawn("single", RouteeActor::new);
+
+		assertThrows(NullPointerException.class, () -> pool.forKey(null));
+		assertThrows(NullPointerException.class, () -> single.forKey(null));
+		assertThrows(NullPointerException.class, () -> SpawnOptions.pooled(2).withSelector(null));
+	}
+
+	/** What the selector throws reaches the caller of forKey. */
+	@Test
+	void whatTheSelectorThrowsReachesTheCaller() {
+		ActorRef pool = system.spawn("db", RouteeActor::new, SpawnOptions.pooled(2).withSelector(key -> {
+			throw new IllegalStateException("no member for " + key);
+		}));
+
+		assertThrows(IllegalStateException.class, () -> pool.forKey("a"));
+	}
+
+	/**
+	 * A stopped member is still the member of its key: the key does not move. An
+	 * ask to it fails, as to any stopped actor, while the round-robin tell of the
+	 * pool still skips it.
+	 */
+	@Test
+	void aStoppedMemberIsStillTheMemberOfItsKey() throws Exception {
+		ActorRef pool = system.spawn("db", RouteeActor::new, SpawnOptions.pooled(3).withSelector(key -> (Integer) key));
+
+		system.stop(system.findActor("/db-1").orElseThrow());
+		waitUntil(() -> system.findActor("/db-1").isEmpty());
+
+		ActorRef member = pool.forKey(1);
+		assertEquals("/db-1", member.path());
+		CompletableFuture<Message> reply = member.ask(new Ping(1));
+		assertTrue(reply.isCompletedExceptionally(), "an ask to a stopped member fails at once");
+
+		for (int seq = 0; seq < 4; seq++) {
+			pool.tell(new Ping(seq));
+		}
+		waitUntil(() -> totalReceived.get() == 4);
+		assertEquals(0, countFor("/db-1"), "the round-robin tell still skips the stopped member");
+	}
+
+	/** The member of a key is an ordinary actor, with its own home carrier. */
+	@Test
+	void theMemberOfAKeyHasAHomeCarrier() {
+		ActorRef pool = system.spawn("db", RouteeActor::new, SpawnOptions.pooled(4).withSelector(key -> (Integer) key));
+
+		assertEquals(system.homeCarrierIdOf(system.findActor("/db-2").orElseThrow()),
+				system.homeCarrierIdOf(pool.forKey(2)));
+	}
+
+	/** A selector with a pool size of 1 is rejected, and nothing is created. */
+	@Test
+	void aSelectorWithoutAPoolIsRejected() {
+		assertThrows(IllegalArgumentException.class,
+				() -> system.spawn("solo", RouteeActor::new, SpawnOptions.defaults().withSelector(Object::hashCode)));
+
+		assertTrue(system.findActor("/solo").isEmpty(), "a rejected spawn creates nothing");
+	}
+
+	/** forKey works on a pool of children too. */
+	@Test
+	void forKeyWorksOnAChildPool() throws Exception {
+		ActorRef parent = system.spawn("parent", RouteeActor::new);
+
+		PoolSpawned spawned = (PoolSpawned) ask(parent,
+				new SpawnPool("io", SpawnOptions.pooled(3).withSelector(key -> (Integer) key)));
+
+		assertEquals(new Pong("/parent/io-2", 5), ask(spawned.pool().forKey(2), new Ping(5)));
 	}
 
 	// ================================================================

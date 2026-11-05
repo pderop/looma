@@ -15,10 +15,12 @@ package io.github.pderop.looma.impl;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.ToIntFunction;
 
 import io.github.pderop.looma.ActorRef;
 import io.github.pderop.looma.Message;
@@ -28,6 +30,7 @@ import io.github.pderop.looma.SpawnOptions;
  * The {@link ActorRef} handed out for a pool — a {@code spawn} whose
  * {@link SpawnOptions#poolSize()} was above {@code 1}: a router over the pool's
  * actors, spreading every {@code tell} and {@code ask} across them round-robin.
+ * {@link #forKey(Object)} picks one of them by key instead.
  *
  * <p>
  * <b>This reference owns no mailbox, no mailbox thread and no actor instance of
@@ -74,6 +77,9 @@ final class PoolRef implements ActorRef {
 	 */
 	private final AtomicInteger cursor = new AtomicInteger();
 
+	/** Maps a key to an int, for {@link #forKey(Object)}. */
+	private final ToIntFunction<Object> selector;
+
 	/**
 	 * @param name
 	 *            the pool's simple name, as passed to {@code spawn} — the routees
@@ -84,11 +90,39 @@ final class PoolRef implements ActorRef {
 	 * @param cells
 	 *            the pool's cells, at least two (a pool of one is not wrapped at
 	 *            all — {@code spawn} returns the cell's own reference)
+	 * @param selector
+	 *            maps a key to an int, for {@link #forKey(Object)}
 	 */
-	PoolRef(String name, String path, List<ActorCell> cells) {
+	PoolRef(String name, String path, List<ActorCell> cells, ToIntFunction<Object> selector) {
 		this.name = name;
 		this.path = path;
 		this.routees = cells.stream().map(ActorCell::selfRef).toArray(ActorRefImpl[]::new);
+		this.selector = selector;
+	}
+
+	/**
+	 * Returns the routee of this key. A stopped routee is not skipped: the same key
+	 * always gives the same routee.
+	 */
+	@Override
+	public ActorRef forKey(Object key) {
+		Objects.requireNonNull(key, "key");
+		return routees[Math.floorMod(selector.applyAsInt(key), routees.length)];
+	}
+
+	/**
+	 * The selector of a pool spawned without one: the key's hash code, with its
+	 * bits mixed. Simple hash codes often share a pattern, such as being all
+	 * multiples of the pool size. Mixed, they spread over every routee. The mix is
+	 * the last step of MurmurHash3 (fmix32).
+	 */
+	static int mixedHashCode(Object key) {
+		int h = key.hashCode();
+		h ^= h >>> 16;
+		h *= 0x85ebca6b;
+		h ^= h >>> 13;
+		h *= 0xc2b2ae35;
+		return h ^ (h >>> 16);
 	}
 
 	/**

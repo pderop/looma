@@ -12,11 +12,11 @@ import io.github.pderop.looma.*;
 | --- | --- |
 | `ActorSystem` | The root of a hierarchy. Spawns root actors, resolves paths, shuts everything down. |
 | `Actor` | The POJO you write: `onReceive` plus four lifecycle hooks. |
-| `ActorRef` | An opaque, thread-safe handle: `tell`, `ask`, and delayed or periodic `tell`. |
+| `ActorRef` | An opaque, thread-safe handle: `tell`, `ask`, delayed or periodic `tell`, and `forKey` for a pool. |
 | `ActorContext` | An actor's view of itself, its children, and the system. |
 | `Message` | The marker interface every payload implements. |
 | `SupervisionStrategy` / `Directive` | What happens when `onReceive` throws. |
-| `Placement` / `SpawnOptions` | At spawn: the actor's home carrier, its supervision, a pool size. |
+| `Placement` / `SpawnOptions` | At spawn: the actor's home carrier, its supervision, a pool size, a key selector. |
 | `Carriers` | Which scheduler carries the process, and how it is sized, when chosen in code. |
 
 The scheduler SPI (`io.github.pderop.looma.spi`) is for people implementing a scheduler — see
@@ -305,6 +305,8 @@ pool.tell(msg, delay)                     a pool has no single carrier
   -> at the deadline, the pool picks a member, as for any tell
 
 pool.tellAtFixedRate(...)  -> the timer cancels itself once all members are stopping
+
+pool.forKey(key).tell(msg, delay)   the member is an ordinary actor: a timer of one actor
 ```
 
 The sender of an `ask` refuses timers: it throws `UnsupportedOperationException`.
@@ -546,6 +548,15 @@ pricers[customer % pricers.length].tell(quote, context.self());
 
 The pricer of `customer` is on carrier `customer % carriers` only when `carriers` divides `64`.
 
+A pool does the lookup for you: `forKey` gives the member of a key, and that member stays on its
+own carrier ([Pools](#pools-n-actors-of-one-type-behind-one-reference)).
+
+```java
+ActorRef pricers = system.spawn("pricing", Pricing::new,
+        SpawnOptions.pooled(64).withSelector(customer -> (Integer) customer));
+pricers.forKey(customer).tell(quote, context.self());   // always pricing-(customer % 64)
+```
+
 ### Pools: N actors of one type behind one reference
 
 `SpawnOptions.pooled(n)` (or `.withPoolSize(n)`) makes one `spawn` create **n** actors from the same
@@ -568,10 +579,43 @@ ActorRef io = context.spawn("io", BlockingIoActor::new, SpawnOptions.pooled(4));
 - **The reference is not an actor.** `path()` is `/db`, but nothing is registered there:
   `findActor("/db")` is empty.
 - **No pool-wide ordering.** Two messages may run at once on two members.
-- **Round-robin only.** A stopped member is skipped.
+- **Round-robin for `tell` and `ask` on the pool.** A stopped member is skipped.
+- **By key with `forKey`.** All the messages of one key go to one member: see below.
 - `poolSize` is at least `1`; a pool of `1` is a plain spawn, with no `-0` suffix. A pool whose
   name collides partway through leaves nothing behind: the members already made are started, then
   stopped, before the `IllegalStateException`.
+
+#### Routing by key
+
+`forKey(key)` returns the member that serves `key`. It is an ordinary `ActorRef`: `tell`, `ask`,
+timers and `homeCarrierIdOf` work on it as on any actor.
+
+```java
+ActorRef sessions = system.spawn("sessions", SessionActor::new,
+        SpawnOptions.pooled(8).withSelector(key -> ((Long) key).intValue()));
+
+ActorRef session = sessions.forKey(sessionId);
+session.tell(new Update(...));
+session.tell(new Checkout(...));   // the same member as the Update
+```
+
+```
+forKey(key) -> selector(key) -> Math.floorMod(value, poolSize) -> the member
+               no selector: key.hashCode(), its bits mixed
+```
+
+- **The same key gives the same member**, for the whole life of the pool: its size never changes.
+- **The selector** returns an int: an index from `0` to `poolSize - 1`, used as is, or any hash.
+  Its value is never mixed.
+- **Without a selector**, the key's `hashCode()` is mixed first (the last step of MurmurHash3), so
+  simple hash codes, such as ids that are all multiples of the pool size, still spread over every
+  member. Two equal keys must have the same `hashCode()`: a `String`, an `Integer`, a `Long`, a
+  `UUID` or a record does.
+- **A stopped member is still returned**, so a key never moves to another member. A `tell` to it is
+  dropped and an `ask` fails, as for any stopped actor.
+- **On a single actor**, `forKey` returns that actor. A selector with a pool size of `1` is
+  rejected by `spawn`.
+- A `null` key throws `NullPointerException`; what the selector throws reaches the caller.
 
 #### Placement and pools
 

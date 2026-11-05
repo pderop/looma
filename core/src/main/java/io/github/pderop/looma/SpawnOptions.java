@@ -15,11 +15,13 @@ package io.github.pderop.looma;
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.ToIntFunction;
 
 /**
  * The optional arguments to {@code spawn}, beyond the mandatory {@code name}
- * and {@code factory}: a {@link Placement}, a {@link SupervisionStrategy} and a
- * {@link #poolSize()}.
+ * and {@code factory}: a {@link Placement}, a {@link SupervisionStrategy}, a
+ * {@link #poolSize()} and a {@link #selector()}. The last two are the options
+ * of a pool.
  *
  * <p>
  * An instance is immutable and complete the moment it is built: there is no
@@ -56,16 +58,19 @@ import java.util.Optional;
  */
 public final class SpawnOptions {
 
-	private static final SpawnOptions DEFAULTS = new SpawnOptions(null, null, 1);
+	private static final SpawnOptions DEFAULTS = new SpawnOptions(null, null, 1, null);
 
 	private final Placement placement;
 	private final SupervisionStrategy strategy;
 	private final int poolSize;
+	private final ToIntFunction<Object> selector;
 
-	private SpawnOptions(Placement placement, SupervisionStrategy strategy, int poolSize) {
+	private SpawnOptions(Placement placement, SupervisionStrategy strategy, int poolSize,
+			ToIntFunction<Object> selector) {
 		this.placement = placement;
 		this.strategy = strategy;
 		this.poolSize = poolSize;
+		this.selector = selector;
 	}
 
 	/**
@@ -119,7 +124,7 @@ public final class SpawnOptions {
 	 */
 	public SpawnOptions withPlacement(Placement placement) {
 		Objects.requireNonNull(placement, "placement");
-		return new SpawnOptions(placement, strategy, poolSize);
+		return new SpawnOptions(placement, strategy, poolSize, selector);
 	}
 
 	/**
@@ -131,7 +136,7 @@ public final class SpawnOptions {
 	 */
 	public SpawnOptions withStrategy(SupervisionStrategy strategy) {
 		Objects.requireNonNull(strategy, "strategy");
-		return new SpawnOptions(placement, strategy, poolSize);
+		return new SpawnOptions(placement, strategy, poolSize, selector);
 	}
 
 	/**
@@ -151,7 +156,38 @@ public final class SpawnOptions {
 		if (poolSize < 1) {
 			throw new IllegalArgumentException("poolSize must be >= 1, got " + poolSize);
 		}
-		return new SpawnOptions(placement, strategy, poolSize);
+		return new SpawnOptions(placement, strategy, poolSize, selector);
+	}
+
+	/**
+	 * Returns a new instance with {@code selector} set, keeping the other options
+	 * unchanged. This instance is not modified.
+	 *
+	 * <p>
+	 * The selector is for a pool: {@link ActorRef#forKey(Object)} uses it to pick
+	 * the member that serves a key. It returns an int for a key, and Looma maps
+	 * that int to a member with {@code Math.floorMod(value, poolSize)}. So it may
+	 * return an index from {@code 0} to {@code poolSize - 1}, used as is, or any
+	 * hash. The value is used as it is, never mixed: an index stays that index.
+	 * Without a selector, the key's {@code hashCode()} is used, with its bits mixed
+	 * so that simple hash codes spread over every member.
+	 *
+	 * <pre>{@code
+	 * ActorRef sessions = system.spawn("sessions", Session::new,
+	 * 		SpawnOptions.pooled(8).withSelector(key -> ((Long) key).intValue()));
+	 * ActorRef session = sessions.forKey(sessionId);
+	 * }</pre>
+	 *
+	 * <p>
+	 * {@code spawn} rejects a selector when {@link #poolSize()} is {@code 1}: it
+	 * would have nothing to choose.
+	 *
+	 * @throws NullPointerException
+	 *             if {@code selector} is {@code null}
+	 */
+	public SpawnOptions withSelector(ToIntFunction<Object> selector) {
+		Objects.requireNonNull(selector, "selector");
+		return new SpawnOptions(placement, strategy, poolSize, selector);
 	}
 
 	/**
@@ -179,7 +215,8 @@ public final class SpawnOptions {
 	 * Above {@code 1}, {@code spawn} creates that many ordinary sibling actors,
 	 * named {@code name-0} … {@code name-(poolSize-1)}, and returns a single
 	 * routing {@link ActorRef} that spreads {@code tell} and {@code ask} over them
-	 * round-robin. See
+	 * round-robin. {@link ActorRef#forKey(Object)} picks one of them by key, with
+	 * the {@link #selector()}. See
 	 * {@link ActorSystem#spawn(String, java.util.function.Supplier, SpawnOptions)}
 	 * for the full contract of that reference.
 	 *
@@ -208,5 +245,14 @@ public final class SpawnOptions {
 	 */
 	public int poolSize() {
 		return poolSize;
+	}
+
+	/**
+	 * Returns the selector this instance carries, or {@link Optional#empty()} if
+	 * none was set — in which case a pool uses the key's {@code hashCode()}, mixed.
+	 * See {@link #withSelector(ToIntFunction)}.
+	 */
+	public Optional<ToIntFunction<Object>> selector() {
+		return Optional.ofNullable(selector);
 	}
 }

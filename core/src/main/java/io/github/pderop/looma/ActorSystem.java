@@ -260,6 +260,14 @@ public interface ActorSystem {
 	 * pool-wide</b>: two messages sent through the pool land in two mailboxes and
 	 * are processed concurrently. Messages that must be ordered relative to each
 	 * other, or that share mutable state, belong to one actor — not to a pool.
+	 * {@link ActorRef#forKey(Object)} gives that actor for a key: all the messages
+	 * of one key then go to the same member.
+	 *
+	 * <pre>{@code
+	 * ActorRef sessions = system.spawn("sessions", Session::new,
+	 * 		SpawnOptions.pooled(8).withSelector(key -> ((Long) key).intValue()));
+	 * sessions.forKey(sessionId).tell(new Update(...)); // always the same member for sessionId
+	 * }</pre>
 	 *
 	 * <p>
 	 * <b>The placement applies to each actor of the pool</b>, which is to say a
@@ -297,9 +305,10 @@ public interface ActorSystem {
 	 *             if {@code options} is {@code null}
 	 * @throws IllegalArgumentException
 	 *             if the name is {@code null}, blank, or contains {@code '/'}, if
-	 *             {@code options}' placement is {@link Placement#inherit()}, or if
-	 *             it is a {@link Placement#carrier(int)} whose id is not less than
-	 *             {@link #carrierCount()}
+	 *             {@code options}' placement is {@link Placement#inherit()}, if it
+	 *             is a {@link Placement#carrier(int)} whose id is not less than
+	 *             {@link #carrierCount()}, or if {@code options} has a selector and
+	 *             a pool size of {@code 1}
 	 * @throws IllegalStateException
 	 *             if the name — or, for a pool, any of the {@code poolSize} names
 	 *             it derives — is already taken by a root actor, or this system is

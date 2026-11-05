@@ -145,7 +145,10 @@ public interface ActorContext {
 	 * inside {@code onReceive} stalls only its own mailbox and its
 	 * {@code poolSize - 1} peers keep serving — a pool is the way to absorb
 	 * blocking work without offloading it to {@link #vThreadFactory()}. Ordering,
-	 * in exchange, is per child and no longer pool-wide.
+	 * in exchange, is per child and no longer pool-wide. To send all the messages
+	 * of one key to the same child, use {@link ActorRef#forKey(Object)}, with a
+	 * {@link SpawnOptions#withSelector(java.util.function.ToIntFunction) selector}
+	 * if the key's {@code hashCode()} is not the right choice.
 	 *
 	 * <pre>{@code
 	 * // four children on this actor's own carrier, load-balanced behind one
@@ -194,9 +197,10 @@ public interface ActorContext {
 	 * @throws NullPointerException
 	 *             if {@code options} is {@code null}
 	 * @throws IllegalArgumentException
-	 *             if the name is {@code null}, blank, or contains {@code '/'}, or
+	 *             if the name is {@code null}, blank, or contains {@code '/'}, if
 	 *             {@code options}' placement is a {@link Placement#carrier(int)}
-	 *             whose id is not less than {@link #carrierCount()}
+	 *             whose id is not less than {@link #carrierCount()}, or if
+	 *             {@code options} has a selector and a pool size of {@code 1}
 	 * @throws IllegalStateException
 	 *             if a sibling already has that name — or, for a pool, any of the
 	 *             {@code poolSize} names it derives — or this actor is itself
