@@ -1,6 +1,8 @@
 # Looma
 
-**Actors on Java virtual threads, pinned to a core.**
+<p align="center">
+  <img src="docs/looma-promo.gif" width="436" alt="Actors on Java virtual threads, pinned to a core.">
+</p>
 
 Looma starts from someone else's work. Francesco Nigro's
 [**Netty-VirtualThread-Scheduler**](https://github.com/franz1981/Netty-VirtualThread-Scheduler) is a
