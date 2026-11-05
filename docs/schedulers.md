@@ -108,7 +108,7 @@ The engine is in `io.github.pderop.looma.impl`, once, for both schedulers:
   supervision. It implements `ActorContext`.
 - **`ActorRefImpl`** — the reference to a live cell; **`PromiseRef`** — the single-use reply
   channel an `ask` passes as `sender`; **`PoolRef`** — a round-robin fan-out over a pool's actors,
-  with no mailbox of its own.
+  with no mailbox of its own; `forKey` picks one of them by key.
 - **`Envelope`** — one mailbox entry, a message or a lifecycle step.
 - **`ActorSchedulers`** — discovery, and `carriers(...)`'s installation.
 

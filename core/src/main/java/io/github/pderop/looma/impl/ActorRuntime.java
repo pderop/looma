@@ -497,6 +497,11 @@ final class ActorRuntime {
 	ActorRef spawnGroup(String name, Supplier<Actor> factory, SpawnOptions options, ActorCell parent,
 			Placement placement) {
 		int poolSize = options.poolSize();
+		if (poolSize == 1 && options.selector().isPresent()) {
+			// A selector picks among the members of a pool: one actor leaves nothing to
+			// pick.
+			throw new IllegalArgumentException("a selector needs a pool: poolSize is 1");
+		}
 		SupervisionStrategy strategy = options.strategy().orElse(null);
 		// Before deriving name-0 … name-(n-1) from it: "null" + "-0" is a perfectly
 		// valid actor name, and would let a null pool name through unnoticed.
@@ -546,7 +551,8 @@ final class ActorRuntime {
 		if (poolSize == 1) {
 			return cells.get(0).self();
 		}
-		return new PoolRef(name, poolPath(name, parent), cells);
+		// Without a selector, the key's hash code, mixed, picks the member.
+		return new PoolRef(name, poolPath(name, parent), cells, options.selector().orElse(PoolRef::mixedHashCode));
 	}
 
 	/**

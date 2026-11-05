@@ -13,6 +13,7 @@
  */
 package io.github.pderop.looma;
 
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -42,6 +43,8 @@ import java.util.concurrent.TimeUnit;
  * {@code homeCarrierIdOf} rejects it. The per-actor ordering an actor
  * guarantees is <em>not</em> a pool-wide ordering: see
  * {@link ActorSystem#spawn(String, java.util.function.Supplier, SpawnOptions)}.
+ * To send all the messages of one key to the same actor of a pool, use
+ * {@link #forKey(Object)}.
  *
  * <p>
  * Identity is plain reference identity: {@code ActorRef} does not override
@@ -56,6 +59,48 @@ public interface ActorRef {
 	 * for an actor whose {@link #path()} is {@code "/db/worker"}.
 	 */
 	String name();
+
+	/**
+	 * Returns the actor that serves {@code key}.
+	 *
+	 * <p>
+	 * For a pool, it is the member chosen by the pool's selector (see
+	 * {@link SpawnOptions#withSelector(java.util.function.ToIntFunction)}): the
+	 * same key gives the same member for the whole life of the pool. The member is
+	 * an ordinary actor: {@code homeCarrierIdOf} works on it, and its timers go to
+	 * its own carrier. A stopped member is still returned, and a {@code tell} to it
+	 * is dropped, as for any stopped actor. So the same key never moves to another
+	 * member.
+	 *
+	 * <p>
+	 * For a single actor, it is this reference.
+	 *
+	 * <p>
+	 * Without a selector, the key's {@code hashCode()} picks the member, after its
+	 * bits are mixed so that simple hash codes spread over every member. So two
+	 * equal keys must have the same {@code hashCode()}: a {@code String}, an
+	 * {@code Integer}, a {@code Long}, a {@code UUID} or a record does; a class
+	 * that does not override {@code hashCode()} does not.
+	 *
+	 * <pre>{@code
+	 * ActorRef sessions = system.spawn("sessions", Session::new, SpawnOptions.pooled(8));
+	 * ActorRef session = sessions.forKey(sessionId);
+	 * session.tell(new Update(...));
+	 * session.tell(new Checkout(...)); // the same member as the Update
+	 * }</pre>
+	 *
+	 * @param key
+	 *            the key, for example a session id
+	 * @return the actor that serves this key
+	 * @throws NullPointerException
+	 *             if {@code key} is {@code null}
+	 * @throws RuntimeException
+	 *             whatever the pool's selector throws
+	 */
+	default ActorRef forKey(Object key) {
+		Objects.requireNonNull(key, "key");
+		return this;
+	}
 
 	/**
 	 * Returns the full, slash-separated path of this actor, e.g.
