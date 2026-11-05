@@ -1,14 +1,16 @@
 # Looma
 
-**Actors on Java virtual threads, which can be kept on one CPU core.**
+**Actors on Java virtual threads, pinned to a core.**
 
-Looma starts from Francesco Nigro's
-[**Netty-VirtualThread-Scheduler**](https://github.com/franz1981/Netty-VirtualThread-Scheduler): a
-carrier-affine virtual-thread scheduler, where a pool of carrier threads replaces the JDK's
-`ForkJoinPool`, each carrier pinned to a CPU, and a virtual thread keeps resuming on the same
-carrier — so on the same core, with its data still in that core's caches. His
+Looma starts from someone else's work. Francesco Nigro's
+[**Netty-VirtualThread-Scheduler**](https://github.com/franz1981/Netty-VirtualThread-Scheduler) is a
+carrier-affine virtual-thread scheduler: instead of the JDK's `ForkJoinPool`, a pool of carrier
+threads pinned one per CPU, on which a virtual thread keeps resuming on the same carrier — and so on
+the same core, with its data still in that core's private caches. His
 [PERFORMANCE.md](https://github.com/franz1981/Netty-VirtualThread-Scheduler/blob/master/PERFORMANCE.md)
-shows what that is worth to a Netty event loop. Then Looma asks the next question:
+shows what that is worth to a Netty event loop, and it is a genuinely elegant piece of engineering:
+it makes a scheduler respect locality without asking the application to know anything about it.
+Then Looma asks the next question:
 
 > **Does a carrier-affine scheduler help an actor system?**
 

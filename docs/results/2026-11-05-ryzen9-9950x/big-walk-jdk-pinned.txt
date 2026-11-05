@@ -1,0 +1,627 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 219K of event 'cycles'
+# Event count (approx.): 925179416855
+#
+# Overhead        Period  Symbol                                                                                                                                                                                           
+# ........  ............  .................................................................................................................................................................................................
+#
+    64.09%   592914183357  [.] long io.github.pderop.looma.examples.user.UserGroup.walk(java.lang.Integer)
+    11.07%   102380843996  [.] 0x0000000000000a09
+     7.50%   69424907212  [.] void io.github.pderop.looma.examples.user.FrontendServer.send(long, boolean, java.util.Random)
+     1.61%   14936463211  [.] os::javaTimeNanos()
+     1.33%   12330611383  [.] clock_gettime
+     0.90%    8297646106  [.] 0x0000000000000a3f
+     0.58%    5409066413  [.] void java.lang.VirtualThread.run(java.lang.Runnable)
+     0.57%    5284650025  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)
+     0.50%    4608250861  [.] 0x00000000000009c2
+     0.46%    4292047646  [.] 0x00000000000009e3
+     0.44%    4057508054  [.] void java.lang.VirtualThread.runContinuation()
+     0.42%    3890416259  [.] void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)
+     0.40%    3665620213  [.] 0x00000000000009b4
+     0.38%    3474875451  [.] 0x0000000000000a17
+     0.29%    2674674702  [k] __raw_spin_lock_irqsave
+     0.28%    2596840250  [.] 0x0000000000000a0b
+     0.28%    2558470996  [.] 0x0000000000000a57
+     0.26%    2405233997  [k] fput
+     0.25%    2341134367  [.] 0x0000000000000a31
+     0.24%    2219041277  [k] skb_release_data
+     0.23%    2107756980  [.] java.lang.Object java.util.concurrent.ConcurrentHashMap.putVal(java.lang.Object, java.lang.Object, boolean)
+     0.23%    2088411941  [.] java.lang.Object java.util.concurrent.ConcurrentHashMap.replaceNode(java.lang.Object, java.lang.Object, java.lang.Object)
+     0.22%    2032999575  [k] do_epoll_ctl
+     0.21%    1988762683  [.] 0x0000000000000a0f
+     0.20%    1875324264  [.] 0x0000000000000a81
+     0.20%    1860864502  [k] _raw_spin_lock_bh
+     0.20%    1844978960  [.] 0x0000000000000a22
+     0.20%    1840740301  [k] _raw_spin_lock
+     0.18%    1619436155  [.] 0x0000000000000a45
+     0.17%    1607986801  [k] fdget
+     0.16%    1481802114  [k] ep_item_poll.isra.0
+     0.15%    1382805392  [.] void io.github.pderop.looma.impl.ActorCell.drainMailbox()
+     0.14%    1284267423  [k] __inet_lookup_established
+     0.13%    1244426180  [.] clock_gettime@plt
+     0.13%    1200783329  [k] entry_SYSCALL_64
+     0.13%    1178392434  [.] void jdk.internal.vm.Continuation.run()
+     0.12%    1100296544  [k] _raw_spin_lock_irq
+     0.11%    1040497867  [k] mutex_lock
+     0.11%     980564991  [k] fdget_pos
+     0.10%     964466481  [k] tcp_poll
+     0.09%     838187250  [.] void io.github.pderop.looma.impl.ActorRefImpl.tell(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef)
+     0.09%     822317188  [.] boolean java.util.AbstractQueue.add(java.lang.Object)
+     0.09%     820951969  [k] sock_write_iter
+     0.09%     791907193  [.] 0x0000000000000a85
+     0.08%     758590483  [k] sock_rfree
+     0.08%     732878355  [k] tcp_sendmsg_locked
+     0.08%     731051818  [.] void sun.nio.ch.Poller.subPollerLoop(sun.nio.ch.Poller)
+     0.08%     720783900  [k] dst_release
+     0.08%     703246340  [k] tcp_rcv_established
+     0.07%     666970934  [k] sock_poll
+     0.07%     663554397  [k] skb_defer_free_flush
+     0.07%     640427998  [k] read_tsc
+     0.07%     618445584  [.] boolean java.lang.Integer.equals(java.lang.Object)
+     0.07%     601795511  [k] __copy_skb_header
+     0.06%     579298317  [k] switch_fpu_return
+     0.06%     554434092  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)
+     0.06%     547813760  [.] void org.HdrHistogram.Recorder.recordValue(long)
+     0.06%     533190010  [k] sock_def_readable
+     0.06%     529132018  [k] skb_attempt_defer_free
+     0.06%     528067597  [k] __smp_call_single_queue
+     0.06%     526920900  [.] int sun.nio.ch.SocketDispatcher.write0(java.io.FileDescriptor, long, int)
+     0.05%     474491432  [k] tcp_wfree
+     0.05%     459262555  [k] sock_put
+     0.05%     458522859  [k] tcp_clean_rtx_queue
+     0.05%     431906341  [k] mutex_unlock
+     0.05%     426693033  [k] __skb_datagram_iter
+     0.05%     422265093  [k] kmem_cache_alloc_node_noprof
+     0.04%     406688683  [.] void java.util.concurrent.ForkJoinPool.signalWork()
+     0.04%     404231299  [.] 0x0000000000000a8a
+     0.04%     395227769  [k] kfree_skbmem
+     0.04%     388482572  [.] 0x0000000000000a00
+     0.04%     372308509  [k] check_heap_object
+     0.04%     360608700  [.] void io.github.pderop.looma.impl.ActorCell.startMailboxThread()
+     0.04%     358867445  [k] __flush_smp_call_function_queue
+     0.04%     354097477  [k] ep_poll_callback
+     0.04%     354015251  [k] aa_inet_msg_perm
+     0.04%     347280790  [k] call_function_single_prep_ipi
+     0.04%     345512360  [k] asm_sysvec_call_function_single
+     0.04%     339975489  [k] ip_send_check
+     0.04%     339373378  [.] 0x00000000000009ba
+     0.04%     335981819  [.] void java.lang.System$1.parkVirtualThread()
+     0.03%     321995075  [.] 0x0000000000000a75
+     0.03%     321870041  [k] tcp_event_new_data_sent
+     0.03%     317422298  [.] int sun.nio.ch.SocketDispatcher.read0(java.io.FileDescriptor, long, int)
+     0.03%     311554511  [k] __update_load_avg_se
+     0.03%     310123860  [k] psi_group_change
+     0.03%     290692914  [k] __pi_memset
+     0.03%     284775124  [k] __dev_queue_xmit
+     0.03%     278622026  [.] pthread_cond_wait
+     0.03%     275304553  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)
+     0.03%     269839019  [k] futex_wake_mark
+     0.03%     264006979  [k] select_idle_sibling
+     0.03%     259932535  [k] reweight_entity
+     0.03%     255186796  [k] native_read_msr
+     0.03%     232876192  [k] __schedule
+     0.03%     232204519  [.] int sun.nio.ch.EPoll.ctl(int, int, int, int)
+     0.02%     231219480  [k] update_cfs_group
+     0.02%     230406118  [k] cubictcp_acked
+     0.02%     227738704  [k] _copy_to_iter
+     0.02%     226269147  [k] finish_task_switch.isra.0
+     0.02%     225046971  [k] vfs_write
+     0.02%     224653320  [k] native_write_msr
+     0.02%     220251376  [k] skb_page_frag_refill
+     0.02%     215668638  [k] __rcu_read_lock
+     0.02%     214562396  [k] mod_memcg_state
+     0.02%     208090606  [k] __tcp_transmit_skb
+     0.02%     204400590  [.] void io.github.pderop.looma.impl.ActorRuntime.workFinished()
+     0.02%     203432377  [k] __update_load_avg_cfs_rq
+     0.02%     200165336  [.] 0x0000000000000a7b
+     0.02%     199752187  [.] int sun.nio.ch.EPoll.wait(int, long, int, int)
+     0.02%     191237618  [k] futex_wake
+     0.02%     190968225  [.] boolean jdk.internal.vm.Continuation.yield0(jdk.internal.vm.ContinuationScope, jdk.internal.vm.Continuation)
+     0.02%     183189329  [k] native_sched_clock
+     0.02%     178181295  [.] void java.lang.VirtualThread$BuiltinForkJoinPoolScheduler.onContinue(java.lang.Thread$VirtualThreadTask)
+     0.02%     177038302  [.] void sun.nio.ch.Poller.pollerLoop()
+     0.02%     176939753  [k] do_syscall_64
+     0.02%     172343015  [k] __futex_unqueue
+     0.02%     171918625  [k] update_curr
+     0.02%     169417856  [k] irqentry_exit
+     0.02%     165334175  [.] 0x00000000000009ec
+     0.02%     164259289  [k] ip_finish_output2
+     0.02%     162457146  [k] select_task_rq_fair
+     0.02%     155818946  [k] __calc_delta.constprop.0
+     0.02%     154937116  [.] void jdk.internal.misc.Unsafe.park(boolean, long)
+     0.02%     152769982  [k] asm_sysvec_apic_timer_interrupt
+     0.02%     151351310  [.] 0x0000000000000a26
+     0.02%     150960178  [k] tcp_skb_entail
+     0.02%     150368933  [k] arch_exit_to_user_mode_prepare.isra.0
+     0.02%     150023246  [k] tcp_update_pacing_rate
+     0.02%     149734624  [k] default_send_IPI_single_phys
+     0.02%     149579861  [.] void java.lang.VirtualThread.afterYield()
+     0.02%     145590967  [k] update_se
+     0.02%     145226998  [k] skb_clone
+     0.02%     142572114  [k] restore_fpregs_from_fpstate
+     0.01%     137071418  [k] ktime_get
+     0.01%     125710948  [k] __alloc_skb
+     0.01%     119468526  [k] net_rx_action
+     0.01%     119374073  [k] __mutex_lock.constprop.0
+     0.01%     118733405  [k] dequeue_entities
+     0.01%     117243227  [k] native_queued_spin_lock_slowpath
+     0.01%     117164131  [k] place_entity
+     0.01%     117133373  [k] dequeue_entity
+     0.01%     116478518  [k] update_cfs_rq_load_avg
+     0.01%     115510821  [k] update_load_avg
+     0.01%     115272633  [k] tcp_ack
+     0.01%     110682856  [k] __rcu_read_unlock
+     0.01%     108786133  [.] 0x00000000000009d9
+     0.01%     106838629  [k] ep_poll
+     0.01%     105797510  [k] mutex_spin_on_owner
+     0.01%     105659632  [k] tcp_tso_segs
+     0.01%     104169746  [k] __ip_queue_xmit
+     0.01%     101469345  [.] int sun.nio.ch.IOUtil.read(java.io.FileDescriptor, java.nio.ByteBuffer, long, sun.nio.ch.NativeDispatcher)
+     0.01%     100260179  [k] __sched_balance_update_blocked_averages
+     0.01%      99536853  [k] enqueue_task_fair
+     0.01%      95733700  [.] 0x00000000000009b0
+     0.01%      95576013  [k] sock_read_iter
+     0.01%      94893456  [.] pthread_cond_signal
+     0.01%      94028065  [k] tcp_send_mss
+     0.01%      93604614  [k] _copy_from_user
+     0.01%      91403941  [.] AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<2383974ul, G1BarrierSet>, (AccessInternal::BarrierType)1, 2383974ul>::oop_access_barrier(oopDesc*, long, oopDesc*)
+     0.01%      91106382  [k] tcp_current_mss
+     0.01%      89388940  [k] __css_rstat_updated
+     0.01%      87546305  [k] _copy_from_iter
+     0.01%      86709244  [k] cubictcp_cwnd_event
+     0.01%      85364576  [k] cpuacct_charge
+     0.01%      80923037  [.] 0x00000000000ac802
+     0.01%      80628593  [k] apparmor_ip_postroute
+     0.01%      78297840  [k] entry_SYSCALL_64_safe_stack
+     0.01%      77690867  [k] avg_vruntime
+     0.01%      76373287  [.] 0x00000000000a039c
+     0.01%      76049472  [k] tcp_rcv_space_adjust
+     0.01%      75677043  [k] vfs_read
+     0.01%      74620968  [k] __resched_curr
+     0.01%      73554791  [k] propagate_entity_load_avg
+     0.01%      73399524  [k] syscall_return_via_sysret
+     0.01%      72079560  [k] tcp_ack_update_rtt
+     0.01%      70456534  [k] tcp_queue_rcv
+     0.01%      70262684  [.] FreezeBase::freeze_fast_copy(stackChunkOopDesc*, int)
+     0.01%      68669195  [.] 0x00000000000a03a0
+     0.01%      67776399  [k] apparmor_socket_recvmsg
+     0.01%      67740766  [k] try_charge_memcg
+     0.01%      67544935  [k] pick_task_fair
+     0.01%      67115122  [k] apparmor_socket_sendmsg
+     0.01%      66024901  [.] java.lang.Integer java.lang.Integer.valueOf(int)
+     0.01%      64146201  [.] java.util.concurrent.ForkJoinPool$WorkQueue java.util.concurrent.ForkJoinPool.submissionQueue(int, boolean)
+     0.01%      62957884  [.] Parker::park(bool, long)
+     0.01%      62819237  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)
+     0.01%      62292648  [k] ip_output
+     0.01%      62031920  [k] tcp_recvmsg_locked
+     0.01%      60230477  [.] FastThreadsListHandle::FastThreadsListHandle(oopDesc*, JavaThread*)
+     0.01%      60186769  [k] loopback_xmit
+     0.01%      59857689  [k] entity_lag.isra.0
+     0.01%      59608272  [k] dequeue_task_fair
+     0.01%      59448806  [k] tcp_established_options
+     0.01%      59114928  [k] __futex_wait
+     0.01%      59039542  [k] schedule_hrtimeout_range_clock
+     0.01%      58515975  [k] cubictcp_cong_avoid
+     0.01%      58447889  [k] update_deadline
+     0.01%      57539407  [k] schedule_hrtimeout_range
+     0.01%      56357998  [k] futex_wait
+     0.01%      55769223  [k] nf_hook_slow
+     0.01%      55660249  [.] Java_sun_nio_ch_SocketDispatcher_write0
+     0.01%      55234457  [k] entry_SYSCALL_64_after_hwframe
+     0.01%      55200304  [k] nohz_balancer_kick
+     0.01%      55177741  [k] aa_file_perm
+     0.01%      55103195  [.] Continuation::prepare_thaw(JavaThread*, bool)
+     0.01%      51611405  [k] vruntime_eligible
+     0.01%      51593221  [k] osq_lock
+     0.01%      51007753  [k] update_sg_lb_stats
+     0.01%      50998364  [k] tcp_mstamp_refresh
+     0.01%      50547875  [k] task_tick_fair
+     0.01%      50278883  [k] sk_forced_mem_schedule
+     0.01%      50272306  [k] x64_sys_call
+     0.01%      48641587  [k] __enqueue_entity
+     0.01%      47945888  [k] wake_up_q
+     0.00%      45896883  [k] ktime_get_update_offsets_now
+     0.00%      45630076  [k] sk_free
+     0.00%      45472379  [k] update_curr_dl_se
+     0.00%      45363243  [k] idle_cpu
+     0.00%      45338455  [k] ip_rcv_finish_core
+     0.00%      42767102  [k] tcp_mtu_probe
+     0.00%      42695812  [k] __wake_up_common
+     0.00%      42275594  [k] hrtimer_interrupt
+     0.00%      42064426  [.] 0x00000000001b0a13
+     0.00%      41621633  [.] epoll_ctl
+     0.00%      41434132  [k] __mod_timer
+     0.00%      41258733  [k] psi_task_switch
+     0.00%      41246301  [k] mem_cgroup_sk_charge
+     0.00%      41193971  [k] _find_next_bit
+     0.00%      40774247  [k] tcp_recvmsg
+     0.00%      39662116  [.] pthread_mutex_lock
+     0.00%      38075790  [.] ThreadStateTransition::transition_from_native(JavaThread*, JavaThreadState, bool) [clone .constprop.0]
+     0.00%      38022050  [k] tcp_bpf_rtt
+     0.00%      37989157  [k] sched_balance_newidle
+     0.00%      37685174  [k] __virt_addr_valid
+     0.00%      37417727  [k] tcp_sendmsg
+     0.00%      36976916  [k] inet_ehashfn
+     0.00%      36661303  [k] tcp_rearm_rto
+     0.00%      36500873  [k] ep_done_scan
+     0.00%      34160098  [k] hook_socket_sendmsg
+     0.00%      33700408  [.] pthread_mutex_trylock
+     0.00%      33642267  [k] do_futex
+     0.00%      33497161  [k] pick_eevdf
+     0.00%      33417484  [k] tcp_v4_rcv
+     0.00%      33410614  [.] convertReturnVal
+     0.00%      33257673  [.] AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<286822ul, G1BarrierSet>, (AccessInternal::BarrierType)1, 286822ul>::oop_access_barrier(oopDesc*, long, oopDesc*)
+     0.00%      32972545  [.] SafeThreadsListPtr::release_stable_list()
+     0.00%      32381347  [k] _raw_spin_rq_lock_irqsave
+     0.00%      32167666  [k] prepare_task_switch
+     0.00%      31923712  [k] wakeup_preempt_fair
+     0.00%      31904148  [k] fpregs_assert_state_consistent
+     0.00%      31217098  [k] __futex_hash
+     0.00%      30532047  [k] pick_next_task_fair
+     0.00%      30503902  [k] tcp_write_xmit
+     0.00%      30468327  [k] ttwu_queue_wakelist
+     0.00%      30366783  [k] ip_skb_dst_mtu
+     0.00%      30238801  [k] sched_clock
+     0.00%      29925598  [k] kick_ilb
+     0.00%      29879736  [.] 0x00000000001b0b1d
+     0.00%      29699570  [k] tcp_update_skb_after_send
+     0.00%      29649628  [.] long* thaw<Config<(oop_kind)0, G1BarrierSet> >(JavaThread*, int)
+     0.00%      29428330  [k] tcp_schedule_loss_probe
+     0.00%      29199623  [.] int io.github.pderop.looma.examples.user.Upstream.parseInt(int, int)
+     0.00%      29141754  [.] int freeze<Config<(oop_kind)0, G1BarrierSet> >(JavaThread*, long*)
+     0.00%      29062026  [k] update_rt_rq_load_avg
+     0.00%      28927140  [k] futex_q_lock
+     0.00%      28911179  [k] _find_next_and_bit
+     0.00%      28892935  [k] __nr_to_section
+     0.00%      28885159  [k] page_counter_try_charge
+     0.00%      28865120  [k] __hrtimer_run_queues
+     0.00%      28802315  [k] security_socket_sendmsg
+     0.00%      28564174  [k] ep_deliver_event
+     0.00%      28468000  [k] kmalloc_reserve
+     0.00%      28139696  [.] pthread_mutex_unlock
+     0.00%      27949172  [k] tcp_v4_send_check
+     0.00%      27678644  [k] __const_udelay
+     0.00%      27632036  [k] __pick_next_task
+     0.00%      26061041  [.] void jdk.internal.misc.Unsafe.unpark(java.lang.Object)
+     0.00%      25821071  [k] futex_unqueue
+     0.00%      25809888  [k] ip_local_out
+     0.00%      25730482  [.] jni_fast_GetIntField
+     0.00%      25718659  [k] record_times
+     0.00%      25598252  [k] sock_recvmsg
+     0.00%      25541322  [.] FreezeBase::freeze_fast_existing_chunk()
+     0.00%      25530147  [k] sync_regs
+     0.00%      25499805  [.] 0x00000000000a03aa
+     0.00%      25388040  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)
+     0.00%      25367891  [k] __free_frozen_pages
+     0.00%      25366850  [.] freeze_result freeze_internal<Config<(oop_kind)0, G1BarrierSet>, false>(JavaThread*, long*)
+     0.00%      25332055  [.] oopDesc::address_field(int) const
+     0.00%      25310415  [k] futex_wait_setup
+     0.00%      25172265  [k] x86_pmu_disable
+     0.00%      25148922  [k] check_stack_object
+     0.00%      25123852  [k] __update_idle_core
+     0.00%      25066935  [k] __check_object_size
+     0.00%      25001022  [k] xmit_one.constprop.0
+     0.00%      24897382  [.] 0x00000000000a0987
+     0.00%      24862990  [k] ksys_write
+     0.00%      24363917  [.] java.lang.StringBuilder java.lang.StringBuilder.append(java.lang.String)
+     0.00%      24343790  [k] enqueue_entity
+     0.00%      21927087  [k] handle_softirqs
+     0.00%      21758398  [.] 0x0000000000000a7c
+     0.00%      21724941  [.] void java.util.concurrent.locks.LockSupport.setCurrentBlocker(java.lang.Object)
+     0.00%      21703672  [k] ktime_get_with_offset
+     0.00%      21663331  [k] __rb_insert_augmented
+     0.00%      21217207  [.] boolean java.lang.VirtualThread.appendCarrierInfo(java.lang.StringBuilder)
+     0.00%      21051253  [k] process_backlog
+     0.00%      21043378  [k] skb_do_copy_data_nocache
+     0.00%      20948576  [k] sched_clock_cpu
+     0.00%      20859899  [k] _raw_spin_unlock_irqrestore
+     0.00%      20804877  [k] __ip_local_out
+     0.00%      20731866  [k] migrate_disable_switch.isra.0
+     0.00%      20728581  [k] tcp_rate_gen
+     0.00%      20714537  [k] netif_skb_features
+     0.00%      20706815  [.] write
+     0.00%      20603295  [k] ip_finish_output
+     0.00%      20074589  [k] xfd_validate_state
+     0.00%      19913196  [k] irq_enter_rcu
+     0.00%      19509084  [k] ep_send_events
+     0.00%      18827066  [k] put_prev_entity
+     0.00%      18279559  [.] int java.lang.Integer.hashCode()
+     0.00%      18260043  [k] set_next_buddy
+     0.00%      18243547  [.] Unsafe_Unpark
+     0.00%      17904352  [k] apparmor_file_permission
+     0.00%      17832933  [k] get_jiffies_update
+     0.00%      17809683  [k] sched_ttwu_pending
+     0.00%      17797170  [k] get_futex_key
+     0.00%      17743902  [.] void jdk.internal.misc.Unsafe.checkPrimitivePointer(java.lang.Object, long)
+     0.00%      17713760  [k] is_vmalloc_addr
+     0.00%      17563005  [k] ip_protocol_deliver_rcu
+     0.00%      17479384  [k] sched_balance_find_src_rq
+     0.00%      17445246  [k] apparmor_ip_localout
+     0.00%      17432816  [.] vtable stub [3]
+     0.00%      17432649  [k] do_epoll_wait
+     0.00%      17369247  [k] __x64_sys_futex
+     0.00%      17328699  [k] perf_ctx_disable
+     0.00%      17299749  [k] raw_local_deliver
+     0.00%      17242773  [.] int java.util.concurrent.locks.AbstractQueuedSynchronizer.acquire(java.util.concurrent.locks.AbstractQueuedSynchronizer$Node, int, boolean, boolean, boolean, long)
+     0.00%      17217991  [k] rb_next
+     0.00%      17101590  [k] set_next_entity
+     0.00%      17090286  [k] __cgroup_account_cputime
+     0.00%      17082012  [k] sk_page_frag_refill
+     0.00%      17038700  [k] __sk_dst_check
+     0.00%      16989293  [.] java.nio.ByteBuffer java.nio.ByteBuffer.flip()
+     0.00%      16963425  [k] llist_reverse_order
+     0.00%      16889258  [k] napi_consume_skb
+     0.00%      16839073  [.] Java_sun_nio_ch_SocketDispatcher_read0
+     0.00%      16783063  [.] AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<286822ul, G1BarrierSet>, (AccessInternal::BarrierType)3, 286822ul>::oop_access_barrier(oopDesc*, long)
+     0.00%      16782406  [k] ipv4_mtu
+     0.00%      16778158  [k] ip_local_deliver
+     0.00%      16657580  [.] 0x00000000001b0b07
+     0.00%      16650187  [.] __errno_location
+     0.00%      16639240  [k] raw_v4_input
+     0.00%      16636613  [k] __x64_sys_epoll_wait
+     0.00%      16622315  [.] G1CollectedHeap::requires_barriers(stackChunkOopDesc*) const
+     0.00%      16325405  [k] release_sock
+     0.00%      16275830  [k] ipv4_dst_check
+     0.00%      16253194  [k] kfree
+     0.00%      16207308  [k] page_counter_uncharge
+     0.00%      16183225  [k] __sysvec_apic_timer_interrupt
+     0.00%      15897469  [k] psi_task_change
+     0.00%      15667828  [.] 0x00000000001b0b8f
+     0.00%      15581848  [k] tcp_do_parse_auth_options
+     0.00%      15581391  [k] irqentry_enter
+     0.00%      14183926  [k] __dequeue_entity
+     0.00%      13862020  [k] exit_to_user_mode_loop
+     0.00%      13709355  [k] mod_timer
+     0.00%      13270087  [k] neigh_hh_output
+     0.00%      13180330  [k] __hrtimer_next_event_base
+     0.00%      13140837  [.] 0x00000000000a03c9
+     0.00%      13082515  [k] tick_nohz_handler
+     0.00%      13056515  [.] void java.lang.VirtualThread$BuiltinForkJoinPoolScheduler.onStart(java.lang.Thread$VirtualThreadTask)
+     0.00%      13030644  [k] rb_insert_color
+     0.00%      13020532  [k] tick_program_event
+     0.00%      12969245  [k] __netif_receive_skb_core.constprop.0
+     0.00%      12966445  [k] security_sock_rcv_skb
+     0.00%      12943805  [.] 0x0000000000000a71
+     0.00%      12721274  [k] detach_if_pending
+     0.00%      12699974  [k] bpf_lsm_socket_sendmsg
+     0.00%      12685847  [.] 0x00000000000a8fdc
+     0.00%      12669459  [.] 0x00000000000a037e
+     0.00%      12654311  [k] rcu_note_context_switch
+     0.00%      12644869  [k] refill_stock
+     0.00%      12569303  [.] java.nio.ByteBuffer java.nio.ByteBuffer.position(int)
+     0.00%      12555760  [k] perf_event_context_sched_out
+     0.00%      12551985  [.] 0x00000000000a03f5
+     0.00%      12544502  [k] select_task_rq
+     0.00%      12445004  [k] lock_timer_base
+     0.00%      12406016  [k] tcp_newly_delivered
+     0.00%      12391248  [.] 0x00000000000a693b
+     0.00%      12386776  [.] java.lang.StringBuilder java.lang.StringBuilder.append(long)
+     0.00%      12368099  [k] apparmor_socket_sock_rcv_skb
+     0.00%      12364520  [.] 0x00000000001b0b3c
+     0.00%      12326062  [k] sched_use_asym_prio.isra.0
+     0.00%      12215124  [k] update_other_load_avgs
+     0.00%      12157468  [k] kernel_init_pages
+     0.00%      12066557  [k] pick_next_task
+     0.00%      12056469  [.] 0x00000000001b0acb
+     0.00%      12032964  [k] barn_replace_full_sheaf.part.0
+     0.00%      12017882  [.] 0x00000000000a030c
+     0.00%      11984284  [.] 0x00000000001b0b7f
+     0.00%      11972509  [k] tcp_rate_skb_delivered.part.0
+     0.00%      11918706  [k] tcp_chrono_stop
+     0.00%      11805799  [k] __tcp_select_window
+     0.00%      11674203  [k] skb_release_head_state
+     0.00%      11519226  [k] futex_ref_get
+     0.00%      11293862  [k] _raw_spin_unlock
+     0.00%      10888854  [.] Java_sun_nio_ch_EPoll_wait
+     0.00%      10732884  [k] try_to_block_task.constprop.0.isra.0
+     0.00%       9821939  [k] dequeue_task
+     0.00%       9345380  [k] tcp_stream_alloc_skb
+     0.00%       9114621  [.] StubRoutines cont_thaw_stub (stub gen)
+     0.00%       8927373  [k] __irq_exit_rcu
+     0.00%       8779415  [k] __perf_event_task_sched_out
+     0.00%       8778159  [k] skb_csum_hwoffload_help
+     0.00%       8756137  [k] arch_asym_cpu_priority
+     0.00%       8727356  [.] FreezeBase::size_if_fast_freeze_available()
+     0.00%       8711933  [k] __usecs_to_jiffies
+     0.00%       8705134  [k] ___task_rq_lock
+     0.00%       8704193  [.] 0x0000000000000a7f
+     0.00%       8704053  [.] 0x00000000000009d0
+     0.00%       8703436  [.] 0x0000000000000a49
+     0.00%       8691223  [k] arch_scale_freq_tick
+     0.00%       8615938  [k] __x64_sys_read
+     0.00%       8575430  [k] update_sd_lb_stats.constprop.0
+     0.00%       8536663  [k] inet6_recvmsg
+     0.00%       8535599  [k] kmem_cache_free
+     0.00%       8514750  [k] futex_hash
+     0.00%       8474825  [k] _find_first_bit
+     0.00%       8467443  [k] tcp_cwnd_validate
+     0.00%       8459152  [.] StubRoutines jbyte_disjoint_arraycopy_stub (stub gen)
+     0.00%       8454289  [k] __tcp_cleanup_rbuf
+     0.00%       8435960  [k] ip_rcv_core
+     0.00%       8423758  [.] Interpreter
+     0.00%       8403727  [.] Freeze<Config<(oop_kind)0, G1BarrierSet> >::allocate_chunk(unsigned long, int)
+     0.00%       8385574  [k] __ip_finish_output
+     0.00%       8380818  [.] epoll_wait@plt
+     0.00%       8342429  [k] set_next_task_idle
+     0.00%       8322571  [k] clockevents_program_event
+     0.00%       8316655  [k] nohz_balance_exit_idle
+     0.00%       8289633  [k] __pcs_replace_full_main
+     0.00%       8279559  [k] dev_hard_start_xmit
+     0.00%       8271075  [.] ContinuationEntry::flush_stack_processing(JavaThread*) const
+     0.00%       8270931  [.] 0x00000000000a0310
+     0.00%       8266890  [.] void jdk.internal.vm.StackableScope.popAll()
+     0.00%       8266658  [.] jvmti_yield_cleanup(JavaThread*, ContinuationWrapper&)
+     0.00%       8237883  [k] irq_work_run_list
+     0.00%       8207615  [.] 0x00000000000a0340
+     0.00%       8205324  [k] skb_clone_tx_timestamp
+     0.00%       8200722  [k] __set_next_task_fair.part.0
+     0.00%       8194768  [k] tcp_in_ack_event
+     0.00%       8168931  [k] __cgroup_account_cputime_field
+     0.00%       8146437  [k] tmigr_requires_handle_remote
+     0.00%       8123909  [k] futex_do_wait
+     0.00%       8123724  [k] ip_rcv
+     0.00%       8102055  [k] perf_adjust_freq_unthr_context
+     0.00%       8038509  [k] __sk_mem_reduce_allocated
+     0.00%       8021668  [k] sched_core_idle_cpu
+     0.00%       8014039  [k] bpf_skops_write_hdr_opt.isra.0
+     0.00%       8013568  [k] tcp_cleanup_rbuf
+     0.00%       7968503  [k] validate_xmit_skb
+     0.00%       7961867  [k] simple_copy_to_iter
+     0.00%       7942956  [k] arch_exit_to_user_mode_prepare.isra.0
+     0.00%       7928235  [k] __irqentry_text_end
+     0.00%       7872599  [k] sched_balance_domains
+     0.00%       7709785  [.] java.lang.ThreadLocal$ThreadLocalMap java.lang.Thread.terminatingThreadLocals()
+     0.00%       7696680  [k] sched_balance_find_src_group
+     0.00%       7586265  [k] try_to_wake_up
+     0.00%       7119240  [k] schedule
+     0.00%       6682314  [k] sysvec_apic_timer_interrupt
+     0.00%       5335016  [k] bpf_lsm_file_permission
+     0.00%       5216586  [k] list_add_tail
+     0.00%       5136829  [.] G1CollectedHeap::attempt_allocation_slow(unsigned int, unsigned long, bool)
+     0.00%       5097862  [k] __ep_eventpoll_poll.isra.0
+     0.00%       4963952  [.] G1HeapRegion::set_eden()
+     0.00%       4949209  [k] rw_verify_area
+     0.00%       4855857  [k] rcu_pending
+     0.00%       4737934  [.] 0x00000000000ac800
+     0.00%       4727771  [k] __kfree_skb
+     0.00%       4648617  [.] void jdk.internal.vm.Continuation.enterSpecial(jdk.internal.vm.Continuation, boolean, boolean)
+     0.00%       4607570  [k] validate_xmit_xfrm
+     0.00%       4573053  [k] wake_q_add_safe
+     0.00%       4539894  [k] get_page_from_freelist
+     0.00%       4525345  [k] put_prev_task_fair
+     0.00%       4518419  [k] sched_balance_trigger
+     0.00%       4500450  [k] tcp_rate_check_app_limited
+     0.00%       4482898  [k] hrtick_update
+     0.00%       4457398  [.] 0x00000000000a03cc
+     0.00%       4446974  [k] perf_pmu_nop_void
+     0.00%       4433296  [k] wakeup_preempt
+     0.00%       4430008  [k] acct_account_cputime
+     0.00%       4428786  [k] account_user_time
+     0.00%       4403883  [.] SharedRuntime::find_callee_info_helper(vframeStream&, Bytecodes::Code&, CallInfo&, JavaThread*)
+     0.00%       4401719  [.] void java.util.concurrent.ForkJoinPool$WorkQueue.push(java.util.concurrent.ForkJoinTask, java.util.concurrent.ForkJoinPool, boolean)
+     0.00%       4395494  [k] scx_tick
+     0.00%       4387417  [k] skb_copy_datagram_iter
+     0.00%       4371932  [k] security_socket_recvmsg
+     0.00%       4358305  [k] task_h_load
+     0.00%       4353611  [.] 0x00000000000009f3
+     0.00%       4352807  [.] 0x0000000000000a93
+     0.00%       4352215  [.] __vdso_clock_gettime
+     0.00%       4352087  [.] 0x0000000000000a5f
+     0.00%       4350795  [.] 0x00000000000009b1
+     0.00%       4343490  [k] tcp_push
+     0.00%       4331921  [.] MemAllocator::finish(HeapWordImpl**) const
+     0.00%       4314607  [.] 0x00000000001b0b6f
+     0.00%       4297876  [k] lock_sock_nested
+     0.00%       4294760  [k] raw_spin_rq_lock_nested.constprop.0
+     0.00%       4289939  [.] MutatorAllocRegion::retire_region(G1HeapRegion*)
+     0.00%       4283449  [.] 0x00000000001b0b5a
+     0.00%       4281937  [k] rb_erase
+     0.00%       4277293  [.] MemAllocator::mem_allocate_inside_tlab_fast() const
+     0.00%       4274245  [.] 0x00000000000ac7e8
+     0.00%       4272136  [.] ThreadsListHandle::~ThreadsListHandle()
+     0.00%       4256586  [.] boolean java.util.concurrent.locks.AbstractQueuedSynchronizer.casTail(java.util.concurrent.locks.AbstractQueuedSynchronizer$Node, java.util.concurrent.locks.AbstractQueuedSynchronizer$Node)
+     0.00%       4248869  [k] validate_xmit_vlan
+     0.00%       4245612  [k] native_send_call_func_single_ipi
+     0.00%       4245545  [k] deactivate_task
+     0.00%       4241924  [k] tcp_small_queue_check.isra.0
+     0.00%       4240318  [.] void sun.nio.ch.EPollPoller.implStopPoll(int, boolean)
+     0.00%       4239325  [.] JvmtiObjectAllocEventCollector::JvmtiObjectAllocEventCollector()
+     0.00%       4232818  [k] sysvec_call_function_single
+     0.00%       4226059  [.] G1RegionsOnNodes::add(G1HeapRegion*)
+     0.00%       4211450  [k] native_apic_mem_eoi
+     0.00%       4205524  [k] can_migrate_task
+     0.00%       4199923  [k] cpu_util
+     0.00%       4194921  [k] sched_balance_rq
+     0.00%       4190363  [k] eth_type_trans
+     0.00%       4182453  [k] rmqueue.isra.0
+     0.00%       4180268  [.] void java.util.concurrent.locks.AbstractQueuedSynchronizer.acquireInterruptibly(int)
+     0.00%       4176768  [.] java.lang.Object java.util.concurrent.ConcurrentHashMap.remove(java.lang.Object)
+     0.00%       4174027  [.] 0x00000000000ac7d9
+     0.00%       4167653  [k] inet_steal_sock.constprop.0
+     0.00%       4163131  [k] update_vsyscall
+     0.00%       4159560  [k] tcp_v4_fill_cb
+     0.00%       4152438  [.] 0x00000000000a0368
+     0.00%       4150461  [k] entry_SYSRETQ_unsafe_stack
+     0.00%       4148694  [k] tcp_v4_do_rcv
+     0.00%       4141334  [k] kthread_is_per_cpu
+     0.00%       4140184  [k] bpf_lsm_socket_recvmsg
+     0.00%       4132802  [k] __local_bh_enable_ip
+     0.00%       4128627  [.] java.lang.String java.lang.StringBuilder.toString()
+     0.00%       4117795  [.] void io.github.pderop.looma.examples.user.UserGroup$UpstreamAnswered.<init>(java.lang.Integer, io.github.pderop.looma.ActorRef, int)
+     0.00%       4115576  [.] 0x00000000001b1387
+     0.00%       4102312  [k] account_system_time
+     0.00%       4094566  [k] __msecs_to_jiffies
+     0.00%       4093593  [k] should_we_balance
+     0.00%       4093277  [k] tcp_update_recv_tstamps
+     0.00%       4090144  [.] 0x00000000000a0374
+     0.00%       4087418  [k] psi_flags_change
+     0.00%       4085044  [k] update_dl_rq_load_avg
+     0.00%       4076853  [k] ktime_get_seconds
+     0.00%       4071862  [k] update_process_times
+     0.00%       4069667  [k] select_idle_core.isra.0
+     0.00%       4065031  [k] free_tail_page_prepare
+     0.00%       4050982  [.] void java.util.concurrent.locks.AbstractQueuedSynchronizer.acquire(int)
+     0.00%       4041958  [k] timekeeping_adjust
+     0.00%       4031700  [.] 0x00000000000a0344
+     0.00%       4030623  [.] int jdk.internal.vm.Continuation.doYield()
+     0.00%       4029311  [.] boolean java.lang.VirtualThread.compareAndSetState(int, int)
+     0.00%       4027216  [k] _raw_spin_unlock_irq
+     0.00%       4012058  [k] do_softirq.part.0
+     0.00%       4006697  [.] 0x00000000001b0b54
+     0.00%       3994761  [.] G1Allocator::unsafe_max_tlab_alloc()
+     0.00%       3987083  [k] raw_spin_rq_lock_nested
+     0.00%       3973378  [.] java.nio.ByteBuffer java.nio.HeapByteBuffer.compact()
+     0.00%       3967653  [.] 0x00000000000a035f
+     0.00%       3957978  [.] 0x00000000001b0b44
+     0.00%       3949160  [.] 0x00000000001b0b77
+     0.00%       3936345  [.] ImmutableOopMapSet::find_map_at_offset(int) const
+     0.00%       3936205  [.] 0x00000000001b0b68
+     0.00%       3935319  [k] ip_local_deliver_finish
+     0.00%       3910368  [k] sched_clock_noinstr
+     0.00%       3880532  [k] resched_curr_lazy
+     0.00%       3878081  [.] JfrThreadLocal::has_cpu_time_jfr_requests()
+     0.00%       3846583  [k] qdisc_pkt_len_segs_init
+     0.00%       3791590  [.] StubRoutines jint_disjoint_arraycopy_stub (stub gen)
+     0.00%       3751419  [k] __x64_sys_epoll_ctl
+     0.00%       3734772  [k] sk_filter_trim_cap
+     0.00%       3715955  [.] int java.util.concurrent.ThreadLocalRandom.getProbe()
+     0.00%       3294868  [.] G1ParScanThreadState::trim_queue_to_threshold(unsigned int)
+     0.00%       2874358  [k] ep_start_scan
+     0.00%       1890264  [k] amd_pmu_v2_disable_all
+     0.00%       1284198  [.] G1HeapRegionClaimer::claim_region(unsigned int)
+     0.00%       1255147  [k] _raw_read_lock
+     0.00%       1249386  [.] FreeCSetClosure::do_heap_region(G1HeapRegion*)
+     0.00%       1175068  [.] 0x00000000000b3cdc
+     0.00%       1161843  [.] G1CodeRootSet::length() const
+     0.00%       1091316  [.] ConNode::make(Type const*)
+     0.00%       1069344  [.] G1SurvRateGroup::accum_surv_rate_pred(unsigned int) const
+     0.00%        932227  [.] AbsSeq::davg() const
+     0.00%        931176  [.] ConstantPool::klass_ref_index_at(int, Bytecodes::Code)
+     0.00%         68461  [.] 0x00000000000a0317
+     0.00%         22445  [.] GCIdMark::GCIdMark(unsigned int)
+     0.00%         20537  [.] 0x00000000000ac6c9
+     0.00%         20243  [.] pthread_cond_timedwait
+     0.00%         11009  [.] WorkerThread::run()
+     0.00%         10862  [.] VMThread::wait_for_operation()
+     0.00%         10704  [.] _pthread_cleanup_pop
+     0.00%         10285  [.] ObjectSynchronizer::is_async_deflation_needed()
+     0.00%         10190  [.] 0x00000000000ac70b
+     0.00%         10169  [.] 0x000000000004acff
+     0.00%         10146  [.] 0x00000000000a2ccb
+     0.00%          9963  [.] Monitor::wait_without_safepoint_check(unsigned long)
+     0.00%          9822  [.] 0x00000000000a2cb8
+     0.00%          9589  [.] 0x00000000000a2d62
+     0.00%          8547  [.] 0x00000000000a06e8
+     0.00%          8543  [.] G1Policy::calculate_desired_num_young_regions(unsigned long, unsigned long, unsigned long, unsigned int, unsigned int) const
+     0.00%          8474  [k] ttwu_do_activate
+     0.00%          4714  [k] perf_ctx_unlock
+     0.00%            72  [k] event_function
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

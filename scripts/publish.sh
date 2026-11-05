@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 #
-# Copies what can be committed from a run of scripts/bench.sh to docs/results/.
+# Copies what can be committed from a run of scripts/bench.sh to docs/results/. Only the latest
+# campaign is kept there.
 # Nothing is added to git: `git status` then shows the copied files.
 #
 #   scripts/publish.sh bench/20261021-030301
@@ -15,10 +16,12 @@ Usage: scripts/publish.sh [-n] <bench-dir>
 Copies, from <bench-dir>, the output directory of scripts/bench.sh:
   summary.md                  the tables of all the cases
   <case>-c2c-<scheduler>.txt  the full perf c2c report of each case and scheduler
+  <case>-walk-<scheduler>.txt the perf report of each walk run: the cycles of each function
   runs/*.out, runs/*.gc.log   the console and the GC log of each run
   runs/*-stat-*.csv           the perf stat counts of each stat run
-into docs/results/<date>-<cpu>/, with the date and the CPU read from summary.md. That folder is
-emptied first, if it exists. The perf data files are not copied: they are big, and only perf on
+into docs/results/<date>-<cpu>/, with the date and the CPU read from summary.md. Only the latest
+campaign is kept: the folders of the other campaigns in docs/results/ are removed first, and that
+folder is emptied if it exists. The perf data files are not copied: they are big, and only perf on
 the machine that made them can read them.
 
   -n        Dry run: print what would be copied, copy nothing.
@@ -69,15 +72,17 @@ copy() {
 }
 
 cd "$ROOT"
-# A campaign of the same date and CPU replaces the folder: no file of the older one stays.
-if [ -d "$DEST" ]; then
-	echo "$([ "$DRY" = 1 ] && echo "would replace" || echo "replaced") $DEST"
-	[ "$DRY" = 1 ] || rm -rf "$DEST"
-fi
+# Only the latest campaign is kept: every campaign folder goes, this one too, so that no file of an
+# older campaign stays.
+for old in docs/results/20*-*/; do
+	[ -d "$old" ] || continue
+	echo "$([ "$DRY" = 1 ] && echo "would remove" || echo "removed") ${old%/}"
+	[ "$DRY" = 1 ] || rm -rf "$old"
+done
 [ "$DRY" = 1 ] || mkdir -p "$DEST/runs"
 echo "$([ "$DRY" = 1 ] && echo "would copy" || echo "copied"):"
 copy "$SUMMARY" summary.md
-for f in "$DIR"/*-c2c-*.txt; do
+for f in "$DIR"/*-c2c-*.txt "$DIR"/*-walk-*.txt; do
 	[ -e "$f" ] || continue
 	copy "$f" "$(basename "$f")"
 done
