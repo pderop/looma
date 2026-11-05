@@ -1,17 +1,13 @@
 # The results
 
-One folder per campaign, `<date>-<cpu>`: its `summary.md`, and the files behind every number.
-[`../benchmark.md`](../benchmark.md) explains the benchmark.
+`docs/results/` keeps one campaign, the latest, in `<date>-<cpu>/`: its `summary.md`, and the files
+behind every number. [`../benchmark.md`](../benchmark.md) explains the benchmark.
 
-## The campaigns
+## The latest campaign
 
-### AMD Ryzen 9 9950X
-
-| Campaign | Schedulers | JDK | Note |
+| Campaign | Machine | Schedulers | JDK |
 | --- | --- | --- | --- |
-| [`2026-11-02-ryzen9-9950x`](2026-11-02-ryzen9-9950x/summary.md) | `mpsc`, `mpsc-mode3`, `jdk`, `jdk-pinned` | openjdk/loom pull request 227 | the latest; the client threads count their own answers |
-| [`2026-10-24-ryzen9-9950x`](2026-10-24-ryzen9-9950x/summary.md) | `stealing-local`, `stealing-local-home` ([older names](#older-campaigns)), `jdk`, `jdk-pinned` | builds.shipilev.net | after [#9](https://github.com/pderop/looma/pull/9) |
-| [`2026-10-22-ryzen9-9950x`](2026-10-22-ryzen9-9950x/summary.md) | the same four | builds.shipilev.net | before #9: the scan for an idle carrier started at a random one, not the first; #9 removed it |
+| [`2026-11-05-ryzen9-9950x`](2026-11-05-ryzen9-9950x/summary.md) | AMD Ryzen 9 9950X | `mpsc`, `jdk`, `jdk-pinned` | openjdk/loom pull request 227, commit 5766f81 |
 
 The machine and the layout: [`../benchmark.md`](../benchmark.md#amd-ryzen-9-9950x).
 
@@ -54,7 +50,6 @@ What each column means:
 | **cpu µs/req** | CPU per request, mean of r1 to r3. The main number |
 | **cpu range** | lowest and highest of r1 to r3 |
 | **vs jdk** | against `jdk`, same case and depth |
-| **walk µs** | older campaigns only: cpu µs/req at depth 256 - at depth 0. Not the walk alone: the scheduler's own cost changes between the two depths too |
 | **walk cycles/req** | the cycles of `UserGroup.walk` alone, per request of the measure |
 | **p50, p99, p99.9 µs** | latency from the planned send time; lowest and highest of r1 to r3 |
 | **migrations** | how often an actor ran a message on another carrier than the one before; one message in 64 checked |
@@ -91,22 +86,21 @@ GCs               lines Pause of runs/<...>.gc.log, without the StackChunk count
                   (Heap Inspection)
 
 vs jdk = cpu µs/req / cpu µs/req of jdk, same case and depth, - 1   (empty when jdk is not a measurement)
-walk   = cpu µs/req at depth 256 - cpu µs/req at depth 0   (older campaigns only)
 ```
 
 ### perf stat
 
-The line, from [`2026-11-02-ryzen9-9950x/summary.md`](2026-11-02-ryzen9-9950x/summary.md):
+The line, from [`2026-11-05-ryzen9-9950x/summary.md`](2026-11-05-ryzen9-9950x/summary.md):
 
 | case | scheduler | instructions/req | IPC | cycles per instruction | cycles/req | instructions | cycles | requests | note |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| default | mpsc | 75,212 | 1.20 | 0.83 | 62,678 | 157,944,798,154 | 131,623,071,543 | 2,100,000 | |
+| default | mpsc | 68,498 | 1.09 | 0.92 | 62,996 | 143,845,254,788 | 132,291,611,696 | 2,100,000 | |
 
-From `2026-11-02-ryzen9-9950x/runs/default-stat-mpsc.csv`, one line per thread and counter:
+From `2026-11-05-ryzen9-9950x/runs/default-stat-mpsc.csv`, one line per thread and counter:
 
 ```
-mpsc-carrier-0-8436,11459908717,,cycles,2966130044,100.00,,
-mpsc-carrier-0-8436,13118375273,,instructions,2966098824,100.00,,
+mpsc-carrier-0-104210,11363548493,,cycles,2919408602,100.00,,
+mpsc-carrier-0-104210,11845745640,,instructions,2919411842,100.00,,
 field 1: the thread   field 2: the count   field 4: what it counts   (the file's comment lists all)
 ```
 
@@ -117,10 +111,10 @@ cycles       = the same, where field 4 = cycles
 requests     = 150,000 req/s × 14 s (the perf stat window), not counted;
                the line throughput of runs/default-stat-mpsc-256.out shows the rate was kept
 
-instructions/req       = instructions / requests  = 157,944,798,154 / 2,100,000       = 75,212
-cycles/req             = cycles / requests        = 131,623,071,543 / 2,100,000       = 62,678
-IPC                    = instructions / cycles    = 157,944,798,154 / 131,623,071,543 = 1.20
-cycles per instruction = cycles / instructions    = 131,623,071,543 / 157,944,798,154 = 0.83
+instructions/req       = instructions / requests  = 143,845,254,788 / 2,100,000       = 68,498
+cycles/req             = cycles / requests        = 132,291,611,696 / 2,100,000       = 62,996
+IPC                    = instructions / cycles    = 143,845,254,788 / 132,291,611,696 = 1.09
+cycles per instruction = cycles / instructions    = 132,291,611,696 / 143,845,254,788 = 0.92
 ```
 
 ### perf c2c
@@ -143,12 +137,23 @@ The walk run is the run at depth 256, with two more JVM flags:
 - `-XX:+DumpPerfMapAtExit`: at exit, the JVM writes the perf map, `/tmp/perf-<pid>.map`. It gives
   the name of each JIT-compiled function. `perf report` reads it, so it can name the walk.
 
+From its perf report, `<case>-walk-<scheduler>.txt`: `perf record -e cycles` over the measure,
+minus 3 s at each end, then `perf report --sort sym --show-total-period`. One line per function;
+the column Period is in cycles.
+
 ```
-walk cycles      sum of the column Period on the lines UserGroup.walk(...) of the perf report,
-                 <case>-walk-<scheduler>.txt (perf record -e cycles over the measure, minus 3 s at
-                 each end; perf report --sort sym --show-total-period)
+walk cycles      Period on the line UserGroup.walk(...)
 requests         rate × 14 s (the perf record window), not counted
 walk cycles/req  walk cycles / requests
+```
+
+Example, big, mpsc, from `2026-11-05-ryzen9-9950x/big-walk-mpsc.txt`:
+
+```
+    60.23%   505127965208  [.] long io.github.pderop.looma.examples.user.UserGroup.walk(java.lang.Integer)
+    % of all Period        function
+
+walk cycles/req = 505,127,965,208 / 2,100,000 = 240,537
 ```
 
 The scheduler, the kernel and the GC are on other lines of the same report.
@@ -162,23 +167,10 @@ heap used           top - start, in the GC log's last heap line, runs/<case>-eps
 difference          cpu µs/req Epsilon - cpu µs/req G1
 ```
 
-Example, `2026-11-02-ryzen9-9950x/runs/default-epsilon-mpsc-256.gc.log`:
+Example, `2026-11-05-ryzen9-9950x/runs/default-epsilon-mpsc-256.gc.log`:
 
 ```
-space 12582912K,  52% used [0x0000000500000000, 0x0000000690b3cd58, 0x0000000800000000)
+space 12582912K,  51% used [0x0000000500000000, 0x000000068e742560, 0x0000000800000000)
                              start               top (next object)    end
-heap used = 0x690b3cd58 - 0x500000000 = 6,722,669,912 bytes = 6,411 MiB
+heap used = 0x68e742560 - 0x500000000 = 6,684,943,712 bytes = 6,375 MiB
 ```
-
-## Older campaigns
-
-2026-10-22 and 2026-10-24 ran two setups of Looma's copy of the Netty-VirtualThread-Scheduler,
-then behind `Carriers.affine(n)`, on the Loom JDK 28 of builds.shipilev.net (b59):
-
-| Name | What it was | Now |
-| --- | --- | --- |
-| `stealing-local-home` | stealing within an L3, actors never stolen | removed |
-| `stealing-local` | the same, but an idle carrier could also steal an actor | removed |
-
-Since 2026-10-31, the copy is no longer built, and `Carriers.affine(n)` runs the MPSC scheduler:
-its runs are named `mpsc`.

@@ -20,7 +20,7 @@ In each case (a size of the groups), for each repetition, it runs every schedule
 at depth 0. Then one more run per scheduler with perf c2c, one with perf stat, and one with perf
 record for the walk: on Linux, the script needs perf. All runs use the same jar and the same JVM
 flags: only -Dbench.scheduler changes. The walk run also keeps UserGroup.walk out of line, so that
-its cycles have a name of their own.
+it has a name of its own.
 
 The default CPUs are those of an AMD Ryzen 9 9950X. On another machine, give the three lists,
 with commas and ranges only (2-7,10-15), and no CPU in two lists:
@@ -560,8 +560,8 @@ summary_tables() {
 			print "```"
 			print ""
 			print "The walk run of each scheduler, at depth " depth ": the same run, with UserGroup.walk kept out"
-			print "of line (-XX:CompileCommand=dontinline), so that its cycles have a name of their own. walk"
-			print "cycles: the cycles that perf record gives to UserGroup.walk, the column Period of its report,"
+			print "of line (-XX:CompileCommand=dontinline), so that it has a name of its own. walk cycles: the"
+			print "cycles that perf record gives to UserGroup.walk, the column Period of its report,"
 			print "<case>-walk-<scheduler>.txt. It is only the walk: the scheduler and the kernel are not in it."
 			print "requests: " group(rate) " req/s × " window " s, the window of perf record."
 			print step

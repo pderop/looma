@@ -11,11 +11,11 @@ actors moved.
 
 | Case | `mpsc` (each actor stays on its core) | `jdk` (the JDK's default scheduler) | `jdk-pinned` |
 | --- | --- | --- | --- |
-| `default`: data fits in a core's L2 | **15.26** | 35.92 | 43.63 |
-| `big`: data does not fit in the caches | **63.06** | cannot keep up: not a measurement | 75.54 |
+| `default`: data fits in a core's L2 | **15.65** | 37.02 | 43.81 |
+| `big`: data does not fit in the caches | **63.91** | cannot keep up: not a measurement | 75.97 |
 
-From [`results/2026-11-02-ryzen9-9950x/summary.md`](results/2026-11-02-ryzen9-9950x/summary.md),
-"At a glance": depth 256, the mean of 3 runs. In `default`, `mpsc` spends 57.5% less than `jdk`; in `big`, `jdk-pinned` spends 19.8% more than `mpsc`.
+From [`results/2026-11-05-ryzen9-9950x/summary.md`](results/2026-11-05-ryzen9-9950x/summary.md),
+"At a glance": depth 256, the mean of 3 runs. In `default`, `mpsc` spends 57.7% less than `jdk`; in `big`, `jdk-pinned` spends 18.9% more than `mpsc`.
 
 - Code: [`examples/…/examples/user`](../examples/src/main/java/io/github/pderop/looma/examples/user)
 - Scripts: [`scripts/bench.sh`](../scripts/bench.sh) runs it, [`scripts/publish.sh`](../scripts/publish.sh)
@@ -177,7 +177,7 @@ Linux without it).
 sdk env                                 # the Loom JDK, from .sdkmanrc; or export JAVA_HOME
 mvn clean install                       # once
 scripts/bench.sh                        # both cases; CPU lists of the AMD machine by default
-scripts/publish.sh bench/<date>-<time>  # keep it: -> docs/results/<date>-<cpu>/
+scripts/publish.sh bench/<date>-<time>  # keep it: -> docs/results/<date>-<cpu>/, the only one kept
 ```
 
 `bench.sh` first runs [`scripts/prepare-linux-bench.sh`](../scripts/prepare-linux-bench.sh) with sudo:
@@ -248,12 +248,13 @@ Output: `bench/<date>-<time>/` (`--out` changes it): `summary.md` and the files 
 
 `publish.sh` copies `summary.md`, the `<case>-c2c-<scheduler>.txt` and `<case>-walk-<scheduler>.txt`
 reports, and the consoles, GC logs and `perf stat` files of `runs/` to `docs/results/<date>-<cpu>/`.
-It empties that folder first. The perf data files are not copied. `publish.sh -n` shows what it would copy.
+Only the latest campaign is kept: it removes the folders of the others first. The perf data files
+are not copied. `publish.sh -n` shows what it would copy.
 
 ## Results
 
-Latest: [`results/2026-11-02-ryzen9-9950x/summary.md`](results/2026-11-02-ryzen9-9950x/summary.md).
-All the campaigns, the older ones too: [`results/campaigns.md`](results/campaigns.md).
+Latest: [`results/2026-11-05-ryzen9-9950x/summary.md`](results/2026-11-05-ryzen9-9950x/summary.md).
+What it contains, and where each number comes from: [`results/campaigns.md`](results/campaigns.md).
 
 ## Why it is built this way
 
@@ -266,8 +267,7 @@ All the campaigns, the older ones too: [`results/campaigns.md`](results/campaign
   is not counted.
 - **Repetitions:** each run is a new JVM, with its own JIT and GC choices. They follow each other,
   so a drift of the machine hits every scheduler alike.
-- **Depth 0:** everything but the walk: the messages, the GET, the scheduling. Depth 256 minus
-  depth 0 is not the walk alone: the scheduler's own cost changes between the two depths too.
+- **Depth 0:** everything but the walk: the messages, the GET, the scheduling.
 - **The walk run:** `UserGroup.walk` kept out of line has a name of its own in `perf`. Its cycles
   are the walk alone.
 - **A fixed rate:** the same work for every scheduler. Latency from the planned send time, so a late
