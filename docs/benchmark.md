@@ -236,19 +236,21 @@ What the script does:
                                   live StackChunks counted during the warm-up and after the
                                   measure (full GCs, left out of the GC column)
    c. stat run, per scheduler:    perf stat, cycles and instructions of the server's threads
-   d. epsilon run, per scheduler: -XX:+UseEpsilonGC -Xms12g -Xmx12g: no GC
+   d. walk run, per scheduler:    perf record of the cycles, with UserGroup.walk kept out of
+                                  line: the cycles of the walk alone
+   e. epsilon run, per scheduler: -XX:+UseEpsilonGC -Xms12g -Xmx12g: no GC
                                   (what a run allocates: the Epsilon table of summary.md)
 4. summary.md, both cases
 ```
 
-3 schedulers: 27 runs per case, 54 in all, about 28 minutes.
+4 schedulers: 40 runs per case, 80 in all, about 41 minutes.
 
 Output: `bench/<date>-<time>/` (`--out` changes it): `summary.md` and the files behind each number.
 [`results/campaigns.md`](results/campaigns.md) explains them.
 
-`publish.sh` copies `summary.md`, the `<case>-c2c-<scheduler>.txt` reports, and the consoles, GC
-logs and `perf stat` files of `runs/` to `docs/results/<date>-<cpu>/`. It empties that folder
-first. The `perf c2c` data files are not copied. `publish.sh -n` shows what it would copy.
+`publish.sh` copies `summary.md`, the `<case>-c2c-<scheduler>.txt` and `<case>-walk-<scheduler>.txt`
+reports, and the consoles, GC logs and `perf stat` files of `runs/` to `docs/results/<date>-<cpu>/`.
+It empties that folder first. The perf data files are not copied. `publish.sh -n` shows what it would copy.
 
 ## Results
 
@@ -267,7 +269,9 @@ All the campaigns, the older ones too: [`results/campaigns.md`](results/campaign
 - **Repetitions:** each run is a new JVM, with its own JIT and GC choices. They follow each other,
   so a drift of the machine hits every scheduler alike.
 - **Depth 0:** everything but the walk: the messages, the GET, the scheduling. Depth 256 minus
-  depth 0 is the walk.
+  depth 0 is not the walk alone: the scheduler's own cost changes between the two depths too.
+- **The walk run:** `UserGroup.walk` kept out of line has a name of its own in `perf`. Its cycles
+  are the walk alone.
 - **A fixed rate:** the same work for every scheduler. Latency from the planned send time, so a late
   client cannot hide a delay.
 - **Pinned clients:** the load stays off the carriers, and counts its own answers.

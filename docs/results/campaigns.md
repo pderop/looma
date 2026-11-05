@@ -23,11 +23,13 @@ copies it here:
 ```
 summary.md                                     the results
 <case>-c2c-<scheduler>.txt                     the perf c2c report
+<case>-walk-<scheduler>.txt                    the perf report of the walk run: cycles per function
 runs/<case>-<run>-<scheduler>-<depth>.out      the console of a run (default-r1-mpsc-256.out,
                                                big-c2c-jdk-256.out, default-epsilon-mpsc-256.out)
 runs/<case>-<run>-<scheduler>-<depth>.gc.log   its GC log
 runs/<case>-stat-<scheduler>.csv               the perf stat counts, per thread
 runs/<case>-c2c-<scheduler>.data               the perf c2c data: stays in bench/, not copied
+runs/<case>-walk-<scheduler>.data              the perf record data: stays in bench/, not copied
 ```
 
 `summary.md`: a header (date, machine, CPU, turbo, JDK, CPU lists, heap, command), then these
@@ -42,6 +44,7 @@ files:
 | Controls | case, depth, scheduler | rate reached, GC pauses, live StackChunks |
 | perf stat | case, scheduler | from the stat run |
 | perf c2c | case, scheduler | from the c2c run |
+| Walk | case, scheduler | the cycles of the walk alone, from the walk run |
 | Epsilon | case, scheduler | CPU with G1 and with Epsilon, heap used |
 
 What each column means:
@@ -51,7 +54,8 @@ What each column means:
 | **cpu µs/req** | CPU per request, mean of r1 to r3. The main number |
 | **cpu range** | lowest and highest of r1 to r3 |
 | **vs jdk** | against `jdk`, same case and depth |
-| **walk µs** | the cost of reading the users |
+| **walk µs** | older campaigns only: cpu µs/req at depth 256 - at depth 0. Not the walk alone: the scheduler's own cost changes between the two depths too |
+| **walk cycles/req** | the cycles of `UserGroup.walk` alone, per request of the measure |
 | **p50, p99, p99.9 µs** | latency from the planned send time; lowest and highest of r1 to r3 |
 | **migrations** | how often an actor ran a message on another carrier than the one before; one message in 64 checked |
 | **GCs** | GC pauses, lowest and highest of r1 to r3. About the same for every scheduler |
@@ -87,7 +91,7 @@ GCs               lines Pause of runs/<...>.gc.log, without the StackChunk count
                   (Heap Inspection)
 
 vs jdk = cpu µs/req / cpu µs/req of jdk, same case and depth, - 1   (empty when jdk is not a measurement)
-walk   = cpu µs/req at depth 256 - cpu µs/req at depth 0
+walk   = cpu µs/req at depth 256 - cpu µs/req at depth 0   (older campaigns only)
 ```
 
 ### perf stat
@@ -129,6 +133,25 @@ From the c2c report `<case>-c2c-<scheduler>.txt`, block `Trace Event Information
 other L3 = Load Remote HITM / Load Operations
 DRAM     = Load DRAM / Load Operations
 ```
+
+### Walk
+
+The walk run is the run at depth 256, with two more JVM flags:
+
+- `-XX:CompileCommand=dontinline` on `UserGroup.walk`: the JIT keeps the walk as a function of its
+  own.
+- `-XX:+DumpPerfMapAtExit`: at exit, the JVM writes the perf map, `/tmp/perf-<pid>.map`. It gives
+  the name of each JIT-compiled function. `perf report` reads it, so it can name the walk.
+
+```
+walk cycles      sum of the column Period on the lines UserGroup.walk(...) of the perf report,
+                 <case>-walk-<scheduler>.txt (perf record -e cycles over the measure, minus 3 s at
+                 each end; perf report --sort sym --show-total-period)
+requests         rate × 14 s (the perf record window), not counted
+walk cycles/req  walk cycles / requests
+```
+
+The scheduler, the kernel and the GC are on other lines of the same report.
 
 ### Epsilon
 

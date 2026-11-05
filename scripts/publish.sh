@@ -15,6 +15,7 @@ Usage: scripts/publish.sh [-n] <bench-dir>
 Copies, from <bench-dir>, the output directory of scripts/bench.sh:
   summary.md                  the tables of all the cases
   <case>-c2c-<scheduler>.txt  the full perf c2c report of each case and scheduler
+  <case>-walk-<scheduler>.txt the perf report of each walk run: the cycles of each function
   runs/*.out, runs/*.gc.log   the console and the GC log of each run
   runs/*-stat-*.csv           the perf stat counts of each stat run
 into docs/results/<date>-<cpu>/, with the date and the CPU read from summary.md. That folder is
@@ -77,7 +78,7 @@ fi
 [ "$DRY" = 1 ] || mkdir -p "$DEST/runs"
 echo "$([ "$DRY" = 1 ] && echo "would copy" || echo "copied"):"
 copy "$SUMMARY" summary.md
-for f in "$DIR"/*-c2c-*.txt; do
+for f in "$DIR"/*-c2c-*.txt "$DIR"/*-walk-*.txt; do
 	[ -e "$f" ] || continue
 	copy "$f" "$(basename "$f")"
 done

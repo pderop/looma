@@ -17,9 +17,10 @@ Usage: scripts/bench.sh [options]
 
 Each run is one JVM, with one scheduler: 5 seconds of warm-up, then 20 seconds measured.
 In each case (a size of the groups), for each repetition, it runs every scheduler at --depth and
-at depth 0. Then one more run per scheduler with perf c2c, and one with perf stat: on Linux, the
-script needs perf. All runs use the same jar and the same JVM flags: only -Dbench.scheduler
-changes, and mpsc-mode3 adds -Djdk.pollerMode=3.
+at depth 0. Then one more run per scheduler with perf c2c, one with perf stat, and one with perf
+record for the walk: on Linux, the script needs perf. All runs use the same jar and the same JVM
+flags: only -Dbench.scheduler changes, and mpsc-mode3 adds -Djdk.pollerMode=3. The walk run also
+keeps UserGroup.walk out of line, so that its cycles have a name of their own.
 
 The default CPUs are those of an AMD Ryzen 9 9950X. On another machine, give the three lists,
 with commas and ranges only (2-7,10-15), and no CPU in two lists:
@@ -157,10 +158,10 @@ else
 fi
 C2C=0
 command -v perf >/dev/null && C2C=1
-# On Linux, the c2c and stat runs are part of every measurement: no perf, no run.
-[ "$C2C" = 1 ] || [ "$(uname -s)" != Linux ] || die "perf is needed on Linux (the c2c and stat runs)"
-# Elsewhere, there is no perf: a smoke test, without the c2c and stat runs.
-[ "$C2C" = 1 ] || echo "no perf: no c2c and no stat run, a smoke test and not a measurement" >&2
+# On Linux, the c2c, stat and walk runs are part of every measurement: no perf, no run.
+[ "$C2C" = 1 ] || [ "$(uname -s)" != Linux ] || die "perf is needed on Linux (the c2c, stat and walk runs)"
+# Elsewhere, there is no perf: a smoke test, without the c2c, stat and walk runs.
+[ "$C2C" = 1 ] || echo "no perf: no c2c, stat or walk run, a smoke test and not a measurement" >&2
 
 turbo() {
 	local f
@@ -273,6 +274,19 @@ stat() {
 	rm -f "$RUNS/$CASE-stat-$s.counts"
 }
 
+# perf record of the cycles over the measure, minus 3 seconds at each end. Its report waits for the
+# JVM to exit, which writes the map of the JIT-compiled code. One line per function, with its cycles.
+walk_record() {
+	local s=$1 pid=$2 out=$3
+	wait_line "$pid" "$out" measure || return 0
+	sleep 3
+	perf record -e cycles -F 1000 -p "$pid" -o "$RUNS/$CASE-walk-$s.data" -- sleep $((MEASURE - 6)) \
+		>"$RUNS/$CASE-walk-$s.record.log" 2>&1 || true
+	while kill -0 "$pid" 2>/dev/null; do sleep 1; done
+	DEBUGINFOD_URLS= perf report -i "$RUNS/$CASE-walk-$s.data" --stdio --sort sym --show-total-period \
+		>"$OUT/$CASE-walk-$s.txt" 2>&1 || true
+}
+
 # The stat columns of a run, from its perf stat file: "instructions | cycles | requests". The
 # counts are summed over the server's threads: the client-* threads are the load, not the server.
 # The requests are the rate times the window of perf stat.
@@ -298,6 +312,18 @@ c2c_counts() {
 		}' "$1"
 }
 
+# The walk columns of a run, from its perf report: "walk cycles | requests". walk cycles is the
+# sum of the column Period on the lines of UserGroup.walk. The requests are the rate times the
+# window of perf record.
+walk_counts() {
+	awk -v req=$((RATE * (MEASURE - 6))) '
+		/UserGroup\.walk\(/ { gsub(/,/, "", $2); if ($2 ~ /^[0-9]+$/) { cycles += $2; found = 1 } }
+		END {
+			if (found) printf "%.0f | %d", cycles, req
+			else printf "no sample of the walk |"
+		}' "$1"
+}
+
 # The heap used at exit of an epsilon run, in MiB, from its GC log: Epsilon writes the line
 # "space 12582912K,  33% used [<start>, <top>, <end>)", and the heap used is top - start.
 epsilon_heap() {
@@ -309,28 +335,29 @@ epsilon_heap() {
 	echo $(((top - start) / 1048576))
 }
 
-# row <case> <label> <scheduler> <depth> [c2c|stat|epsilon]: the line of one run in rows.md, from
-# its files: the console, the GC log, and the perf stat file or the c2c report.
+# row <case> <label> <scheduler> <depth> [c2c|stat|walk|epsilon]: the line of one run in rows.md,
+# from its files: the console, the GC log, and the perf stat file, the c2c or the walk report.
 row() {
-	local c=$1 label=$2 s=$3 depth=$4 mode=${5:-} name=$1-$2-$3-$4 gcs late stats=" | | " c2cs=" | | " heap=
+	local c=$1 label=$2 s=$3 depth=$4 mode=${5:-} name=$1-$2-$3-$4 gcs late stats=" | | " c2cs=" | | " heap= walks=" | "
 	# The full GCs of the StackChunk counts are not the run's.
 	gcs=$(grep Pause "$RUNS/$name.gc.log" | grep -vc 'Heap Inspection' || true)
 	late=$(grep -q 'did not keep up\|no backend response\|pinning failed' "$RUNS/$name.out" && echo "not a measurement" || echo)
 	[ "$mode" != c2c ] || c2cs=$(c2c_counts "$OUT/$c-c2c-$s.txt")
 	[ "$mode" != stat ] || stats=$(stat_counts "$RUNS/$c-stat-$s.csv")
 	[ "$mode" != epsilon ] || heap=$(epsilon_heap "$RUNS/$name.gc.log")
+	[ "$mode" != walk ] || walks=$(walk_counts "$OUT/$c-walk-$s.txt")
 	awk -v c="$c" -v s="$s" -v d="$depth" -v r="$label" -v gcs="$gcs" -v late="$late" -v stats="$stats" -v c2cs="$c2cs" \
-		-v heap="$heap" '
+		-v heap="$heap" -v walks="$walks" '
 		/^throughput/  { gsub(/,/, "", $2); rps = $2 }
 		/^cpu /        { cpu = $2 }
 		/^migrations/  { mig = $2 }
 		/^latency/     { p50 = $3; p99 = $7; p999 = $9 }
 		/^stackchunks/ { chunks = $2 " → " $7 }
-		END { printf "| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |\n",
-			c, s, d, r, rps, cpu, mig, p50, p99, p999, gcs, stats, c2cs, chunks, late, heap }' "$RUNS/$name.out"
+		END { printf "| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |\n",
+			c, s, d, r, rps, cpu, mig, p50, p99, p999, gcs, stats, c2cs, chunks, late, heap, walks }' "$RUNS/$name.out"
 }
 
-# The sections of the summary after "The runs", from rows.md: perf stat, perf c2c, the controls,
+# The sections of the summary after "The runs", from rows.md: perf stat, perf c2c, the walk, the controls,
 # and in short the CPU and the latency. One line per case and scheduler. Each section says where
 # its numbers come from, and shows the counts that the other columns are computed from.
 summary_tables() {
@@ -363,7 +390,7 @@ summary_tables() {
 			if (own != "") return "this run: " own
 			return measured(cs SUBSEP depth) ? "" : runs ": not a measurement"
 		}
-		{ for (i = 2; i <= 21; i++) f[i] = trim($i); c = f[2]; s = f[3]; d = f[4]; r = f[5]; cs = c SUBSEP s }
+		{ for (i = 2; i <= 23; i++) f[i] = trim($i); c = f[2]; s = f[3]; d = f[4]; r = f[5]; cs = c SUBSEP s }
 		r ~ /^r[0-9]+$/ {
 			k = cs SUBSEP d; n[k]++; cpu[k] += f[7]; mig[k] += f[8]
 			keep(k SUBSEP "rps", f[6]); keep(k SUBSEP "cpu", f[7]); keep(k SUBSEP "p50", f[9])
@@ -371,6 +398,7 @@ summary_tables() {
 			if (f[20] != "") late[k] = 1
 		}
 		r == "stat" { stat[cs] = 1; ins[cs] = f[13]; cyc[cs] = f[14]; req[cs] = f[15]; snote[cs] = f[20] }
+		r == "walk" { wrun[cs] = 1; wcyc[cs] = f[22]; wreq[cs] = f[23]; wnote[cs] = f[20] }
 		r == "epsilon" { eps[cs] = 1; ecpu[cs] = f[7]; enote[cs] = f[20]; eheap[cs] = f[21] }
 		r == "c2c" {
 			c2c[cs] = 1; cmig[cs] = f[8]; loads[cs] = f[16]; hitm[cs] = f[17]; dram[cs] = f[18]
@@ -407,24 +435,21 @@ summary_tables() {
 			print ""
 			print "## In short"
 			print ""
-			print "| case | scheduler | depth | cpu µs/req | cpu range | vs jdk | walk µs | p50 µs | p99 µs | p99.9 µs | migrations |"
-			print "|---|---|---|---|---|---|---|---|---|---|---|"
+			print "| case | scheduler | depth | cpu µs/req | cpu range | vs jdk | p50 µs | p99 µs | p99.9 µs | migrations |"
+			print "|---|---|---|---|---|---|---|---|---|---|"
 			for (a = 1; a <= nc; a++) for (j = 0; j < 2; j++) for (i = 1; i <= ns; i++) {
 				cs = cas[a] SUBSEP sch[i]; d = j == 0 ? depth : 0; k = cs SUBSEP d
 				if (!n[k]) continue
 				cv = measured(k) ? sprintf("%.2f", mean(k)) : "not a measurement"
 				jk = cas[a] SUBSEP "jdk" SUBSEP d
 				vs = sch[i] != "jdk" && measured(k) && measured(jk) ? sprintf("%+.1f%%", (mean(k) / mean(jk) - 1) * 100) : ""
-				z = cs SUBSEP 0
-				w = d == depth && measured(k) && measured(z) ? sprintf("%.2f", mean(k) - mean(z)) : ""
-				printf "| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %.1f%% |\n", cas[a], sch[i], d, cv,
-					(measured(k) ? range(k SUBSEP "cpu", "%.2f") : ""), vs, w, grange(k SUBSEP "p50"), grange(k SUBSEP "p99"),
+				printf "| %s | %s | %s | %s | %s | %s | %s | %s | %s | %.1f%% |\n", cas[a], sch[i], d, cv,
+					(measured(k) ? range(k SUBSEP "cpu", "%.2f") : ""), vs, grange(k SUBSEP "p50"), grange(k SUBSEP "p99"),
 					grange(k SUBSEP "p999"), mig[k] / n[k]
 			}
 			print ""
 			print "```"
 			print "vs jdk = cpu µs/req / cpu µs/req of jdk, same case and depth, - 1"
-			print "walk   = cpu µs/req at depth " depth " - cpu µs/req at depth 0"
 			print "```"
 			print ""
 			print "From the console of each run, runs/<case>-<run>-<scheduler>-<depth>.out: cpu µs/req, the line"
@@ -516,6 +541,32 @@ summary_tables() {
 			print step
 
 			print ""
+			print "## Walk"
+			print ""
+			print "| case | scheduler | walk cycles/req | walk cycles | requests | note |"
+			print "|---|---|---|---|---|---|"
+			for (a = 1; a <= nc; a++) for (i = 1; i <= ns; i++) {
+				cs = cas[a] SUBSEP sch[i]
+				if (!wrun[cs]) continue
+				if (wcyc[cs] ~ /^[0-9]+$/ && wreq[cs] + 0 > 0)
+					printf "| %s | %s | %s | %s | %s | %s |\n", cas[a], sch[i], group(wcyc[cs] / wreq[cs]),
+						group(wcyc[cs]), group(wreq[cs]), pnote(cs, wnote[cs])
+				else
+					printf "| %s | %s | | %s | | %s |\n", cas[a], sch[i], wcyc[cs], pnote(cs, wnote[cs])
+			}
+			print ""
+			print "```"
+			print "walk cycles/req = walk cycles / requests"
+			print "```"
+			print ""
+			print "The walk run of each scheduler, at depth " depth ": the same run, with UserGroup.walk kept out"
+			print "of line (-XX:CompileCommand=dontinline), so that its cycles have a name of their own. walk"
+			print "cycles: the cycles that perf record gives to UserGroup.walk, the column Period of its report,"
+			print "<case>-walk-<scheduler>.txt. It is only the walk: the scheduler and the kernel are not in it."
+			print "requests: " group(rate) " req/s × " window " s, the window of perf record."
+			print step
+
+			print ""
 			print "## Epsilon"
 			print ""
 			print "| case | scheduler | cpu µs/req G1 | cpu µs/req Epsilon | difference | heap used | note |"
@@ -542,7 +593,7 @@ summary_tables() {
 		}' "$OUT/rows.md"
 }
 
-# run <label> <scheduler> <depth> [c2c|stat|epsilon]: one JVM of the case $CASE, its console in
+# run <label> <scheduler> <depth> [c2c|stat|walk|epsilon]: one JVM of the case $CASE, its console in
 # <case>-<label>-<scheduler>-<depth>.out, one line in rows.md.
 run() {
 	local label=$1 s=$2 depth=$3 mode=${4:-} name=$CASE-$1-$2-$3 pid helpers=()
@@ -558,6 +609,9 @@ run() {
 		-Dbench.rate="$RATE" -Dbench.clientCpus="$CLIENT_LIST" -Dbench.depth="$depth"
 		-Dbench.usersPerGroup="$CASE_USERS" -Dbench.warmupSeconds="$WARMUP" -Dbench.measureSeconds="$MEASURE")
 	[ "$mode" != c2c ] || args+=(-XX:+UnlockDiagnosticVMOptions -XX:+DumpPerfMapAtExit -Dbench.stackChunks=true)
+	# The walk run: UserGroup.walk is never inlined into its caller, so perf sees it as one function.
+	[ "$mode" != walk ] || args+=(-XX:+UnlockDiagnosticVMOptions -XX:+DumpPerfMapAtExit -XX:CompileCommand=quiet
+		-XX:CompileCommand=dontinline,io.github.pderop.looma.examples.user.UserGroup::walk)
 	"${PIN[@]}" "$JAVA" "${args[@]}" -cp "$CP" io.github.pderop.looma.examples.user.Main >"$RUNS/$name.out" 2>&1 &
 	pid=$!
 	rm -f "$RUNS/$name.pinning"
@@ -567,6 +621,7 @@ run() {
 	fi
 	[ "$mode" != c2c ] || { c2c "$s" "$pid" "$RUNS/$name.out" & helpers+=($!); }
 	[ "$mode" != stat ] || { stat "$s" "$pid" "$RUNS/$name.out" & helpers+=($!); }
+	[ "$mode" != walk ] || { walk_record "$s" "$pid" "$RUNS/$name.out" & helpers+=($!); }
 	wait "$pid" || die "$name failed: see $RUNS/$name.out"
 	# A helper that fails must not end the campaign: what it did is in its file.
 	[ "${#helpers[@]}" = 0 ] || wait "${helpers[@]}" || true
@@ -582,7 +637,7 @@ run() {
 }
 
 S=$(wc -w <<<"$SCHEDULERS")
-N=$(((REPS * 2 + C2C * 2 + 1) * S * ${#CASES[@]}))
+N=$(((REPS * 2 + C2C * 3 + 1) * S * ${#CASES[@]}))
 echo "about $((N * (WARMUP + MEASURE + 5) / 60 + 1)) minutes: $N runs"
 : >"$OUT/rows.md"
 for c in "${CASES[@]}"; do
@@ -609,6 +664,9 @@ for c in "${CASES[@]}"; do
 		for s in $SCHEDULERS; do
 			run stat "$s" "$DEPTH" stat
 		done
+		for s in $SCHEDULERS; do
+			run walk "$s" "$DEPTH" walk
+		done
 	fi
 	for s in $SCHEDULERS; do
 		run epsilon "$s" "$DEPTH" epsilon
@@ -632,8 +690,9 @@ done
 	reps="r1 to r$REPS"
 	[ "$REPS" != 1 ] || { times=once; reps=r1; }
 	echo "In each case, each scheduler ran $times at depth $DEPTH and at depth 0 ($reps), then once"
-	echo "more with perf c2c, once more with perf stat, and once more with the Epsilon GC, at depth"
-	echo "$DEPTH. Each run: $WARMUP seconds of warm-up, then $MEASURE seconds measured."
+	echo "more with perf c2c, once more with perf stat, once more with perf record for the walk, and"
+	echo "once more with the Epsilon GC, at depth $DEPTH. Each run: $WARMUP seconds of warm-up, then"
+	echo "$MEASURE seconds measured."
 	echo
 	echo "- Open loop: the clients send at a fixed rate. A latency is from the planned send time of a"
 	echo "  request to its answer. cpu µs/req is the server's: the process minus the clients."
@@ -649,10 +708,11 @@ done
 	echo "- Heap: -Xms2g -Xmx2g -XX:+AlwaysPreTouch, G1, and a GC log per run. The epsilon run:"
 	echo "  -XX:+UseEpsilonGC -Xms12g -Xmx12g -XX:+AlwaysPreTouch. Epsilon frees nothing, so no GC runs:"
 	echo "  each allocation takes new memory."
-	echo "- The c2c run and the stat run count during the measure, minus 3 seconds at each end. The c2c run"
+	echo "- The c2c, stat and walk runs count during the measure, minus 3 seconds at each end. The c2c run"
 	echo "  also counts the live StackChunks (GC.class_histogram), during the warm-up and after the measure."
-	echo "  The full report of each c2c run is in <case>-c2c-<scheduler>.txt, the files of every run in"
-	echo "  runs/."
+	echo "  The walk run keeps UserGroup.walk out of line. The full report of each c2c run is in"
+	echo "  <case>-c2c-<scheduler>.txt, of each walk run in <case>-walk-<scheduler>.txt, the files of every"
+	echo "  run in runs/."
 	echo
 	summary_tables
 } >>"$OUT/summary.md"
