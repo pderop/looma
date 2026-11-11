@@ -49,7 +49,7 @@ class MpscCommonPoolTest {
 	@Test
 	void theCommonPoolKeepsEveryCpu() throws Exception {
 		assumeTrue(Files.isDirectory(TASKS), "not Linux");
-		ActorSystem system = ActorSystem.builder().carriers(Carriers.affine(3)).build();
+		ActorSystem system = ActorSystem.builder().carriers(Carriers.mpsc(3)).build();
 		String all = cpusAllowed(SELF);
 		int workers = ForkJoinPool.getCommonPoolParallelism();
 
@@ -62,7 +62,8 @@ class MpscCommonPoolTest {
 						together.countDown();
 						await(together);
 						return cpusAllowed(SELF);
-					})).toList();
+					}))
+					.toList();
 			return tasks.stream().map(CompletableFuture::join).collect(Collectors.toSet());
 		});
 

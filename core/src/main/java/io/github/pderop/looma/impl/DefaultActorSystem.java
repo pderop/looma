@@ -133,7 +133,7 @@ public final class DefaultActorSystem implements ActorSystem {
 		this.runtime = new ActorRuntime(new Dispatchers(), mpscQueueFactory, this::afterTermination);
 		this.timers = IntStream.range(0, dispatchers.length)
 				.mapToObj(i -> new CarrierTimer(scheduler.mailboxThreadFactory(i), mpscQueueFactory.create(),
-						mpscQueueFactory.create(), timerTick.toNanos(), runtime, "looma-timer-" + i))
+						mpscQueueFactory.create(), timerTick.toNanos(), "looma-timer-" + i))
 				.toArray(CarrierTimer[]::new);
 		// Only a scheduler that says so gets the local path. Elsewhere the mailbox
 		// threads can move between OS threads, so they do not touch the wheel.

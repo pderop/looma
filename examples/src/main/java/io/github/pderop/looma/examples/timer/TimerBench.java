@@ -41,7 +41,7 @@ import io.github.pderop.looma.Message;
 
 /**
  * Compares the timer wheel of Looma with a ScheduledThreadPoolExecutor. Run it
- * with {@code scripts/timer-bench.sh}.
+ * with {@code scripts/bench-timer.sh}.
  *
  * <p>
  * It is an open loop. A driver thread works on a fixed schedule: every
@@ -249,7 +249,7 @@ public final class TimerBench {
 		long tickMillis = Long.getLong("timer.tickMillis", 1);
 		String mode = System.getProperty("timer.mode", "wheel");
 		String scenario = System.getProperty("timer.scenario", "expire");
-		int warmup = Integer.getInteger("timer.warmupSeconds", 5);
+		int warmup = Integer.getInteger("timer.warmupSeconds", 10);
 		int measure = Integer.getInteger("timer.measureSeconds", 15);
 		if (!mode.equals("wheel") && !mode.equals("jdk")) {
 			throw new IllegalArgumentException("timer.mode must be wheel or jdk, not " + mode);
@@ -260,8 +260,10 @@ public final class TimerBench {
 
 		// First, before any virtual thread starts: the JVM picks its scheduler when
 		// the first one starts.
-		ActorSystem system = ActorSystem.builder().carriers(Carriers.affine(carriers))
-				.timerTick(Duration.ofMillis(tickMillis)).build();
+		ActorSystem system = ActorSystem.builder()
+				.carriers(Carriers.mpsc(carriers))
+				.timerTick(Duration.ofMillis(tickMillis))
+				.build();
 
 		// The worker takes back main's CPUs when it starts, whatever thread starts
 		// it. So it comes from the platform thread factory of the scheduler.
@@ -306,7 +308,7 @@ public final class TimerBench {
 		TimeUnit.SECONDS.sleep(warmup);
 		shared.lateness.reset();
 		shared.measuring = true;
-		// scripts/timer-bench.sh starts perf from this line.
+		// scripts/bench-timer.sh starts perf from this line.
 		System.out.printf(Locale.ROOT, "measure      started, %ds%n", measure);
 		System.out.flush();
 		long start = System.nanoTime();

@@ -47,10 +47,10 @@ public interface ActorSchedulerProvider {
 	ActorScheduler create();
 
 	/**
-	 * Installs this provider's scheduler in this JVM as the carrier-affine pool
+	 * Installs this provider's scheduler in this JVM as the MPSC pool
 	 * {@code carriers} describes, as {@code ActorSystem.Builder.carriers(...)}
 	 * asks. On success {@link #isAvailable()} reports {@code true} and
-	 * {@link #create(Carriers.Affine)} is called next.
+	 * {@link #create(Carriers.Mpsc)} is called next.
 	 *
 	 * <p>
 	 * Called before the JVM's first virtual thread when the caller got the order
@@ -59,23 +59,23 @@ public interface ActorSchedulerProvider {
 	 * configures itself through system properties sets them here and then checks
 	 * that they took.
 	 *
-	 * @return {@code false} when this provider offers no carrier-affine scheduler,
-	 *         so that the next one is tried; the default
+	 * @return {@code false} when this provider offers no MPSC pool, so that the
+	 *         next one is tried; the default
 	 * @throws IllegalStateException
 	 *             when this provider is the right one but cannot be installed as
 	 *             asked: the JVM already runs virtual threads under another
 	 *             scheduler, or under this one configured differently
 	 */
-	default boolean install(Carriers.Affine carriers) {
+	default boolean install(Carriers.Mpsc carriers) {
 		return false;
 	}
 
 	/**
 	 * Creates a new {@link ActorScheduler} for a system built with
-	 * {@code carriers}, after {@link #install(Carriers.Affine)} accepted them. The
+	 * {@code carriers}, after {@link #install(Carriers.Mpsc)} accepted them. The
 	 * default calls {@link #create()}.
 	 */
-	default ActorScheduler create(Carriers.Affine carriers) {
+	default ActorScheduler create(Carriers.Mpsc carriers) {
 		return create();
 	}
 

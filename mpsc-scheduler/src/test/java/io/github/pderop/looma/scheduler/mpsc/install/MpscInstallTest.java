@@ -62,7 +62,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  */
 class MpscInstallTest {
 
-	private static final Carriers.Affine CARRIERS = Carriers.affine(3);
+	private static final Carriers.Mpsc CARRIERS = Carriers.mpsc(3);
 
 	private ActorSystem system;
 
@@ -89,7 +89,7 @@ class MpscInstallTest {
 	void anEqualRequestGetsTheSamePool() {
 		ActorSystem.builder().carriers(CARRIERS).build().shutdown();
 
-		system = ActorSystem.builder().carriers(Carriers.affine(3)).build();
+		system = ActorSystem.builder().carriers(Carriers.mpsc(3)).build();
 
 		assertEquals(3, system.carrierCount());
 	}
@@ -99,7 +99,7 @@ class MpscInstallTest {
 		ActorSystem.builder().carriers(CARRIERS).build().shutdown();
 
 		IllegalStateException e = assertThrows(IllegalStateException.class,
-				() -> ActorSystem.builder().carriers(Carriers.affine(2)).build());
+				() -> ActorSystem.builder().carriers(Carriers.mpsc(2)).build());
 
 		assertTrue(e.getMessage().contains("already installed"), e.getMessage());
 	}

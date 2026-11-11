@@ -1,0 +1,237 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 820" width="1200" height="820" role="img" aria-labelledby="title desc">
+  <title id="title">One request in the servlet benchmark</title>
+  <desc id="desc">A client asks the container of its session. The container tells the servlet of the path. The servlet asks the fraud detector for a risk; the detector calls the backend on a virtual thread and gives the risk back. The servlet calls the backend on a virtual thread, builds the page and gives it to the container, which answers the client.</desc>
+  <style>
+    svg {
+      --bg: #ffffff; --fg: #1f2328; --muted: #59636e; --frame: #d0d7de;
+      --actor-fill: #ddf4ff; --actor-line: #54aeff;
+      --fraud-fill: #fff1e5; --fraud-line: #fb8f44; --cell: #ffd8b5; --cell-hot: #fb8f44;
+      --pool-fill: #f6f8fa; --slot: #ffffff; --slot-busy: #1a7f37;
+      --backend-fill: #dafbe1; --backend-line: #4ac26b;
+      --client-fill: #fbefff; --client-line: #c297ff;
+      --msg: #0969da; --call: #1a7f37; --timer: #9a6700; --badge-fg: #ffffff;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      svg {
+        --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --frame: #3d444d;
+        --actor-fill: #0c2d6b; --actor-line: #4493f8;
+        --fraud-fill: #3d1f00; --fraud-line: #f0883e; --cell: #6b3a12; --cell-hot: #f0883e;
+        --pool-fill: #161b22; --slot: #0d1117; --slot-busy: #3fb950;
+        --backend-fill: #0f2d1a; --backend-line: #3fb950;
+        --client-fill: #271052; --client-line: #a371f7;
+        --msg: #4493f8; --call: #3fb950; --timer: #d29922; --badge-fg: #0d1117;
+      }
+    }
+    .bg { fill: var(--bg); }
+    text { fill: var(--fg); font-size: 12.5px; }
+    .h1 { font-size: 17px; font-weight: 700; }
+    .h2 { font-size: 14.5px; font-weight: 700; }
+    .h3 { font-size: 13.5px; font-weight: 600; }
+    .muted { fill: var(--muted); }
+    .small { font-size: 12px; }
+    .mid { text-anchor: middle; }
+    .end { text-anchor: end; }
+    .jvm { fill: none; stroke: var(--frame); stroke-width: 1.5; stroke-dasharray: 7 5; }
+    .cont { fill: var(--bg); stroke: var(--frame); stroke-width: 1.5; }
+    .cont-shadow { fill: var(--bg); stroke: var(--frame); stroke-width: 1.2; }
+    .group { fill: none; stroke: var(--actor-line); stroke-width: 1.2; stroke-dasharray: 4 4; }
+    .actor { fill: var(--actor-fill); stroke: var(--actor-line); stroke-width: 1.5; }
+    .fraud { fill: var(--fraud-fill); stroke: var(--fraud-line); stroke-width: 1.5; }
+    .cell { fill: var(--cell); }
+    .cell-hot { fill: var(--cell-hot); }
+    .pool { fill: var(--pool-fill); stroke: var(--call); stroke-width: 1.5; }
+    .slot { fill: var(--slot); stroke: var(--call); stroke-width: 1.2; }
+    .slot-busy { fill: var(--slot-busy); stroke: var(--call); stroke-width: 1.2; }
+    .backend { fill: var(--backend-fill); stroke: var(--backend-line); stroke-width: 1.5; }
+    .client { fill: var(--client-fill); stroke: var(--client-line); stroke-width: 1.5; }
+    .vt { fill: var(--bg); stroke: var(--call); stroke-width: 1.5; }
+    .msg { fill: none; stroke: var(--msg); stroke-width: 2; }
+    .call { fill: none; stroke: var(--call); stroke-width: 2; stroke-dasharray: 6 4; }
+    .ah-msg { fill: var(--msg); }
+    .ah-call { fill: var(--call); }
+    .badge-msg { fill: var(--msg); }
+    .badge-call { fill: var(--call); }
+    .badge-text { fill: var(--badge-fg); font-size: 12px; font-weight: 700; text-anchor: middle; }
+    .timer { fill: var(--bg); stroke: var(--timer); stroke-width: 1.6; }
+    .hand { stroke: var(--timer); stroke-width: 1.6; stroke-linecap: round; }
+    .timer-text { fill: var(--timer); font-size: 12px; }
+    .divider { stroke: var(--frame); stroke-width: 1; }
+  </style>
+  <defs>
+    <marker id="m-msg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path class="ah-msg" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+    <marker id="m-call" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path class="ah-call" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="820" rx="16"/>
+
+  <!-- Server JVM -->
+  <rect class="jvm" x="20" y="20" width="890" height="620" rx="14"/>
+  <text class="h1" x="40" y="50">Server JVM</text>
+
+  <!-- Clients -->
+  <rect class="client" x="40" y="200" width="160" height="230" rx="12"/>
+  <text class="h2 mid" x="120" y="232">Clients</text>
+  <text class="muted mid" x="120" y="252">LoadGenerator</text>
+  <text class="muted mid small" x="120" y="270">on their own CPUs</text>
+  <text class="mid" x="120" y="310">fixed rate, open loop</text>
+  <text class="mid" x="120" y="340">GET /profile</text>
+  <text class="mid" x="120" y="360">POST /cart</text>
+  <text class="mid" x="120" y="390">a random session</text>
+  <text class="mid" x="120" y="408">and a random product</text>
+
+  <!-- The containers: one per carrier -->
+  <rect class="cont-shadow" x="280" y="90" width="610" height="520" rx="14"/>
+  <rect class="cont-shadow" x="270" y="100" width="610" height="520" rx="14"/>
+  <rect class="cont" x="260" y="110" width="610" height="520" rx="14"/>
+  <text class="h2" x="280" y="138">ServletContainerActor, sharded (one per carrier)</text>
+  <text class="muted small" x="280" y="158">The same session always reaches the same container.</text>
+
+  <!-- Container actor -->
+  <rect class="actor" x="285" y="250" width="125" height="110" rx="10"/>
+  <text class="h3 mid" x="347" y="284">Container</text>
+  <text class="muted mid small" x="347" y="303">actor, picked by</text>
+  <text class="muted mid small" x="347" y="321">forKey(session)</text>
+  <text class="muted mid small" x="347" y="339">routes by path</text>
+
+  <!-- Servlets -->
+  <rect class="group" x="490" y="180" width="170" height="200" rx="12"/>
+  <text class="muted mid small" x="575" y="200">two ServletActor children</text>
+  <rect class="actor" x="495" y="212" width="160" height="70" rx="10"/>
+  <text class="h3 mid" x="575" y="236">ProfileServlet</text>
+  <text class="muted mid small" x="575" y="254">GET /profile</text>
+  <text class="muted mid small" x="575" y="271">viewed products</text>
+  <rect class="actor" x="495" y="294" width="160" height="70" rx="10"/>
+  <text class="h3 mid" x="575" y="318">CartServlet</text>
+  <text class="muted mid small" x="575" y="336">POST /cart</text>
+  <text class="muted mid small" x="575" y="353">cart lines</text>
+
+  <!-- Fraud detector -->
+  <rect class="fraud" x="730" y="180" width="135" height="200" rx="12"/>
+  <text class="h3 mid" x="797" y="206" style="font-size: 12px">FraudDetectorActor</text>
+  <text class="muted mid small" x="797" y="224">child actor</text>
+  <g>
+    <rect class="cell" x="754" y="240" width="12" height="12" rx="2"/><rect class="cell-hot" x="769" y="240" width="12" height="12" rx="2"/><rect class="cell" x="784" y="240" width="12" height="12" rx="2"/><rect class="cell" x="799" y="240" width="12" height="12" rx="2"/><rect class="cell" x="814" y="240" width="12" height="12" rx="2"/><rect class="cell-hot" x="829" y="240" width="12" height="12" rx="2"/>
+    <rect class="cell" x="754" y="255" width="12" height="12" rx="2"/><rect class="cell" x="769" y="255" width="12" height="12" rx="2"/><rect class="cell" x="784" y="255" width="12" height="12" rx="2"/><rect class="cell-hot" x="799" y="255" width="12" height="12" rx="2"/><rect class="cell" x="814" y="255" width="12" height="12" rx="2"/><rect class="cell" x="829" y="255" width="12" height="12" rx="2"/>
+    <rect class="cell-hot" x="754" y="270" width="12" height="12" rx="2"/><rect class="cell" x="769" y="270" width="12" height="12" rx="2"/><rect class="cell" x="784" y="270" width="12" height="12" rx="2"/><rect class="cell" x="799" y="270" width="12" height="12" rx="2"/><rect class="cell" x="814" y="270" width="12" height="12" rx="2"/><rect class="cell" x="829" y="270" width="12" height="12" rx="2"/>
+    <rect class="cell" x="754" y="285" width="12" height="12" rx="2"/><rect class="cell" x="769" y="285" width="12" height="12" rx="2"/><rect class="cell-hot" x="784" y="285" width="12" height="12" rx="2"/><rect class="cell" x="799" y="285" width="12" height="12" rx="2"/><rect class="cell" x="814" y="285" width="12" height="12" rx="2"/><rect class="cell-hot" x="829" y="285" width="12" height="12" rx="2"/>
+  </g>
+  <text class="mid small" x="797" y="322">a table of ints</text>
+  <text class="muted mid small" x="797" y="340">a check touches</text>
+  <text class="muted mid small" x="797" y="357">records all over it</text>
+
+  <!-- Actor messages -->
+  <line class="msg" x1="200" y1="285" x2="283" y2="285" marker-end="url(#m-msg)"/>
+  <circle class="badge-msg" cx="222" cy="263" r="10"/><text class="badge-text" x="222" y="267">1</text>
+  <text class="small" x="236" y="267">ask</text>
+
+  <line class="msg" x1="285" y1="330" x2="202" y2="330" marker-end="url(#m-msg)"/>
+  <circle class="badge-msg" cx="222" cy="352" r="10"/><text class="badge-text" x="222" y="356">8</text>
+  <text class="small" x="236" y="356">answer</text>
+
+  <line class="msg" x1="410" y1="285" x2="488" y2="285" marker-end="url(#m-msg)"/>
+  <circle class="badge-msg" cx="450" cy="268" r="10"/><text class="badge-text" x="450" y="272">2</text>
+
+  <line class="msg" x1="490" y1="330" x2="412" y2="330" marker-end="url(#m-msg)"/>
+  <circle class="badge-msg" cx="450" cy="348" r="10"/><text class="badge-text" x="450" y="352">7</text>
+
+  <line class="msg" x1="660" y1="235" x2="728" y2="235" marker-end="url(#m-msg)"/>
+  <circle class="badge-msg" cx="695" cy="218" r="10"/><text class="badge-text" x="695" y="222">3</text>
+
+  <line class="msg" x1="730" y1="330" x2="662" y2="330" marker-end="url(#m-msg)"/>
+  <circle class="badge-msg" cx="695" cy="348" r="10"/><text class="badge-text" x="695" y="352">5</text>
+
+  <!-- Backend call of the servlet -->
+  <line class="call" x1="575" y1="380" x2="575" y2="408"/>
+  <rect class="vt" x="515" y="410" width="120" height="28" rx="14"/>
+  <text class="mid small" x="575" y="428">virtual thread</text>
+  <line class="call" x1="575" y1="438" x2="575" y2="488" marker-end="url(#m-call)"/>
+  <circle class="badge-call" cx="553" cy="464" r="10"/><text class="badge-text" x="553" y="468">6</text>
+  <circle class="timer" cx="497" cy="424" r="8"/>
+  <line class="hand" x1="497" y1="424" x2="497" y2="419"/><line class="hand" x1="497" y1="424" x2="501" y2="426"/>
+  <text class="timer-text end" x="484" y="428">timer</text>
+
+  <!-- Backend call of the fraud detector -->
+  <line class="call" x1="792" y1="380" x2="792" y2="408"/>
+  <rect class="vt" x="735" y="410" width="115" height="28" rx="14"/>
+  <text class="mid small" x="792" y="428">virtual thread</text>
+  <line class="call" x1="792" y1="438" x2="792" y2="488" marker-end="url(#m-call)"/>
+  <circle class="badge-call" cx="814" cy="464" r="10"/><text class="badge-text" x="814" y="468">4</text>
+  <circle class="timer" cx="716" cy="424" r="8"/>
+  <line class="hand" x1="716" y1="424" x2="716" y2="419"/><line class="hand" x1="716" y1="424" x2="720" y2="426"/>
+  <text class="timer-text end" x="703" y="428">timer</text>
+
+  <!-- Backend pool -->
+  <rect class="pool" x="520" y="490" width="300" height="100" rx="12"/>
+  <text class="h3 mid" x="670" y="515">ConnectionPool</text>
+  <text class="muted mid small" x="670" y="534">shared by the servlets and the detector</text>
+  <rect class="slot-busy" x="554" y="550" width="22" height="22" rx="5"/>
+  <rect class="slot-busy" x="584" y="550" width="22" height="22" rx="5"/>
+  <rect class="slot" x="614" y="550" width="22" height="22" rx="5"/>
+  <rect class="slot" x="644" y="550" width="22" height="22" rx="5"/>
+  <rect class="slot" x="674" y="550" width="22" height="22" rx="5"/>
+  <rect class="slot" x="704" y="550" width="22" height="22" rx="5"/>
+  <rect class="slot" x="734" y="550" width="22" height="22" rx="5"/>
+  <rect class="slot" x="764" y="550" width="22" height="22" rx="5"/>
+
+  <!-- Pool to backend -->
+  <line class="call" x1="822" y1="540" x2="943" y2="540" marker-start="url(#m-call)" marker-end="url(#m-call)"/>
+  <text class="mid small" x="883" y="528">GET /data?bytes=N</text>
+  <text class="mid small" x="883" y="560">body</text>
+
+  <!-- Backend JVM -->
+  <rect class="backend" x="945" y="440" width="230" height="200" rx="14"/>
+  <text class="h1 mid" x="1060" y="476">Backend JVM</text>
+  <text class="mid" x="1060" y="506">a plain NIO server</text>
+  <text class="muted mid small" x="1060" y="530">reactor threads,</text>
+  <text class="muted mid small" x="1060" y="548">no actors</text>
+  <text class="mid small" x="1060" y="580">answers a body</text>
+  <text class="mid small" x="1060" y="598">of the size asked</text>
+  <text class="muted mid small" x="1060" y="620">on its own CPUs</text>
+
+  <!-- Legend -->
+  <text class="h2" x="945" y="50">Legend</text>
+  <line class="msg" x1="945" y1="80" x2="1000" y2="80" marker-end="url(#m-msg)"/>
+  <text x="1012" y="84">actor message</text>
+  <line class="call" x1="945" y1="112" x2="1000" y2="112" marker-end="url(#m-call)"/>
+  <text x="1012" y="116">backend call</text>
+  <circle class="timer" cx="955" cy="144" r="8"/>
+  <line class="hand" x1="955" y1="144" x2="955" y2="139"/><line class="hand" x1="955" y1="144" x2="959" y2="146"/>
+  <text x="1012" y="148">timer on the actor,</text>
+  <text x="1012" y="166">cancelled by the answer</text>
+  <rect class="slot-busy" x="945" y="186" width="18" height="18" rx="4"/>
+  <rect class="slot" x="969" y="186" width="18" height="18" rx="4"/>
+  <text x="1012" y="200">connection in use / free</text>
+  <rect class="cell-hot" x="947" y="222" width="12" height="12" rx="2"/>
+  <rect class="cell" x="963" y="222" width="12" height="12" rx="2"/>
+  <text x="1012" y="233">records of one check</text>
+  <text class="muted small" x="945" y="280">Under mpsc with affinity, a</text>
+  <text class="muted small" x="945" y="298">container and its child actors</text>
+  <text class="muted small" x="945" y="316">stay on its carrier.</text>
+
+  <!-- Steps -->
+  <line class="divider" x1="20" y1="662" x2="1180" y2="662"/>
+  <text class="h2" x="40" y="690">One request</text>
+
+  <circle class="badge-msg" cx="52" cy="714" r="10"/><text class="badge-text" x="52" y="718">1</text>
+  <text x="72" y="718">The client asks the container of its session.</text>
+  <circle class="badge-msg" cx="52" cy="740" r="10"/><text class="badge-text" x="52" y="744">2</text>
+  <text x="72" y="744">The container tells the servlet of the path.</text>
+  <circle class="badge-msg" cx="52" cy="766" r="10"/><text class="badge-text" x="52" y="770">3</text>
+  <text x="72" y="770">The servlet updates the session, and asks the detector for a risk.</text>
+  <circle class="badge-call" cx="52" cy="792" r="10"/><text class="badge-text" x="52" y="796">4</text>
+  <text x="72" y="796">The detector scores the request, and calls the backend for a flag.</text>
+
+  <circle class="badge-msg" cx="622" cy="714" r="10"/><text class="badge-text" x="622" y="718">5</text>
+  <text x="642" y="718">The detector learns from the answer, and gives the risk to the servlet.</text>
+  <circle class="badge-call" cx="622" cy="740" r="10"/><text class="badge-text" x="622" y="744">6</text>
+  <text x="642" y="744">The servlet calls the backend for its data.</text>
+  <circle class="badge-msg" cx="622" cy="766" r="10"/><text class="badge-text" x="622" y="770">7</text>
+  <text x="642" y="770">The servlet builds the page, with the risk, and gives it to the container.</text>
+  <circle class="badge-msg" cx="622" cy="792" r="10"/><text class="badge-text" x="622" y="796">8</text>
+  <text x="642" y="796">The container answers the client.</text>
+</svg>

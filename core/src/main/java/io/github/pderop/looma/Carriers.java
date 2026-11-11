@@ -19,16 +19,17 @@ package io.github.pderop.looma;
  * instead of JVM flags.
  *
  * <ul>
- * <li>{@link #affine(int)}: each actor stays on one carrier. Today the JDK's
- * MPSC scheduler (openjdk/loom pull request 227).
+ * <li>{@link #mpsc(int)}: the JDK's MPSC scheduler (openjdk/loom pull request
+ * 227). By default, each actor stays on one carrier, and each carrier is pinned
+ * to one CPU.
  * <li>{@link #builtin(int)}: the JDK's default scheduler, today a ForkJoinPool.
  * </ul>
  *
  * <p>
- * With {@code affine}, each actor stays on one carrier for life, each carrier
- * is pinned to one CPU (on Linux), and an idle carrier may steal only the
- * threads that actors offload. There are no options: this is the setup the
- * benchmark found the fastest.
+ * An {@code mpsc} pool has two settings, both on by default:
+ * {@link Mpsc#affinity(boolean) affinity}, an actor stays on its carrier, and
+ * {@link Mpsc#pinned(boolean) pinned}, a carrier stays on its CPU. In every
+ * case, an idle carrier may steal the threads that actors offload.
  *
  * <p>
  * <b>A scheduler is chosen once per JVM, before its first virtual thread.</b>
@@ -45,17 +46,18 @@ package io.github.pderop.looma;
 public sealed interface Carriers {
 
 	/**
-	 * A pool of {@code count} carriers where each actor stays on one carrier. Today
-	 * the JDK's MPSC scheduler: each carrier is pinned to one CPU, each actor has
-	 * the {@code Thread.Affinity} of its carrier, so it never moves, and an idle
-	 * carrier may steal the other threads, from any carrier. Needs the JDK of
-	 * openjdk/loom pull request 227.
+	 * A pool of {@code count} carriers of the JDK's MPSC scheduler. Each actor has
+	 * the {@code Thread.Affinity} of its carrier, so it never moves, and each
+	 * carrier is pinned to one CPU (on Linux). An idle carrier may steal the other
+	 * threads, from any carrier. Needs the JDK of openjdk/loom pull request 227.
+	 * {@link Mpsc#affinity(boolean)} and {@link Mpsc#pinned(boolean)} turn each
+	 * setting off.
 	 *
 	 * @throws IllegalArgumentException
 	 *             if {@code count} is less than 1
 	 */
-	static Affine affine(int count) {
-		return new Affine(count);
+	static Mpsc mpsc(int count) {
+		return new Mpsc(count, true, true);
 	}
 
 	/**
@@ -71,17 +73,38 @@ public sealed interface Carriers {
 	}
 
 	/**
-	 * A pool where each actor stays on one carrier: see {@link #affine(int)}.
+	 * A pool of the JDK's MPSC scheduler: see {@link #mpsc(int)}.
 	 *
 	 * @param count
 	 *            carriers in the pool
+	 * @param pinned
+	 *            whether each carrier is pinned to one CPU (on Linux)
+	 * @param affinity
+	 *            whether each actor stays on its carrier
 	 */
-	record Affine(int count) implements Carriers {
+	record Mpsc(int count, boolean pinned, boolean affinity) implements Carriers {
 
-		public Affine {
+		public Mpsc {
 			if (count < 1) {
 				throw new IllegalArgumentException("carrier count must be at least 1, not " + count);
 			}
+		}
+
+		/**
+		 * The same pool, with each carrier pinned to one CPU or not. Unpinned, the OS
+		 * chooses where each carrier runs, and may move it.
+		 */
+		public Mpsc pinned(boolean pinned) {
+			return new Mpsc(count, pinned, affinity);
+		}
+
+		/**
+		 * The same pool, with each actor kept on its carrier or not. Without affinity,
+		 * an actor can run on any carrier: its thread starts on the carrier of its
+		 * sender, and an idle carrier may take it.
+		 */
+		public Mpsc affinity(boolean affinity) {
+			return new Mpsc(count, pinned, affinity);
 		}
 	}
 

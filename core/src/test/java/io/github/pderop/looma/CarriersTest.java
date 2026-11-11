@@ -16,6 +16,8 @@ package io.github.pderop.looma;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -30,14 +32,38 @@ class CarriersTest {
 
 	@Test
 	void eachKindIsItsCount() {
-		assertEquals(4, Carriers.affine(4).count());
+		assertEquals(4, Carriers.mpsc(4).count());
 		assertEquals(4, Carriers.builtin(4).parallelism());
-		assertEquals(Carriers.affine(4), Carriers.affine(4));
+		assertEquals(Carriers.mpsc(4), Carriers.mpsc(4));
+	}
+
+	@Test
+	void mpscIsPinnedAndAffineUnlessAskedNotTo() {
+		Carriers.Mpsc mpsc = Carriers.mpsc(4);
+		assertTrue(mpsc.pinned());
+		assertTrue(mpsc.affinity());
+
+		Carriers.Mpsc neither = mpsc.pinned(false).affinity(false);
+		assertFalse(neither.pinned());
+		assertFalse(neither.affinity());
+		assertEquals(4, neither.count());
+		assertEquals(mpsc, neither.pinned(true).affinity(true));
+	}
+
+	@Test
+	void eachSettingIsItsOwn() {
+		Carriers.Mpsc unpinned = Carriers.mpsc(4).pinned(false);
+		assertTrue(unpinned.affinity());
+		Carriers.Mpsc moving = Carriers.mpsc(4).affinity(false);
+		assertTrue(moving.pinned());
+		assertNotEquals(Carriers.mpsc(4), unpinned);
+		assertNotEquals(Carriers.mpsc(4), moving);
+		assertNotEquals(unpinned, moving);
 	}
 
 	@Test
 	void rejectsAnEmptyPool() {
-		assertThrows(IllegalArgumentException.class, () -> Carriers.affine(0));
+		assertThrows(IllegalArgumentException.class, () -> Carriers.mpsc(0));
 		assertThrows(IllegalArgumentException.class, () -> Carriers.builtin(0));
 	}
 
@@ -50,8 +76,7 @@ class CarriersTest {
 	void rejectsCarriersNextToAnExplicitScheduler() {
 		ActorSystem other = ActorSystem.builder().build();
 		try {
-			ActorSystem.Builder builder = ActorSystem.builder().scheduler(other.scheduler())
-					.carriers(Carriers.affine(2));
+			ActorSystem.Builder builder = ActorSystem.builder().scheduler(other.scheduler()).carriers(Carriers.mpsc(2));
 
 			IllegalStateException e = assertThrows(IllegalStateException.class, builder::build);
 

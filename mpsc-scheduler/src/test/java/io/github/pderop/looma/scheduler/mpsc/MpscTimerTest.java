@@ -153,7 +153,7 @@ class MpscTimerTest extends TimerTest {
 	void aCarrierWithoutTimersBindsNothing() throws Exception {
 		CompletableFuture<Boolean> bound = new CompletableFuture<>();
 		ActorRef ref = system().spawn("plain",
-				() -> (message, sender, context) -> bound.complete(TimerProbe.mailboxThreadBindsItsCarrier()),
+				() -> (message, sender, context) -> bound.complete(TimerProbe.mailboxThreadBindsItsCarrier(context)),
 				SpawnOptions.placedOn(Placement.carrier(0)));
 		ref.tell(new Ping());
 

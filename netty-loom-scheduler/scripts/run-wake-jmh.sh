@@ -50,7 +50,7 @@ while [ $# -gt 0 ]; do
 	esac
 done
 
-source "$ROOT/scripts/loom-jdk.sh"
+source "$ROOT/scripts/lib/loom-jdk.sh"
 JAVAC=$(dirname "$LOOM_JAVA")/javac
 
 MODULE=$ROOT/netty-loom-scheduler/target

@@ -1,0 +1,105 @@
+WARNING: failed to find node
+=================================================
+            Trace Event Information              
+=================================================
+  Total records                     :     175709
+  Locked Load/Store Operations      :        205
+  Load Operations                   :      49885
+  Loads - uncacheable               :          0
+  Loads - IO                        :          0
+  Loads - Miss                      :          0
+  Loads - no mapping                :      12605
+  Load Fill Buffer Hit              :          0
+  Load L1D hit                      :      30821
+  Load L2D hit                      :       1343
+  Load LLC hit                      :       1994
+  Load Local HITM                   :       1874
+  Load Remote HITM                  :        233
+  Load Remote HIT                   :          0
+  Load Local DRAM                   :       2832
+  Load Remote DRAM                  :          0
+  Load MESI State Exclusive         :       2832
+  Load MESI State Shared            :          0
+  Load LLC Misses                   :       3065
+  Load access blocked by data       :          0
+  Load access blocked by address    :          0
+  Load HIT Local Peer               :          0
+  Load HIT Remote Peer              :          0
+  LLC Misses to Local DRAM          :       92.4%
+  LLC Misses to Remote DRAM         :        0.0%
+  LLC Misses to Remote cache (HIT)  :        0.0%
+  LLC Misses to Remote cache (HITM) :        7.6%
+  Store Operations                  :      13153
+  Store - uncacheable               :          0
+  Store - no mapping                :       1239
+  Store L1D Hit                     :      11024
+  Store L1D Miss                    :          0
+  Store No available memory level   :        498
+  No Page Map Rejects               :      15223
+  Unable to parse data source       :     112671
+
+=================================================
+    Global Shared Cache Line Event Information   
+=================================================
+  Total Shared Cache Lines          :       2069
+  Load HITs on shared lines         :       2381
+  Fill Buffer Hits on shared lines  :          0
+  L1D hits on shared lines          :        237
+  L2D hits on shared lines          :         17
+  LLC hits on shared lines          :       1882
+  Load hits on peer cache or nodes  :          0
+  Locked Access on shared lines     :         70
+  Blocked Access on shared lines    :          0
+  Store HITs on shared lines        :        138
+  Store L1D hits on shared lines    :        128
+  Store No available memory level   :          8
+  Total Merged records              :       2245
+
+=================================================
+                 c2c details                     
+=================================================
+  Events                            : ibs_op/ldlat=0/
+  Cachelines sort on                : Total HITMs
+  Cacheline data grouping           : offset,iaddr
+
+=================================================
+           Shared Data Cache Line Table          
+=================================================
+#
+#        ----------- Cacheline ----------      Tot  ------- Load Hitm -------    Total    Total    Total  --------- Stores --------  ----- Core Load Hit -----  - LLC Load Hit --  - RMT Load Hit --  --- Load Dram ----
+# Index             Address  Node  PA cnt     Hitm    Total  LclHitm  RmtHitm  records    Loads   Stores    L1Hit   L1Miss      N/A       FB       L1       L2    LclHit  LclHitm    RmtHit  RmtHitm       Lcl       Rmt
+# .....  ..................  ....  ......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  ........  .......  ........  .......  ........  ........
+#
+      0          0x88d3be00     0       1    0.57%       12        5        7       17       17        0        0        0        0        0        3        0         0        5         0        7         2         0
+      1          0x89a04340     0       5    0.28%        6        2        4       14       14        0        0        0        0        0        8        0         0        2         0        4         0         0
+      2          0x80d14000     0       5    0.14%        3        2        1        5        5        0        0        0        0        0        2        0         0        2         0        1         0         0
+
+=================================================
+      Shared Cache Line Distribution Pareto      
+=================================================
+#
+#        ----- HITM -----  ------- Store Refs ------  --------- Data address ---------                      ---------- cycles ----------    Total       cpu                                                                                                                                                                                          Shared                                                                                                                                                                                     
+#   Num  RmtHitm  LclHitm   L1 Hit  L1 Miss      N/A              Offset  Node  PA cnt        Code address  rmt hitm  lcl hitm      load  records       cnt                                                                                                                                                                        Symbol            Object                                                                                                                                                                    Source:Line  Node
+# .....  .......  .......  .......  .......  .......  ..................  ....  ......  ..................  ........  ........  ........  .......  ........  ............................................................................................................................................................................  ................  .............................................................................................................................................................................  ....
+#
+  ----------------------------------------------------------------------
+      0        7        5        0        0        0          0x88d3be00
+  ----------------------------------------------------------------------
+          71.43%   40.00%    0.00%    0.00%    0.00%                0x30     0       1      0x70445bfb6342       409       102       363        7         5  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                                                                                                                         [JIT] tid 325144  void java.lang.MpscCarrierThread.eventLoopSteal()+834                                                                                                                           0
+          14.29%   40.00%    0.00%    0.00%    0.00%                0x30     0       1      0x70445bfb7357       389       288       784        4         3  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                                                                                                                         [JIT] tid 325144  void java.lang.MpscCarrierThread.eventLoopSteal()+4951                                                                                                                          0
+          14.29%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x70445bfb7347       362         0         0        1         1  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                                                                                                                         [JIT] tid 325144  void java.lang.MpscCarrierThread.eventLoopSteal()+4935                                                                                                                          0
+           0.00%   20.00%    0.00%    0.00%    0.00%                0x30     0       1      0x70445bfba187         0        69         0        1         1  [.] void java.lang.SearchGate.release(int)                                                                                                                                    [JIT] tid 325144  void java.lang.SearchGate.release(int)+135                                                                                                                                      0
+
+  ----------------------------------------------------------------------
+      1        4        2        0        0        0          0x89a04340
+  ----------------------------------------------------------------------
+          25.00%    0.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x70445bfac8ed       425         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell$$Lambda/0x00000000350ca800.run()                                                                                               [JIT] tid 325144  void io.github.pderop.looma.impl.ActorCell$$Lambda/0x00000000350ca800.run()+109                                                                                                0
+          50.00%   50.00%    0.00%    0.00%    0.00%                0x20     0       1      0x70445bf5335f       400        57         0        7         5  [.] void io.github.pderop.looma.examples.user.UserGroupActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 325144  void io.github.pderop.looma.examples.user.UserGroupActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+351   0
+          25.00%   50.00%    0.00%    0.00%    0.00%                0x20     0       1      0x70445bf6a292       333        50         0        4         2  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)                                                                                            [JIT] tid 325144  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+274                                                                                             0
+
+  ----------------------------------------------------------------------
+      2        1        2        0        0        0          0x80d14000
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x14     0       1      0x70445bf41099         0        94         0        1         1  [.] void io.github.pderop.looma.examples.utils.LoadGenerator.run(boolean, java.util.Random)  [JIT] tid 325144  void io.github.pderop.looma.examples.utils.LoadGenerator.run(boolean, java.util.Random)+2329   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x14     0       1      0x70445bfacc75       435         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell$$Lambda/0x00000000350ca800.run()              [JIT] tid 325144  void io.github.pderop.looma.impl.ActorCell$$Lambda/0x00000000350ca800.run()+1013               0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x18     0       1      0x70445bf410b1         0        63         0        1         1  [.] void io.github.pderop.looma.examples.utils.LoadGenerator.run(boolean, java.util.Random)  [JIT] tid 325144  void io.github.pderop.looma.examples.utils.LoadGenerator.run(boolean, java.util.Random)+2353   0

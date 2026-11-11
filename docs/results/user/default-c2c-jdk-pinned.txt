@@ -1,0 +1,491 @@
+WARNING: failed to find node
+=================================================
+            Trace Event Information              
+=================================================
+  Total records                     :     157340
+  Locked Load/Store Operations      :        190
+  Load Operations                   :      44746
+  Loads - uncacheable               :          0
+  Loads - IO                        :          0
+  Loads - Miss                      :          0
+  Loads - no mapping                :      12374
+  Load Fill Buffer Hit              :          0
+  Load L1D hit                      :      29233
+  Load L2D hit                      :        902
+  Load LLC hit                      :       1123
+  Load Local HITM                   :        584
+  Load Remote HITM                  :        735
+  Load Remote HIT                   :          0
+  Load Local DRAM                   :        110
+  Load Remote DRAM                  :          0
+  Load MESI State Exclusive         :        110
+  Load MESI State Shared            :          0
+  Load LLC Misses                   :        845
+  Load access blocked by data       :          0
+  Load access blocked by address    :          0
+  Load HIT Local Peer               :          0
+  Load HIT Remote Peer              :          0
+  LLC Misses to Local DRAM          :       13.0%
+  LLC Misses to Remote DRAM         :        0.0%
+  LLC Misses to Remote cache (HIT)  :        0.0%
+  LLC Misses to Remote cache (HITM) :       87.0%
+  Store Operations                  :      11390
+  Store - uncacheable               :          2
+  Store - no mapping                :       1059
+  Store L1D Hit                     :       9835
+  Store L1D Miss                    :          0
+  Store No available memory level   :        239
+  No Page Map Rejects               :       9290
+  Unable to parse data source       :     101204
+
+=================================================
+    Global Shared Cache Line Event Information   
+=================================================
+  Total Shared Cache Lines          :       1231
+  Load HITs on shared lines         :       2676
+  Fill Buffer Hits on shared lines  :          0
+  L1D hits on shared lines          :       1253
+  L2D hits on shared lines          :         22
+  LLC hits on shared lines          :        638
+  Load hits on peer cache or nodes  :          0
+  Locked Access on shared lines     :         83
+  Blocked Access on shared lines    :          0
+  Store HITs on shared lines        :        245
+  Store L1D hits on shared lines    :        204
+  Store No available memory level   :         33
+  Total Merged records              :       1564
+
+=================================================
+                 c2c details                     
+=================================================
+  Events                            : ibs_op/ldlat=0/
+  Cachelines sort on                : Total HITMs
+  Cacheline data grouping           : offset,iaddr
+
+=================================================
+           Shared Data Cache Line Table          
+=================================================
+#
+#        ----------- Cacheline ----------      Tot  ------- Load Hitm -------    Total    Total    Total  --------- Stores --------  ----- Core Load Hit -----  - LLC Load Hit --  - RMT Load Hit --  --- Load Dram ----
+# Index             Address  Node  PA cnt     Hitm    Total  LclHitm  RmtHitm  records    Loads   Stores    L1Hit   L1Miss      N/A       FB       L1       L2    LclHit  LclHitm    RmtHit  RmtHitm       Lcl       Rmt
+# .....  ..................  ....  ......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  ........  .......  ........  .......  ........  ........
+#
+      0          0x8012c540     0      27    1.82%       24       14       10      273      273        0        0        0        0        0      232        0        16       14         0       10         1         0
+      1          0xd901f880     0       5    0.53%        7        4        3       13       13        0        0        0        0        0        5        0         1        4         0        3         0         0
+      2      0x792e2f8fe740     0       1    0.30%        4        4        0       18       18        0        0        0        0        0       12        2         0        4         0        0         0         0
+      3  0xffffd3cb4bbefbc0     0      17    0.23%        3        0        3       20       12        8        7        0        1        0        9        0         0        0         0        3         0         0
+      4          0x801001c0     0       1    0.23%        3        1        2       11       11        0        0        0        0        0        6        0         2        1         0        2         0         0
+      5          0x8012c400     0      13    0.23%        3        0        3       30       29        1        1        0        0        0       25        0         1        0         0        3         0         0
+      6          0x80182300     0       7    0.23%        3        0        3       35       31        4        0        0        4        0       27        0         1        0         0        3         0         0
+      7          0xd914ff40     0       6    0.23%        3        1        2       15       15        0        0        0        0        0        9        2         1        1         0        2         0         0
+      8          0xd92b32c0     0       3    0.23%        3        1        2       14       14        0        0        0        0        0       10        0         1        1         0        2         0         0
+      9          0xffc85000     0       5    0.23%        3        0        3        6        6        0        0        0        0        0        3        0         0        0         0        3         0         0
+     10      0x792e30001600     0       9    0.23%        3        1        2       11        9        2        2        0        0        0        6        0         0        1         0        2         0         0
+     11      0x792ecc47b0c0     0      14    0.23%        3        3        0       14       12        2        2        0        0        0        9        0         0        3         0        0         0         0
+     12  0xffff8e02c0059dc0     0       1    0.15%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     13  0xffff8e02c10c3100     0       1    0.15%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     14  0xffff8e02c4c96400     0       1    0.15%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     15  0xffff8e02d72cef40     0       4    0.15%        2        0        2        5        5        0        0        0        0        0        3        0         0        0         0        2         0         0
+     16  0xffff8e034fddd5c0     0       2    0.15%        2        1        1        9        9        0        0        0        0        0        7        0         0        1         0        1         0         0
+     17  0xffff8e034fdddd80     0       2    0.15%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     18  0xffff8e0396f47340     0       1    0.15%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     19  0xffff8e09fe333540     0       1    0.15%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     20  0xffffd3cb4887fa80     0      15    0.15%        2        1        1       18        8       10        9        0        1        0        6        0         0        1         0        1         0         0
+     21  0xffffd3cb4887fb00     0      29    0.15%        2        1        1       31       14       17       16        0        1        0       12        0         0        1         0        1         0         0
+     22  0xffffd3cb4887fcc0     0      12    0.15%        2        0        2       12        7        5        5        0        0        0        5        0         0        0         0        2         0         0
+     23  0xffffd3cb4887fd00     0      12    0.15%        2        0        2       14       11        3        3        0        0        0        9        0         0        0         0        2         0         0
+     24  0xffffd3cb4bbefb80     0      15    0.15%        2        1        1       15        9        6        5        0        1        0        7        0         0        1         0        1         0         0
+     25          0x80100280     0      18    0.15%        2        2        0       39       35        4        3        0        1        0       31        0         2        2         0        0         0         0
+     26          0x80111000     0      11    0.15%        2        0        2       41       35        6        2        0        4        0       33        0         0        0         0        2         0         0
+     27          0x8012c340     0       9    0.15%        2        0        2       17       17        0        0        0        0        0       10        0         5        0         0        2         0         0
+     28          0x8012d200     0       1    0.15%        2        1        1        8        8        0        0        0        0        0        5        0         1        1         0        1         0         0
+     29          0x8012d400     0       3    0.15%        2        0        2        5        4        1        1        0        0        0        2        0         0        0         0        2         0         0
+     30          0x80155f40     0       7    0.15%        2        1        1       14       14        0        0        0        0        0       12        0         0        1         0        1         0         0
+     31          0x80182440     0       4    0.15%        2        0        2       17       16        1        0        0        1        0       13        0         1        0         0        2         0         0
+     32          0x801aee80     0       7    0.15%        2        0        2       13       13        0        0        0        0        0       11        0         0        0         0        2         0         0
+     33          0x801b9180     0       9    0.15%        2        0        2       22       22        0        0        0        0        0       16        2         2        0         0        2         0         0
+     34          0xd8f50c40     0       2    0.15%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     35          0xd90393c0     0       2    0.15%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     36          0xd9150880     0       9    0.15%        2        1        1       13       13        0        0        0        0        0        9        1         1        1         0        1         0         0
+     37          0xd91616c0     0       1    0.15%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     38          0xd92b3c00     0       9    0.15%        2        0        2       23       23        0        0        0        0        0       20        0         1        0         0        2         0         0
+     39          0xd92c3440     0       1    0.15%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     40          0xd9352400     0       2    0.15%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     41          0xd93803c0     0       2    0.15%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     42          0xd939f140     0       2    0.15%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     43          0xd93ebc00     0       5    0.15%        2        1        1        6        6        0        0        0        0        0        4        0         0        1         0        1         0         0
+     44          0xd9477580     0       2    0.15%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     45          0xd9480700     0       2    0.15%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     46          0xd94c3ec0     0       2    0.15%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     47      0x792e28001600     0       6    0.15%        2        0        2        7        7        0        0        0        0        0        4        0         0        0         0        2         1         0
+     48      0x792e2f8fe7c0     0      31    0.15%        2        2        0       39       36        3        3        0        0        0       32        2         0        2         0        0         0         0
+     49      0x792e3c001600     0       6    0.15%        2        1        1        7        7        0        0        0        0        0        5        0         0        1         0        1         0         0
+
+=================================================
+      Shared Cache Line Distribution Pareto      
+=================================================
+#
+#        ----- HITM -----  ------- Store Refs ------  --------- Data address ---------                      ---------- cycles ----------    Total       cpu                                                                                                                   Shared                                                                                                             
+#   Num  RmtHitm  LclHitm   L1 Hit  L1 Miss      N/A              Offset  Node  PA cnt        Code address  rmt hitm  lcl hitm      load  records       cnt                                                                                                 Symbol            Object                                                                                            Source:Line  Node
+# .....  .......  .......  .......  .......  .......  ..................  ....  ......  ..................  ........  ........  ........  .......  ........  .....................................................................................................  ................  .....................................................................................................  ....
+#
+  ----------------------------------------------------------------------
+      0       10       14        0        0        0          0x8012c540
+  ----------------------------------------------------------------------
+          20.00%    7.14%    0.00%    0.00%    0.00%                0x2c     0       1      0x792ebbf87e16       358       143       152        7         3  [.] void java.lang.VirtualThread.submitRunContinuation(boolean)                                        [JIT] tid 284154  void java.lang.VirtualThread.submitRunContinuation(boolean)+1558                                        0
+          10.00%    0.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x792ebbf5ab3a       364         0         0        1         1  [.] void java.util.concurrent.ForkJoinPool.signalWork()                                                [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.signalWork()+58                                                  0
+          10.00%    0.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x792ebbf87ad4       381         0       180        4         3  [.] void java.lang.VirtualThread.submitRunContinuation(boolean)                                        [JIT] tid 284154  void java.lang.VirtualThread.submitRunContinuation(boolean)+724                                         0
+          20.00%   78.57%    0.00%    0.00%    0.00%                0x30     0       1      0x792ebbfb1b2d       387       195        23      229        10  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+429       0
+          20.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x792ebbf87e1d       364         0        81        3         2  [.] void java.lang.VirtualThread.submitRunContinuation(boolean)                                        [JIT] tid 284154  void java.lang.VirtualThread.submitRunContinuation(boolean)+1565                                        0
+          10.00%    7.14%    0.00%    0.00%    0.00%                0x30     0       1      0x792ebbfb2292       396       118        88       10         7  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2322      0
+          10.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x792ebbf912c4       400         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.startMailboxThread()                                    [JIT] tid 284154  void io.github.pderop.looma.impl.ActorCell.startMailboxThread()+2628                                    0
+           0.00%    7.14%    0.00%    0.00%    0.00%                0x30     0       1      0x792ebbfb1f51         0        88        41        3         3  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+1489      0
+
+  ----------------------------------------------------------------------
+      1        3        4        0        0        0          0xd901f880
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x792ebbf90952         0        77         0        6         6  [.] void io.github.pderop.looma.impl.ActorCell.startMailboxThread()                 [JIT] tid 284154  void io.github.pderop.looma.impl.ActorCell.startMailboxThread()+210                   0
+           0.00%   25.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x792ebbf5d08c         0        46         0        2         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+6796   0
+           0.00%   25.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x792ebbf78146         0       266         0        1         1  [.] void io.github.pderop.looma.impl.ActorRuntime.workFinished()                    [JIT] tid 284154  void io.github.pderop.looma.impl.ActorRuntime.workFinished()+70                       0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x14     0       1      0x792ebbf5ca86       380         0         0        3         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+5254   0
+
+  ----------------------------------------------------------------------
+      2        0        4        0        0        0      0x792e2f8fe740
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x38     0       1      0x792ed32ac802         0        97         2       18         5  [.] 0x00000000000ac802  libc.so.6         libc.so.6[ac802]   0
+
+  ----------------------------------------------------------------------
+      3        3        0        7        0        1  0xffffd3cb4bbefbc0
+  ----------------------------------------------------------------------
+           0.00%    0.00%   14.29%    0.00%    0.00%                 0x0     0       1  0xffffffff8d4f26fa         0         0         0        1         1  [k] psi_group_change                       [kernel.kallsyms]  psi_group_change+26                         0
+           0.00%    0.00%   14.29%    0.00%    0.00%                 0x8     0       1  0xffffffff8e3e3d95         0         0         0        1         1  [k] sock_write_iter                        [kernel.kallsyms]  sock_write_iter+5                           0
+          66.67%    0.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff8d5a1284       418         0         0        2         2  [k] futex_wake                             [kernel.kallsyms]  futex_wake+292                              0
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x18     0       1  0xffffffff8e716918       447         0         0        1         1  [k] plist_add                              [kernel.kallsyms]  plist_add+72                                0
+           0.00%    0.00%   14.29%    0.00%    0.00%                0x18     0       1  0xffffffff8d5a1045         0         0         0        1         1  [k] futex_wake_mark                        [kernel.kallsyms]  futex_wake_mark+5                           0
+           0.00%    0.00%   14.29%    0.00%    0.00%                0x18     0       1  0xffffffff8d5a1053         0         0         0        1         1  [k] futex_wake_mark                        [kernel.kallsyms]  futex_wake_mark+19                          0
+           0.00%    0.00%    0.00%    0.00%  100.00%                0x18     0       1  0xffffffff8d5a2043         0         0         0        1         1  [k] __futex_wait                           [kernel.kallsyms]  __futex_wait+163                            0
+           0.00%    0.00%   14.29%    0.00%    0.00%                0x20     0       1  0xffffffff8d347a38         0         0         0        1         1  [k] arch_exit_to_user_mode_prepare.isra.0  [kernel.kallsyms]  arch_exit_to_user_mode_prepare.isra.0+8     0
+           0.00%    0.00%   14.29%    0.00%    0.00%                0x28     0       1  0xffffffff8e737094         0         0         0        1         1  [k] native_sched_clock                     [kernel.kallsyms]  native_sched_clock+20                       0
+           0.00%    0.00%   14.29%    0.00%    0.00%                0x38     0       1  0xffffffff8d8eca20         0         0         0        1         1  [k] vfs_read                               [kernel.kallsyms]  vfs_read+832                                0
+
+  ----------------------------------------------------------------------
+      4        2        1        0        0        0          0x801001c0
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x38     0       1      0x792ebbfb1d46       394       141       332        5         6  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+966    0
+
+  ----------------------------------------------------------------------
+      5        3        0        1        0        0          0x8012c400
+  ----------------------------------------------------------------------
+           0.00%    0.00%  100.00%    0.00%    0.00%                 0x4     0       1      0x792ebbf5abe4         0         0         0        1         1  [.] void java.util.concurrent.ForkJoinPool.signalWork()                                                [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.signalWork()+228                                                 0
+          66.67%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x792ebbf87b46       421         0         0        2         2  [.] void java.lang.VirtualThread.submitRunContinuation(boolean)                                        [JIT] tid 284154  void java.lang.VirtualThread.submitRunContinuation(boolean)+838                                         0
+          33.33%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x792ebbfb23da       424         0         0        1         1  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2650      0
+
+  ----------------------------------------------------------------------
+      6        3        0        0        0        4          0x80182300
+  ----------------------------------------------------------------------
+          66.67%    0.00%    0.00%    0.00%    0.00%                0x24     0       1      0x792ebbf8ff80       379         0         0        2         1  [.] int java.util.concurrent.ForkJoinPool.awaitWork(java.util.concurrent.ForkJoinPool$WorkQueue, int)  [JIT] tid 284154  int java.util.concurrent.ForkJoinPool.awaitWork(java.util.concurrent.ForkJoinPool$WorkQueue, int)+384   0
+           0.00%    0.00%    0.00%    0.00%   50.00%                0x24     0       1      0x792ebbf5abe4         0         0         0        2         2  [.] void java.util.concurrent.ForkJoinPool.signalWork()                                                [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.signalWork()+228                                                 0
+           0.00%    0.00%    0.00%    0.00%   25.00%                0x24     0       1      0x792ebbf87b77         0         0         0        1         1  [.] void java.lang.VirtualThread.submitRunContinuation(boolean)                                        [JIT] tid 284154  void java.lang.VirtualThread.submitRunContinuation(boolean)+887                                         0
+           0.00%    0.00%    0.00%    0.00%   25.00%                0x24     0       1      0x792ebbf87eba         0         0         0        1         1  [.] void java.lang.VirtualThread.submitRunContinuation(boolean)                                        [JIT] tid 284154  void java.lang.VirtualThread.submitRunContinuation(boolean)+1722                                        0
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x792ebbf5abc0       439         0         0        1         1  [.] void java.util.concurrent.ForkJoinPool.signalWork()                                                [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.signalWork()+192                                                 0
+
+  ----------------------------------------------------------------------
+      7        2        1        0        0        0          0xd914ff40
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x20     0       1      0x792ebbfb1d46       374       343         2        7         6  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+966   0
+
+  ----------------------------------------------------------------------
+      8        2        1        0        0        0          0xd92b32c0
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1      0x792ebbfb1d46       442       478        17        8         6  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+966   0
+
+  ----------------------------------------------------------------------
+      9        3        0        0        0        0          0xffc85000
+  ----------------------------------------------------------------------
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x14     0       1      0x792ed2087ffa       429         0         0        1         1  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)  libjvm.so  long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)+58    0
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x792ed2088045       369         0         0        2         2  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)  libjvm.so  long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)+133   0
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x792ed2081c9d       385         0         0        1         1  [.] long* thaw<Config<(oop_kind)0, G1BarrierSet> >(JavaThread*, int)                      libjvm.so  long* thaw<Config<(oop_kind)0, G1BarrierSet> >(JavaThread*, int)+221                       0
+
+  ----------------------------------------------------------------------
+     10        2        1        2        0        0      0x792e30001600
+  ----------------------------------------------------------------------
+           0.00%    0.00%   50.00%    0.00%    0.00%                 0x8     0       1      0x792ed32a8597         0         0         0        1         1  [.] pthread_mutex_trylock  libc.so.6         pthread_mutex_trylock+87   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x792ed32a76ec         0       198         0        1         1  [.] pthread_mutex_lock     libc.so.6         pthread_mutex_lock+76      0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x792ed32a2a82        26         0         0        1         1  [.] pthread_cond_signal    libc.so.6         pthread_cond_signal+66     0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x792ed32a2b88        12         0         0        2         2  [.] pthread_cond_signal    libc.so.6         pthread_cond_signal+328    0
+           0.00%    0.00%   50.00%    0.00%    0.00%                0x30     0       1      0x792ed32a2b8f         0         0         0        1         1  [.] pthread_cond_signal    libc.so.6         pthread_cond_signal+335    0
+
+  ----------------------------------------------------------------------
+     11        0        3        2        0        0      0x792ecc47b0c0
+  ----------------------------------------------------------------------
+           0.00%    0.00%   50.00%    0.00%    0.00%                 0x8     0       1      0x792ed32a76e9         0         0         0        1         1  [.] pthread_mutex_lock    libc.so.6         pthread_mutex_lock+73     0
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x10     0       1      0x792ed32a76a4         0       114         0        1         1  [.] pthread_mutex_lock    libc.so.6         pthread_mutex_lock+4      0
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x10     0       1      0x792ed32a76c4         0       114         0        1         1  [.] pthread_mutex_lock    libc.so.6         pthread_mutex_lock+36     0
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x10     0       1      0x792ed32a9074         0        66         0        1         1  [.] pthread_mutex_unlock  libc.so.6         pthread_mutex_unlock+4    0
+           0.00%    0.00%   50.00%    0.00%    0.00%                0x30     0       1      0x792ed32a2b8f         0         0         0        1         1  [.] pthread_cond_signal   libc.so.6         pthread_cond_signal+335   0
+
+  ----------------------------------------------------------------------
+     12        2        0        0        0        0  0xffff8e02c0059dc0
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffff8d84dfd3       196         0         0        2         2  [k] barn_replace_full_sheaf.part.0  [kernel.kallsyms]  barn_replace_full_sheaf.part.0+115   0
+
+  ----------------------------------------------------------------------
+     13        1        1        0        0        0  0xffff8e02c10c3100
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff8d4a63d4       437       161         0        2         2  [k] call_function_single_prep_ipi  [kernel.kallsyms]  call_function_single_prep_ipi+52   0
+
+  ----------------------------------------------------------------------
+     14        0        2        0        0        0  0xffff8e02c4c96400
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff8d5030a3         0        46         0        1         1  [k] mutex_spin_on_owner  [kernel.kallsyms]  mutex_spin_on_owner+35   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff8e74560c         0        84         0        1         1  [k] mutex_lock           [kernel.kallsyms]  mutex_lock+28            0
+
+  ----------------------------------------------------------------------
+     15        2        0        0        0        0  0xffff8e02d72cef40
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff8d972342       372         0         0        1         1  [k] ep_start_scan  [kernel.kallsyms]  ep_start_scan+50   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x24     0       1  0xffffffff8d972369       390         0         0        1         1  [k] ep_start_scan  [kernel.kallsyms]  ep_start_scan+89   0
+
+  ----------------------------------------------------------------------
+     16        1        1        0        0        0  0xffff8e034fddd5c0
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x4     0       1  0xffffffff8e74cca3       375         0         0        1         1  [k] _raw_spin_lock                    [kernel.kallsyms]  _raw_spin_lock+19                      0
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x4     0       1  0xffffffff8e74cfea         0        59         0        2         2  [k] native_queued_spin_lock_slowpath  [kernel.kallsyms]  native_queued_spin_lock_slowpath+122   0
+
+  ----------------------------------------------------------------------
+     17        1        1        0        0        0  0xffff8e034fdddd80
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff8d59c52c       385         0         0        1         1  [k] futex_q_lock  [kernel.kallsyms]  futex_q_lock+12   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffff8e716903         0        84         0        1         1  [k] plist_add     [kernel.kallsyms]  plist_add+51      0
+
+  ----------------------------------------------------------------------
+     18        1        1        0        0        0  0xffff8e0396f47340
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x14     0       1  0xffffffff8e5ab0c4       427        81         0        2         2  [k] cubictcp_cwnd_event  [kernel.kallsyms]  cubictcp_cwnd_event+36   0
+
+  ----------------------------------------------------------------------
+     19        0        2        0        0        0  0xffff8e09fe333540
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffff8e74cfea         0        52         0        2         1  [k] native_queued_spin_lock_slowpath  [kernel.kallsyms]  native_queued_spin_lock_slowpath+122   0
+
+  ----------------------------------------------------------------------
+     20        1        1        9        0        1  0xffffd3cb4887fa80
+  ----------------------------------------------------------------------
+           0.00%    0.00%   11.11%    0.00%    0.00%                 0x0     0       1  0xffffffff8e520a89         0         0         0        1         1  [k] tcp_poll                                 [kernel.kallsyms]  tcp_poll+9                                     0
+           0.00%    0.00%   11.11%    0.00%    0.00%                0x10     0       1  0xffffffff8e3eefa5         0         0         0        1         1  [k] __sk_mem_reduce_allocated                [kernel.kallsyms]  __sk_mem_reduce_allocated+5                    0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1  0xffffffff8e716918       375         0         0        1         1  [k] plist_add                                [kernel.kallsyms]  plist_add+72                                   0
+           0.00%    0.00%   11.11%    0.00%    0.00%                0x18     0       1  0xffffffff8d4c436e         0         0         0        1         1  [k] sched_balance_newidle                    [kernel.kallsyms]  sched_balance_newidle+14                       0
+           0.00%    0.00%    0.00%    0.00%  100.00%                0x18     0       1  0xffffffff8d5a2043         0         0         0        1         1  [k] __futex_wait                             [kernel.kallsyms]  __futex_wait+163                               0
+           0.00%    0.00%   11.11%    0.00%    0.00%                0x18     0       1  0xffffffff8d75a34d         0         0         0        1         1  [k] perf_swevent_del                         [kernel.kallsyms]  perf_swevent_del+13                            0
+           0.00%    0.00%   11.11%    0.00%    0.00%                0x18     0       1  0xffffffff8db30c76         0         0         0        1         1  [k] security_file_permission                 [kernel.kallsyms]  security_file_permission+86                    0
+           0.00%    0.00%   11.11%    0.00%    0.00%                0x20     0       1  0xffffffff8d75c615         0         0         0        1         1  [k] perf_pmu_nop_void                        [kernel.kallsyms]  perf_pmu_nop_void+5                            0
+           0.00%    0.00%   11.11%    0.00%    0.00%                0x28     0       1  0xffffffff8e3ef18d         0         0         0        1         1  [k] sock_rfree                               [kernel.kallsyms]  sock_rfree+125                                 0
+           0.00%    0.00%   11.11%    0.00%    0.00%                0x28     0       1  0xffffffff8e541165         0         0         0        1         1  [k] tcp_write_xmit                           [kernel.kallsyms]  tcp_write_xmit+5                               0
+           0.00%    0.00%   11.11%    0.00%    0.00%                0x2c     0       1  0xffffffff8d8c3843         0         0         0        1         1  [k] try_charge_memcg                         [kernel.kallsyms]  try_charge_memcg+67                            0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffff8d5a1284         0       169         0        1         1  [k] futex_wake                               [kernel.kallsyms]  futex_wake+292                                 0
+
+  ----------------------------------------------------------------------
+     21        1        1       16        0        1  0xffffd3cb4887fb00
+  ----------------------------------------------------------------------
+           0.00%    0.00%    6.25%    0.00%    0.00%                 0x0     0       1  0xffffffff8d4e7f99         0         0         0        1         1  [k] set_next_task_idle            [kernel.kallsyms]  set_next_task_idle+9              0
+           0.00%    0.00%    6.25%    0.00%    0.00%                 0x0     0       1  0xffffffff8d8c383b         0         0         0        1         1  [k] try_charge_memcg              [kernel.kallsyms]  try_charge_memcg+59               0
+           0.00%    0.00%    6.25%    0.00%    0.00%                 0x8     0       1  0xffffffff8d5a1045         0         0         0        1         1  [k] futex_wake_mark               [kernel.kallsyms]  futex_wake_mark+5                 0
+           0.00%    0.00%    6.25%    0.00%    0.00%                 0x8     0       1  0xffffffff8d975b9c         0         0         0        1         1  [k] do_epoll_ctl                  [kernel.kallsyms]  do_epoll_ctl+1004                 0
+           0.00%    0.00%    6.25%    0.00%    0.00%                 0x8     0       1  0xffffffff8e520a85         0         0         0        1         1  [k] tcp_poll                      [kernel.kallsyms]  tcp_poll+5                        0
+           0.00%    0.00%    0.00%    0.00%  100.00%                 0x8     0       1  0xffffffff8e74191a         0         0         0        1         1  [k] __schedule                    [kernel.kallsyms]  __schedule+10                     0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff8d5a1284         0       156         0        1         1  [k] futex_wake                    [kernel.kallsyms]  futex_wake+292                    0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x10     0       1  0xffffffff8d49ef05         0         0         0        1         1  [k] ttwu_queue_wakelist           [kernel.kallsyms]  ttwu_queue_wakelist+261           0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x18     0       1  0xffffffff8d769e21         0         0         0        1         1  [k] perf_event_context_sched_out  [kernel.kallsyms]  perf_event_context_sched_out+65   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffff8d5a1284       473         0         0        1         1  [k] futex_wake                    [kernel.kallsyms]  futex_wake+292                    0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x20     0       1  0xffffffff8d8c3805         0         0         0        1         1  [k] try_charge_memcg              [kernel.kallsyms]  try_charge_memcg+5                0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x20     0       1  0xffffffff8dce782e         0         0         0        1         1  [k] _copy_from_iter               [kernel.kallsyms]  _copy_from_iter+14                0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x28     0       1  0xffffffff8e3e3d95         0         0         0        1         1  [k] sock_write_iter               [kernel.kallsyms]  sock_write_iter+5                 0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x28     0       1  0xffffffff8e3f8c33         0         0         0        1         1  [k] __alloc_skb                   [kernel.kallsyms]  __alloc_skb+115                   0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x30     0       1  0xffffffff8d75c615         0         0         0        1         1  [k] perf_pmu_nop_void             [kernel.kallsyms]  perf_pmu_nop_void+5               0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x30     0       1  0xffffffff8e5232f6         0         0         0        1         1  [k] tcp_sendmsg                   [kernel.kallsyms]  tcp_sendmsg+54                    0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x38     0       1  0xffffffff8d973da0         0         0         0        1         1  [k] ep_send_events                [kernel.kallsyms]  ep_send_events+64                 0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x38     0       1  0xffffffff8e5234b0         0         0         0        1         1  [k] __tcp_cleanup_rbuf            [kernel.kallsyms]  __tcp_cleanup_rbuf+208            0
+           0.00%    0.00%    6.25%    0.00%    0.00%                0x3c     0       1  0xffffffff8d9217e1         0         0         0        1         1  [k] fdget_pos                     [kernel.kallsyms]  fdget_pos+193                     0
+
+  ----------------------------------------------------------------------
+     22        2        0        5        0        0  0xffffd3cb4887fcc0
+  ----------------------------------------------------------------------
+           0.00%    0.00%   20.00%    0.00%    0.00%                 0x0     0       1  0xffffffff8d5a1215         0         0         0        1         1  [k] futex_wake                [kernel.kallsyms]  futex_wake+181               0
+           0.00%    0.00%   20.00%    0.00%    0.00%                 0x8     0       1  0xffffffff8d5a2043         0         0         0        1         1  [k] __futex_wait              [kernel.kallsyms]  __futex_wait+163             0
+           0.00%    0.00%   20.00%    0.00%    0.00%                 0x8     0       1  0xffffffff8d8e92d2         0         0         0        1         1  [k] rw_verify_area            [kernel.kallsyms]  rw_verify_area+82            0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff8d5a1284       431         0         0        1         1  [k] futex_wake                [kernel.kallsyms]  futex_wake+292               0
+           0.00%    0.00%   20.00%    0.00%    0.00%                0x18     0       1  0xffffffff8d53d42d         0         0         0        1         1  [k] __rcu_read_lock           [kernel.kallsyms]  __rcu_read_lock+13           0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1  0xffffffff8e716918       413         0         0        1         1  [k] plist_add                 [kernel.kallsyms]  plist_add+72                 0
+           0.00%    0.00%   20.00%    0.00%    0.00%                0x30     0       1  0xffffffff8dbaf715         0         0         0        1         1  [k] apparmor_file_permission  [kernel.kallsyms]  apparmor_file_permission+5   0
+
+  ----------------------------------------------------------------------
+     23        2        0        3        0        0  0xffffd3cb4887fd00
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff8d5a1284       439         0         0        1         1  [k] futex_wake                      [kernel.kallsyms]  futex_wake+292                      0
+           0.00%    0.00%   66.67%    0.00%    0.00%                0x18     0       1  0xffffffff8d5a1045         0         0         0        2         1  [k] futex_wake_mark                 [kernel.kallsyms]  futex_wake_mark+5                   0
+           0.00%    0.00%   33.33%    0.00%    0.00%                0x20     0       1  0xffffffff8e3e35d5         0         0         0        1         1  [k] sock_read_iter                  [kernel.kallsyms]  sock_read_iter+5                    0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffff8d5a1284       460         0         0        1         1  [k] futex_wake                      [kernel.kallsyms]  futex_wake+292                      0
+
+  ----------------------------------------------------------------------
+     24        1        1        5        0        1  0xffffd3cb4bbefb80
+  ----------------------------------------------------------------------
+           0.00%    0.00%   20.00%    0.00%    0.00%                 0x0     0       1  0xffffffff8d59c605         0         0         0        1         1  [k] futex_unqueue       [kernel.kallsyms]  futex_unqueue+5           0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff8d5a1284       415         0         0        1         1  [k] futex_wake          [kernel.kallsyms]  futex_wake+292            0
+           0.00%    0.00%   20.00%    0.00%    0.00%                0x10     0       1  0xffffffff8d4bd0ac         0         0         0        1         1  [k] dequeue_task_fair   [kernel.kallsyms]  dequeue_task_fair+12      0
+           0.00%    0.00%   20.00%    0.00%    0.00%                0x18     0       1  0xffffffff8d5a1053         0         0         0        1         1  [k] futex_wake_mark     [kernel.kallsyms]  futex_wake_mark+19        0
+           0.00%    0.00%    0.00%    0.00%  100.00%                0x18     0       1  0xffffffff8d5a2043         0         0         0        1         1  [k] __futex_wait        [kernel.kallsyms]  __futex_wait+163          0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffff8d5a1284         0       103         0        1         1  [k] futex_wake          [kernel.kallsyms]  futex_wake+292            0
+           0.00%    0.00%   20.00%    0.00%    0.00%                0x30     0       1  0xffffffff8d53d42d         0         0         0        1         1  [k] __rcu_read_lock     [kernel.kallsyms]  __rcu_read_lock+13        0
+           0.00%    0.00%   20.00%    0.00%    0.00%                0x3c     0       1  0xffffffff8e5244bf         0         0         0        1         1  [k] tcp_recvmsg_locked  [kernel.kallsyms]  tcp_recvmsg_locked+623    0
+
+  ----------------------------------------------------------------------
+     25        0        2        3        0        1          0x80100280
+  ----------------------------------------------------------------------
+           0.00%    0.00%   33.33%    0.00%    0.00%                 0x8     0       1      0x792ebbf879d2         0         0         0        1         1  [.] void java.lang.VirtualThread.submitRunContinuation(boolean)                                        [JIT] tid 284154  void java.lang.VirtualThread.submitRunContinuation(boolean)+466                                         0
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x792ebbf8ff80         0        87         0        1         1  [.] int java.util.concurrent.ForkJoinPool.awaitWork(java.util.concurrent.ForkJoinPool$WorkQueue, int)  [JIT] tid 284154  int java.util.concurrent.ForkJoinPool.awaitWork(java.util.concurrent.ForkJoinPool$WorkQueue, int)+384   0
+           0.00%    0.00%    0.00%    0.00%  100.00%                 0xc     0       1      0x792ebbf87b77         0         0         0        1         1  [.] void java.lang.VirtualThread.submitRunContinuation(boolean)                                        [JIT] tid 284154  void java.lang.VirtualThread.submitRunContinuation(boolean)+887                                         0
+           0.00%    0.00%   33.33%    0.00%    0.00%                 0xc     0       1      0x792ebbfb24e7         0         0         0        1         1  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2919      0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1      0x792ebbf5abc0         0       152         0        1         1  [.] void java.util.concurrent.ForkJoinPool.signalWork()                                                [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.signalWork()+192                                                 0
+           0.00%    0.00%   33.33%    0.00%    0.00%                0x1c     0       1      0x792ebbf8feda         0         0         0        1         1  [.] int java.util.concurrent.ForkJoinPool.awaitWork(java.util.concurrent.ForkJoinPool$WorkQueue, int)  [JIT] tid 284154  int java.util.concurrent.ForkJoinPool.awaitWork(java.util.concurrent.ForkJoinPool$WorkQueue, int)+218   0
+
+  ----------------------------------------------------------------------
+     26        2        0        2        0        4          0x80111000
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x792ebbfb1b0c       356         0         0       30         1  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+396       0
+           0.00%    0.00%    0.00%    0.00%   75.00%                 0x4     0       1      0x792ebbf5abe4         0         0         0        3         3  [.] void java.util.concurrent.ForkJoinPool.signalWork()                                                [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.signalWork()+228                                                 0
+           0.00%    0.00%    0.00%    0.00%   25.00%                 0x4     0       1      0x792ebbf87b77         0         0         0        1         1  [.] void java.lang.VirtualThread.submitRunContinuation(boolean)                                        [JIT] tid 284154  void java.lang.VirtualThread.submitRunContinuation(boolean)+887                                         0
+           0.00%    0.00%   50.00%    0.00%    0.00%                 0x4     0       1      0x792ebbfb24e7         0         0         0        1         1  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2919      0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x792ebbfb23da       397         0         0        1         1  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2650      0
+           0.00%    0.00%   50.00%    0.00%    0.00%                 0x8     0       1      0x792ebbfb2242         0         0         0        1         1  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2242      0
+
+  ----------------------------------------------------------------------
+     27        2        0        0        0        0          0x8012c340
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x792ebbfb1d46       228         0        92        9         6  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+966   0
+
+  ----------------------------------------------------------------------
+     28        1        1        0        0        0          0x8012d200
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x38     0       1      0x792ebbfb1d46       367       315         0        4         4  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+966   0
+
+  ----------------------------------------------------------------------
+     29        2        0        1        0        0          0x8012d400
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x792ebbf5abc0       436         0         0        1         1  [.] void java.util.concurrent.ForkJoinPool.signalWork()                                            [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.signalWork()+192                                              0
+           0.00%    0.00%  100.00%    0.00%    0.00%                 0x0     0       1      0x792ebbfb2242         0         0         0        1         1  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+2242   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x792ebbf5abf0       425         0         0        1         1  [.] void java.util.concurrent.ForkJoinPool.signalWork()                                            [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.signalWork()+240                                              0
+
+  ----------------------------------------------------------------------
+     30        1        1        0        0        0          0x80155f40
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x792ebbfb1d46       363       353       181        4         4  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)      [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+966      0
+
+  ----------------------------------------------------------------------
+     31        2        0        0        0        1          0x80182440
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x792ebbfb1d46       357         0         0        5         5  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+966    0
+           0.00%    0.00%    0.00%    0.00%  100.00%                 0x8     0       1      0x792ebbfb1e2f         0         0         0        1         1  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+1199   0
+
+  ----------------------------------------------------------------------
+     32        2        0        0        0        0          0x801aee80
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x792ebbfb1d46       464         0         0        8         7  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+966    0
+
+  ----------------------------------------------------------------------
+     33        2        0        0        0        0          0x801b9180
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x792ebbfb1d46       406         0        19       11         7  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+966   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x792ebbfb1ce8       404         0         0        3         2  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+872   0
+
+  ----------------------------------------------------------------------
+     34        1        1        0        0        0          0xd8f50c40
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x792ebbf5df98         0        86         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+10648   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x792ebbf5de80       329         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+10368   0
+
+  ----------------------------------------------------------------------
+     35        2        0        0        0        0          0xd90393c0
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x792ebbf5df98       369         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+10648   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x792ebbf5de80       431         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+10368   0
+
+  ----------------------------------------------------------------------
+     36        1        1        0        0        0          0xd9150880
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x20     0       1      0x792ebbfb1d46       364        90       146        6         5  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+966   0
+
+  ----------------------------------------------------------------------
+     37        1        1        0        0        0          0xd91616c0
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x24     0       1      0x792ebbf5df98       327        41         0        2         2  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+10648   0
+
+  ----------------------------------------------------------------------
+     38        2        0        0        0        0          0xd92b3c00
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x792ebbfb1d46       389         0        94        9         6  [.] void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)  [JIT] tid 284154  void java.util.concurrent.ForkJoinPool.runWorker(java.util.concurrent.ForkJoinPool$WorkQueue)+966   0
+
+  ----------------------------------------------------------------------
+     39        0        2        0        0        0          0xd92c3440
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x792ebbf010ba         0        52         0        2         2  [.] int java.lang.Integer.hashCode()  [JIT] tid 284154  int java.lang.Integer.hashCode()+58   0
+
+  ----------------------------------------------------------------------
+     40        2        0        0        0        0          0xd9352400
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x792ebbf5df88       335         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+10632   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x792ebbf5de80       333         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+10368   0
+
+  ----------------------------------------------------------------------
+     41        1        1        0        0        0          0xd93803c0
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x792ebbf5df98         0        53         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+10648   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x792ebbf5de80       355         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+10368   0
+
+  ----------------------------------------------------------------------
+     42        2        0        0        0        0          0xd939f140
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x792ebbf5ded0       393         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+10448   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x14     0       1      0x792ebbf5df98       431         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+10648   0
+
+  ----------------------------------------------------------------------
+     43        1        1        0        0        0          0xd93ebc00
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x792ebbf5b799       382       102         0        2         2  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+409   0
+
+  ----------------------------------------------------------------------
+     44        1        1        0        0        0          0xd9477580
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x792ebbf5df98       354         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+10648   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1      0x792ebbf5de80         0        41         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+10368   0
+
+  ----------------------------------------------------------------------
+     45        1        1        0        0        0          0xd9480700
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x792ebbf5df98         0        75         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+10648   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x792ebbf5de80       347         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+10368   0
+
+  ----------------------------------------------------------------------
+     46        0        2        0        0        0          0xd94c3ec0
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x792ebbf010ba         0        82         0        1         1  [.] int java.lang.Integer.hashCode()                                                [JIT] tid 284154  int java.lang.Integer.hashCode()+58                                                    0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x14     0       1      0x792ebbf5df98         0        74         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 284154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+10648   0
+
+  ----------------------------------------------------------------------
+     47        2        0        0        0        0      0x792e28001600
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x792ed32a76c4       428         0         0        2         1  [.] pthread_mutex_lock    libc.so.6  pthread_mutex_lock+36     0
+
+  ----------------------------------------------------------------------
+     48        0        2        3        0        0      0x792e2f8fe7c0
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x792ed33378b5         0        94         0        2         2  [.] epoll_wait                                                                                                                 libc.so.6         epoll_wait+37                                                                                                                   0
+           0.00%    0.00%   33.33%    0.00%    0.00%                 0x0     0       1      0x792ebbf874a7         0         0         0        1         1  [.] java.util.concurrent.ForkJoinPool$WorkQueue java.util.concurrent.ForkJoinPool.submissionQueue(int, boolean)                [JIT] tid 284154  java.util.concurrent.ForkJoinPool$WorkQueue java.util.concurrent.ForkJoinPool.submissionQueue(int, boolean)+39                  0
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x792ed33378b6         0       100         9        3         3  [.] epoll_wait                                                                                                                 libc.so.6         epoll_wait+38                                                                                                                   0
+           0.00%    0.00%   33.33%    0.00%    0.00%                0x18     0       1      0x792ebbf4a839         0         0         0        1         1  [.] java.lang.Object java.util.concurrent.ConcurrentHashMap.replaceNode(java.lang.Object, java.lang.Object, java.lang.Object)  [JIT] tid 284154  java.lang.Object java.util.concurrent.ConcurrentHashMap.replaceNode(java.lang.Object, java.lang.Object, java.lang.Object)+953   0
+           0.00%    0.00%   33.33%    0.00%    0.00%                0x34     0       1      0x792ebbf87cd0         0         0         0        1         1  [.] void java.lang.VirtualThread.submitRunContinuation(boolean)                                                                [JIT] tid 284154  void java.lang.VirtualThread.submitRunContinuation(boolean)+1232                                                                0
+
+  ----------------------------------------------------------------------
+     49        1        1        0        0        0      0x792e3c001600
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1      0x792ed32a9074         0       120         0        1         1  [.] pthread_mutex_unlock  libc.so.6  pthread_mutex_unlock+4    0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x792ed32a2b93        18         0         0        1         1  [.] pthread_cond_signal   libc.so.6  pthread_cond_signal+339   0

@@ -119,8 +119,8 @@ final class ActorSchedulers {
 	 * {@code ActorSystem.Builder.carriers(...)} resolves to.
 	 *
 	 * <p>
-	 * An affine pool is installed by the first provider that
-	 * {@link ActorSchedulerProvider#install(Carriers.Affine) accepts} it; when none
+	 * An MPSC pool is installed by the first provider that
+	 * {@link ActorSchedulerProvider#install(Carriers.Mpsc) accepts} it; when none
 	 * does this throws rather than falling back, since a caller who asked for
 	 * carriers by count would otherwise measure the builtin and read it as theirs.
 	 * The builtin is configured here, by the JDK's own two properties, which belong
@@ -135,14 +135,7 @@ final class ActorSchedulers {
 					"this JVM's scheduler is already installed as " + installed + " and cannot also be " + carriers);
 		}
 		ActorScheduler scheduler = switch (carriers) {
-			case Carriers.Affine affine -> {
-				ActorSchedulerProvider provider = firstProvider(p -> p.install(affine), true)
-						.orElseThrow(() -> new IllegalStateException("no ActorSchedulerProvider could install " + affine
-								+ ": it needs looma-mpsc-scheduler on the classpath of a JDK built from openjdk/loom"
-								+ " pull request 227"));
-				discovered = Optional.of(provider);
-				yield provider.create(affine);
-			}
+			case Carriers.Mpsc mpsc -> fromProvider(mpsc);
 			case Carriers.Builtin builtin -> {
 				String implClass = System.getProperty("jdk.virtualThreadScheduler.implClass");
 				if (implClass != null) {
@@ -163,6 +156,18 @@ final class ActorSchedulers {
 	}
 
 	/**
+	 * The scheduler of the first provider that installs {@code carriers}.
+	 */
+	private static ActorScheduler fromProvider(Carriers.Mpsc carriers) {
+		ActorSchedulerProvider provider = firstProvider(p -> p.install(carriers), true)
+				.orElseThrow(() -> new IllegalStateException("no ActorSchedulerProvider could install " + carriers
+						+ ": it needs looma-mpsc-scheduler on the classpath of a JDK built from openjdk/loom"
+						+ " pull request 227"));
+		discovered = Optional.of(provider);
+		return provider.create(carriers);
+	}
+
+	/**
 	 * Returns the first provider on the classpath that {@code accept} is
 	 * {@code true} for — the one walk both {@link #discover()} and
 	 * {@link #install(Carriers)} make, with the failure handling described on this
@@ -174,7 +179,8 @@ final class ActorSchedulers {
 	private static Optional<ActorSchedulerProvider> firstProvider(Predicate<ActorSchedulerProvider> accept,
 			boolean rethrowIllegalState) {
 		Iterator<ActorSchedulerProvider> providers = ServiceLoader
-				.load(ActorSchedulerProvider.class, ActorSchedulerProvider.class.getClassLoader()).iterator();
+				.load(ActorSchedulerProvider.class, ActorSchedulerProvider.class.getClassLoader())
+				.iterator();
 		int failures = 0;
 		while (failures <= MAX_PROVIDER_FAILURES) {
 			ActorSchedulerProvider provider;

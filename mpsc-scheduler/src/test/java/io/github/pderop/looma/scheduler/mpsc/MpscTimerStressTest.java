@@ -146,7 +146,7 @@ class MpscTimerStressTest {
 				return;
 			}
 			ActorRef target = remote != null ? remote : context.self();
-			if (remote == null && TimerProbe.mailboxThreadBindsItsCarrier()) {
+			if (remote == null && TimerProbe.mailboxThreadBindsItsCarrier(context)) {
 				localBatches.incrementAndGet();
 			}
 			for (int i = 0; i < ARMS_PER_KICK; i++) {

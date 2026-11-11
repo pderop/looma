@@ -187,8 +187,11 @@ final class LinuxCpus {
 	private static MethodHandle lookup(String name) {
 		Linker linker = Linker.nativeLinker();
 		try {
-			return linker.defaultLookup().find(name).map(symbol -> linker.downcallHandle(symbol, FunctionDescriptor
-					.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG, ValueLayout.ADDRESS)))
+			return linker.defaultLookup()
+					.find(name)
+					.map(symbol -> linker.downcallHandle(symbol, FunctionDescriptor
+							.of(ValueLayout.JAVA_INT, ValueLayout.JAVA_INT, ValueLayout.JAVA_LONG,
+									ValueLayout.ADDRESS)))
 					.orElse(null);
 		} catch (IllegalCallerException e) {
 			// The JVM refuses native calls from this code.

@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * {@link Carriers#affine(int)} with a {@code maxPoolSize} below its count: the
+ * {@link Carriers#mpsc(int)} with a {@code maxPoolSize} below its count: the
  * JDK would start fewer carriers, so the install refuses before it sets
  * anything.
  */
@@ -34,7 +34,7 @@ class MpscMaxPoolSizeTest {
 		System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", "2");
 
 		IllegalStateException e = assertThrows(IllegalStateException.class,
-				() -> ActorSystem.builder().carriers(Carriers.affine(3)).build());
+				() -> ActorSystem.builder().carriers(Carriers.mpsc(3)).build());
 
 		assertTrue(e.getMessage().contains("maxPoolSize"), e.getMessage());
 		assertNull(System.getProperty("jdk.virtualThreadScheduler.useMpsc"));

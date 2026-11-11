@@ -19,11 +19,14 @@ import io.github.pderop.looma.Actor;
 import io.github.pderop.looma.ActorContext;
 import io.github.pderop.looma.ActorRef;
 import io.github.pderop.looma.ActorSystem;
+import io.github.pderop.looma.Carriers;
 import io.github.pderop.looma.Message;
 
 /**
  * The quick start of the README: one actor, a {@code tell}, an {@code ask} and
  * a delayed {@code tell}. It runs on a stock JDK 25, on the JDK's scheduler.
+ * With the argument {@code mpsc}, it runs on two MPSC carriers instead: this
+ * needs the Loom JDK of the README.
  */
 public class QuickStart {
 
@@ -50,12 +53,17 @@ public class QuickStart {
 	}
 
 	public static void main(String[] args) throws Exception {
-		ActorSystem system = ActorSystem.builder().build();
+		ActorSystem.Builder builder = ActorSystem.builder();
+		if (args.length > 0 && args[0].equals("mpsc")) {
+			builder.carriers(Carriers.mpsc(2)); // carrier affinity: needs the Loom JDK
+		}
+		ActorSystem system = builder.build();
 		ActorRef greeter = system.spawn("greeter", Greeter::new);
 
 		greeter.tell(new Greet("Ann")); // fire and forget
 		Greeting reply = greeter.ask(new Greet("Bob"), Greeting.class) // request and reply
-				.orTimeout(1, TimeUnit.SECONDS).join();
+				.orTimeout(1, TimeUnit.SECONDS)
+				.join();
 		System.out.println(reply.text());
 		greeter.tell(new Greet("Cid"), 100, TimeUnit.MILLISECONDS); // in 100 ms
 

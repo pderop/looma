@@ -1,14 +1,14 @@
 # Looma
 
 <p align="center">
-  <img src="docs/looma-promo.gif" width="436" alt="Actors on Java virtual threads, pinned to a core.">
+  <img src="docs/looma-promo.gif" width="436" alt="Actors on Java virtual threads, with carrier affinity.">
 </p>
 
 Looma starts from someone else's work. Francesco Nigro's
 [**Netty-VirtualThread-Scheduler**](https://github.com/franz1981/Netty-VirtualThread-Scheduler) is a
 carrier-affine virtual-thread scheduler: instead of the JDK's `ForkJoinPool`, a pool of carrier
-threads pinned one per CPU, on which a virtual thread keeps resuming on the same carrier — and so on
-the same core, with its data still in that core's private caches. His
+threads on which a virtual thread keeps resuming on the same carrier — and so, as long as that
+carrier stays on one core, with its data still in that core's private caches. His
 [PERFORMANCE.md](https://github.com/franz1981/Netty-VirtualThread-Scheduler/blob/master/PERFORMANCE.md)
 shows what that is worth to a Netty event loop, and it is a genuinely elegant piece of engineering:
 it makes a scheduler respect locality without asking the application to know anything about it.
@@ -18,8 +18,18 @@ Then Looma asks the next question:
 
 An actor owns private state that only it touches: exactly what wants to stay on one core. Looma
 is an actor library built to measure whether it helps. The same actors run on the JDK's default
-scheduler, or on a carrier-affine one, and a benchmark compares the two:
-[the answer](docs/benchmark.md).
+scheduler, or on a carrier-affine one where each actor stays on its carrier. Pinning each carrier to
+one CPU is an option on top of that. In the [latest results](docs/results/summary.md), affinity
+without pinning uses about as much CPU per request as affinity with pinning (about 5% more at most),
+and both use much less than the schedulers without affinity (at depth 256 in the user benchmark, and
+in the servlet one). Pinning reaches a higher rate in the user benchmark's default case: 1.07M–1.09M
+against 890k–930k requests per second. In the servlet one, 430k in both runs against 430k and 390k.
+Two benchmarks compare them:
+
+- [the user benchmark](docs/benchmark-user.md): does an actor's data stay in its core's cache, and
+  does that save CPU?
+- [the servlet benchmark](docs/benchmark-servlet.md): how far does a server of servlet actors go,
+  and what is its latency below that?
 
 ## Quick start
 
@@ -54,7 +64,11 @@ static class Greeter implements Actor {
 }
 
 public static void main(String[] args) throws Exception {
-    ActorSystem system = ActorSystem.builder().build();
+    ActorSystem.Builder builder = ActorSystem.builder();
+    if (args.length > 0 && args[0].equals("mpsc")) {
+        builder.carriers(Carriers.mpsc(2));       // carrier affinity: next section
+    }
+    ActorSystem system = builder.build();
     ActorRef greeter = system.spawn("greeter", Greeter::new);
 
     greeter.tell(new Greet("Ann"));                                   // fire and forget
@@ -88,12 +102,12 @@ How to read it:
 Ann, Bob     -> one virtual thread, #27: it runs the actor's messages one at a time
 Cid (100 ms) -> a new virtual thread, #33: the mailbox was empty, so #27 had ended
 worker-1, -2 -> the JDK's scheduler may move the actor to another carrier
-                Carriers.affine stops that: next section
+                Carriers.mpsc stops that: next section
 ```
 
 ### With carrier affinity
 
-`Carriers.affine(n)` keeps each actor on one carrier for life, each carrier pinned to one CPU on
+`Carriers.mpsc(n)` keeps each actor on one carrier for life, and pins each carrier to one CPU on
 Linux. It needs:
 
 - a special JDK: the Loom JDK 28 (in development), with the MPSC scheduler of
@@ -104,7 +118,22 @@ Linux. It needs:
 - the choice in code, before the JVM's first virtual thread:
 
 ```java
-ActorSystem system = ActorSystem.builder().carriers(Carriers.affine(2)).build();
+ActorSystem system = ActorSystem.builder().carriers(Carriers.mpsc(2)).build();
+```
+
+The quick start does that when given the argument `mpsc`.
+
+Two settings: `pinned` (each carrier stays on one CPU) and `affinity` (each actor stays on its
+carrier). Both are `true` by default, and each one can be turned off on its own:
+
+```java
+Carriers.mpsc(2)                                   // the default, pinned(true) and affinity(true): each actor
+                                                   // stays on its carrier, each carrier on its CPU
+Carriers.mpsc(2).pinned(false)                     // actors stay on their carrier; the OS places the carriers
+Carriers.mpsc(2).affinity(false)                   // an actor can run on any carrier: its thread starts on
+                                                   // its sender's carrier, and an idle carrier may take it
+Carriers.mpsc(2).pinned(false).affinity(false)     // both off: the OS places the carriers, and an actor
+                                                   // can run on any carrier
 ```
 
 Pinning a carrier is a native call. Add `--enable-native-access=ALL-UNNAMED` to the `java` command,
@@ -117,34 +146,35 @@ sdk env                 # reads .sdkmanrc
 mvn clean install       # builds every module, runs every test
 java --enable-native-access=ALL-UNNAMED \
      -cp core/target/looma-core-1.0-SNAPSHOT.jar:mpsc-scheduler/target/looma-mpsc-scheduler-1.0-SNAPSHOT.jar:examples/target/classes \
-     io.github.pderop.looma.examples.hello.Main       # the hello example, on two affine carriers
+     io.github.pderop.looma.examples.quickstart.QuickStart mpsc   # the quick start, on two mpsc carriers
 ```
 
 The JVM first prints `WARNING: Using experimental MPSC virtual thread scheduler`, then:
 
 ```
-[/hello] handling 'Pierre' on VirtualThread[#38,looma-/hello]/runnable@mpsc-carrier-0
-[/hello] handling 'John' on VirtualThread[#38,looma-/hello]/runnable@mpsc-carrier-0
-[/hello] handling 'Bob' on VirtualThread[#38,looma-/hello]/runnable@mpsc-carrier-0
-[/hello] blocking (simulated I/O) for 'Pierre' on VirtualThread[#41]/runnable@mpsc-carrier-1
-[/hello] blocking (simulated I/O) for 'John' on VirtualThread[#42]/runnable@mpsc-carrier-1
-[/hello] blocking (simulated I/O) for 'Bob' on VirtualThread[#43]/runnable@mpsc-carrier-1
-[/hello/audit] audited Hello[name=Pierre] from /hello on VirtualThread[#39,looma-/hello/audit]/runnable@mpsc-carrier-0
-...
+greeting Ann (#1) on VirtualThread[#41,looma-/greeter]/runnable@mpsc-carrier-0
+greeting Bob (#2) on VirtualThread[#41,looma-/greeter]/runnable@mpsc-carrier-0
+hello Bob
+greeting Cid (#3) on VirtualThread[#43,looma-/greeter]/runnable@mpsc-carrier-0
+terminated: true
 ```
 
+How to read it:
+
 ```
-/hello, /hello/audit -> always mpsc-carrier-0: an actor never leaves its carrier,
-                        and a child gets its parent's
-offloaded calls      -> start on carrier-0; carrier-1 is idle and may steal them
-3 messages at once   -> one virtual thread #38; each offloaded call -> a new thread, #41 to #43
+Ann, Bob, Cid -> always mpsc-carrier-0: the actor never leaves its carrier
+Cid (100 ms)  -> a new virtual thread, #43, on the same carrier
 ```
 
 ### Where next
 
 - [`docs/api.md`](docs/api.md): the API.
 - [`docs/schedulers.md`](docs/schedulers.md): the two schedulers, and how a `tell` runs.
-- [`docs/benchmark.md`](docs/benchmark.md): the benchmark, its answer, and how to run it.
+- [`docs/mpsc-install.md`](docs/mpsc-install.md): what installing `Carriers.mpsc(n)` does, and the
+  threads the JDK starts.
+- [`docs/benchmark.md`](docs/benchmark.md): what the two benchmarks share, and how to run them.
+- [`docs/benchmark-user.md`](docs/benchmark-user.md): the user benchmark, and its answer.
+- [`docs/benchmark-servlet.md`](docs/benchmark-servlet.md): the servlet benchmark, and why it exists.
 
 ## Words
 
@@ -153,11 +183,11 @@ carrier           an OS thread that runs virtual threads
 mailbox thread    the virtual thread that runs an actor's messages, one at a time;
                   the first message of an empty mailbox starts it, it ends once the mailbox is empty
 home carrier      the carrier an actor gets at spawn
-affine            Carriers.affine(n): an actor's mailbox threads run only on its home carrier,
-                  each carrier pinned to one CPU on Linux. It is the JDK's MPSC scheduler
-                  (pull request 227). The benchmark calls it mpsc
+mpsc              Carriers.mpsc(n): the JDK's MPSC scheduler (pull request 227). By default, an
+                  actor's mailbox threads run only on its home carrier, each carrier pinned to
+                  one CPU on Linux. The benchmarks call it mpsc
 builtin           Carriers.builtin(n): the JDK's default scheduler, a ForkJoinPool.
-                  The benchmark calls it jdk
+                  The benchmarks call it jdk
 offloaded thread  a thread from context.vThreadFactory(), for blocking work; an idle carrier may steal it
 ```
 
@@ -166,8 +196,8 @@ offloaded thread  a thread from context.vThreadFactory(), for blocking work; an 
 | Directory | Artifact | Java | Contents |
 | --- | --- | --- | --- |
 | `core` | `looma-core` | 25 | The API (`io.github.pderop.looma`), the engine (`….impl`), the SPI (`….spi`). |
-| `mpsc-scheduler` | `looma-mpsc-scheduler` | 28 | `affine`: the adapter of the JDK's MPSC scheduler. [README](mpsc-scheduler/README.md). |
-| `examples` | `looma-examples` | 25 | `quickstart`, `hello` (the affinity trace), `user` (the benchmark), `timer` (the timer benchmark). |
+| `mpsc-scheduler` | `looma-mpsc-scheduler` | 28 | `mpsc`: the adapter of the JDK's MPSC scheduler. [README](mpsc-scheduler/README.md). |
+| `examples` | `looma-examples` | 25 | `quickstart`, `hello` (blocking work forked from an actor, [`docs/api.md`](docs/api.md#the-hello-example)), `user` (the user benchmark), `servlet` (the servlet benchmark), `timer` (the timer benchmark). |
 
 Everything depends on `looma-core`, never the reverse, and `looma-core` never names a scheduler
 class. `mpsc-scheduler` joins the build only on a JDK 28 or newer. `netty-loom-scheduler` is no
@@ -201,7 +231,7 @@ mvn -pl mpsc-scheduler test-compile surefire:test@install-test -Dtest=MpscInstal
 
 ## Credit
 
-`affine` runs the MPSC scheduler of
+`Carriers.mpsc(n)` runs the MPSC scheduler of
 [openjdk/loom pull request 227](https://github.com/openjdk/loom/pull/227), by Francesco Nigro: a
 queue per carrier, and a `Thread.Affinity` that keeps a virtual thread on one carrier.
 

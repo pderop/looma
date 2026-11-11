@@ -687,7 +687,8 @@ final class ActorCell implements ActorContext {
 		}
 		List<ActorCell> childrenSnapshot = List.copyOf(children);
 		childrenSnapshot.forEach(ActorCell::beginStop);
-		CompletableFuture<?>[] childrenTerminated = childrenSnapshot.stream().map(ActorCell::terminated)
+		CompletableFuture<?>[] childrenTerminated = childrenSnapshot.stream()
+				.map(ActorCell::terminated)
 				.toArray(CompletableFuture[]::new);
 		CompletableFuture.allOf(childrenTerminated).whenComplete((ignoredValue, ignoredError) -> scheduleFinalStop());
 	}

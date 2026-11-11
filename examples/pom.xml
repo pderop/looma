@@ -12,6 +12,10 @@
 
     <artifactId>looma-examples</artifactId>
 
+    <properties>
+        <jmh.version>1.37</jmh.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>io.github.pderop</groupId>
@@ -24,10 +28,36 @@
             <artifactId>HdrHistogram</artifactId>
             <version>2.2.2</version>
         </dependency>
+        <!-- The JMH benchmarks under src/test (scripts/jmh-user.sh, jmh-servlet.sh, jmh-pool.sh). Test scope: not in the jar. -->
+        <dependency>
+            <groupId>org.openjdk.jmh</groupId>
+            <artifactId>jmh-core</artifactId>
+            <version>${jmh.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <executions>
+                    <!-- The JMH generator runs on the tests only, where the benchmark is. -->
+                    <execution>
+                        <id>default-testCompile</id>
+                        <configuration>
+                            <annotationProcessorPaths>
+                                <path>
+                                    <groupId>org.openjdk.jmh</groupId>
+                                    <artifactId>jmh-generator-annprocess</artifactId>
+                                    <version>${jmh.version}</version>
+                                </path>
+                            </annotationProcessorPaths>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <!--
                 Writes the runtime dependencies of this module to target/classpath.txt, for the
                 scripts that launch `java` directly (taskset/perf must not have a build tool in
@@ -46,6 +76,16 @@
                         <configuration>
                             <includeScope>runtime</includeScope>
                             <outputFile>${project.build.directory}/classpath.txt</outputFile>
+                        </configuration>
+                    </execution>
+                    <!-- The same with the test scope, for the scripts/jmh-*.sh scripts. -->
+                    <execution>
+                        <id>build-test-classpath</id>
+                        <phase>package</phase>
+                        <goals><goal>build-classpath</goal></goals>
+                        <configuration>
+                            <includeScope>test</includeScope>
+                            <outputFile>${project.build.directory}/test-classpath.txt</outputFile>
                         </configuration>
                     </execution>
                 </executions>

@@ -13,6 +13,7 @@
  */
 package io.github.pderop.looma.impl;
 
+import io.github.pderop.looma.ActorContext;
 import io.github.pderop.looma.ActorSystem;
 
 /**
@@ -29,8 +30,11 @@ public final class TimerProbe {
 		return ((DefaultActorSystem) system).pendingTimers();
 	}
 
-	/** True if the calling mailbox thread has bound the wheel of its carrier. */
-	public static boolean mailboxThreadBindsItsCarrier() {
-		return CarrierTimer.callerCarrier() != null;
+	/**
+	 * True if the calling mailbox thread, of the actor of {@code context}, has
+	 * bound the wheel of its carrier.
+	 */
+	public static boolean mailboxThreadBindsItsCarrier(ActorContext context) {
+		return ((ActorCell) context).runtime().boundTimer() != null;
 	}
 }

@@ -1,0 +1,38 @@
+scheduler    io.github.pderop.looma.impl.JdkActorScheduler, Builtin[parallelism=10]
+poller mode  not set
+groups       10, 200000 users each (~16015 KiB), depth 256
+load         150,000 req/s, 4 connection(s) on CPUs [0, 1, 16, 17]
+backend      127.0.0.1:8081, 8 connections per group
+window       10s warm-up, 20s measured
+
+ramp         from 150,000 req/s, 20,000 more at each step; at each step 10s measured and 3s to go up to it
+
+step         150,000 req/s, 10s measured
+throughput   149,930 req/s
+cpu          64.79 us/req (9.71 cores busy) -- server: process minus clients
+client cpu   26.67 us/req (4.00 cores busy)
+migrations   4.6% of 46,917 sampled messages ran on another carrier than the one before
+backend cpu  0.75 CPUs busy
+latency      p50 716.3  p90 1435.6  p99 8904.7  p99.9 40435.7  max 57180.2 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         170,000 req/s, 10s measured
+throughput   169,998 req/s
+cpu          58.07 us/req (9.87 cores busy) -- server: process minus clients
+client cpu   23.53 us/req (4.00 cores busy)
+migrations   1.1% of 53,167 sampled messages ran on another carrier than the one before
+backend cpu  0.70 CPUs busy
+latency      p50 2248.7  p90 3883.0  p99 38961.2  p99.9 90439.7  max 102301.7 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         190,000 req/s, 10s measured
+throughput   190,328 req/s
+cpu          52.28 us/req (9.95 cores busy) -- server: process minus clients
+client cpu   21.01 us/req (4.00 cores busy)
+migrations   0.3% of 59,539 sampled messages ran on another carrier than the one before
+backend cpu  0.67 CPUs busy
+latency      p50 5795.8  p90 11001.9  p99 50135.0  p99.9 77594.6  max 93126.7 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+*** did not keep up with 190,000 req/s: sent 189,918 req/s, 791 dropped, 0 unanswered, 0 failed -- not a measurement ***
+
+ramp         kept up with 170,000 req/s
