@@ -1,0 +1,231 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 790" width="1200" height="790" role="img" aria-labelledby="title desc">
+  <title id="title">One request in the user benchmark</title>
+  <desc id="desc">A client asks the group that owns a user. The group starts a virtual thread, which borrows a connection from the group's pool and sends a GET to the backend. The thread tells the answer to the group. The group walks a chain of its users, writes in each one, and answers the client. If the next message runs on the same carrier, the users are still in its cache.</desc>
+  <style>
+    svg {
+      --bg: #ffffff; --fg: #1f2328; --muted: #59636e; --frame: #d0d7de;
+      --actor-fill: #ddf4ff; --actor-line: #54aeff;
+      --users-fill: #fff1e5; --users-line: #fb8f44; --node: #ffd8b5; --node-hot: #fb8f44; --walk: #bc4c00;
+      --pool-fill: #f6f8fa; --slot: #ffffff; --slot-busy: #1a7f37;
+      --backend-fill: #dafbe1; --backend-line: #4ac26b;
+      --client-fill: #fbefff; --client-line: #c297ff;
+      --msg: #0969da; --call: #1a7f37; --badge-fg: #ffffff;
+      --core-fill: #f6f8fa; --cold: #eaeef2;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      svg {
+        --bg: #0d1117; --fg: #e6edf3; --muted: #9198a1; --frame: #3d444d;
+        --actor-fill: #0c2d6b; --actor-line: #4493f8;
+        --users-fill: #3d1f00; --users-line: #f0883e; --node: #6b3a12; --node-hot: #f0883e; --walk: #ffa657;
+        --pool-fill: #161b22; --slot: #0d1117; --slot-busy: #3fb950;
+        --backend-fill: #0f2d1a; --backend-line: #3fb950;
+        --client-fill: #271052; --client-line: #a371f7;
+        --msg: #4493f8; --call: #3fb950; --badge-fg: #0d1117;
+        --core-fill: #161b22; --cold: #2d333b;
+      }
+    }
+    .bg { fill: var(--bg); }
+    text { fill: var(--fg); font-size: 12.5px; }
+    .h1 { font-size: 17px; font-weight: 700; }
+    .h2 { font-size: 14.5px; font-weight: 700; }
+    .h3 { font-size: 13.5px; font-weight: 600; }
+    .muted { fill: var(--muted); }
+    .small { font-size: 12px; }
+    .mid { text-anchor: middle; }
+    .jvm { fill: none; stroke: var(--frame); stroke-width: 1.5; stroke-dasharray: 7 5; }
+    .cont { fill: var(--bg); stroke: var(--frame); stroke-width: 1.5; }
+    .cont-shadow { fill: var(--bg); stroke: var(--frame); stroke-width: 1.2; }
+    .actor { fill: var(--actor-fill); stroke: var(--actor-line); stroke-width: 1.5; }
+    .users { fill: var(--users-fill); stroke: var(--users-line); stroke-width: 1.5; }
+    .user { fill: var(--node); }
+    .user-hot { fill: var(--node-hot); }
+    .walk { fill: none; stroke: var(--walk); stroke-width: 1.6; }
+    .walk-step { fill: none; stroke: var(--walk); stroke-width: 2; }
+    .ah-walk { fill: var(--walk); }
+    .pool { fill: var(--pool-fill); stroke: var(--call); stroke-width: 1.5; }
+    .slot { fill: var(--slot); stroke: var(--call); stroke-width: 1.2; }
+    .slot-busy { fill: var(--slot-busy); stroke: var(--call); stroke-width: 1.2; }
+    .backend { fill: var(--backend-fill); stroke: var(--backend-line); stroke-width: 1.5; }
+    .client { fill: var(--client-fill); stroke: var(--client-line); stroke-width: 1.5; }
+    .vt { fill: var(--bg); stroke: var(--call); stroke-width: 1.5; }
+    .msg { fill: none; stroke: var(--msg); stroke-width: 2; }
+    .call { fill: none; stroke: var(--call); stroke-width: 2; stroke-dasharray: 6 4; }
+    .ah-msg { fill: var(--msg); }
+    .ah-call { fill: var(--call); }
+    .badge-msg { fill: var(--msg); }
+    .badge-call { fill: var(--call); }
+    .badge-walk { fill: var(--walk); }
+    .start { fill: none; stroke: var(--muted); stroke-width: 2; }
+    .ah-start { fill: var(--muted); }
+    .badge-start { fill: var(--muted); }
+    .badge-text { fill: var(--badge-fg); font-size: 12px; font-weight: 700; text-anchor: middle; }
+    .core { fill: var(--core-fill); stroke: var(--frame); stroke-width: 1.4; }
+    .cold { fill: var(--cold); }
+    .divider { stroke: var(--frame); stroke-width: 1; }
+  </style>
+  <defs>
+    <marker id="m-msg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path class="ah-msg" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+    <marker id="m-call" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path class="ah-call" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+    <marker id="m-walk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path class="ah-walk" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+    <marker id="m-start" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path class="ah-start" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="1200" height="790" rx="16"/>
+
+  <!-- Server JVM -->
+  <rect class="jvm" x="20" y="20" width="890" height="600" rx="14"/>
+  <text class="h1" x="40" y="50">Server JVM</text>
+
+  <!-- Clients -->
+  <rect class="client" x="40" y="190" width="160" height="230" rx="12"/>
+  <text class="h2 mid" x="120" y="222">Clients</text>
+  <text class="muted mid" x="120" y="242">LoadGenerator</text>
+  <text class="muted mid small" x="120" y="260">on their own CPUs</text>
+  <text class="mid" x="120" y="300">fixed rate, open loop</text>
+  <text class="mid" x="120" y="330">each request asks</text>
+  <text class="mid" x="120" y="348">for a random user</text>
+  <text class="muted mid small" x="120" y="380">latency from the</text>
+  <text class="muted mid small" x="120" y="397">planned send time</text>
+
+  <!-- The groups: one per carrier -->
+  <rect class="cont-shadow" x="280" y="90" width="610" height="500" rx="14"/>
+  <rect class="cont-shadow" x="270" y="100" width="610" height="500" rx="14"/>
+  <rect class="cont" x="260" y="110" width="610" height="500" rx="14"/>
+  <text class="h2" x="280" y="138">UserGroupActor, one per carrier</text>
+  <text class="muted small" x="280" y="158">The user id, modulo the number of groups, picks the group. A user never leaves its group.</text>
+
+  <!-- Group actor -->
+  <rect class="actor" x="285" y="240" width="140" height="120" rx="10"/>
+  <text class="h3 mid" x="355" y="272">UserGroupActor</text>
+  <text class="muted mid small" x="355" y="291">actor, placed</text>
+  <text class="muted mid small" x="355" y="309">on its carrier</text>
+  <text class="muted mid small" x="355" y="333">Recommend,</text>
+  <text class="muted mid small" x="355" y="350">UpstreamAnswered</text>
+
+  <!-- Its users -->
+  <rect class="users" x="480" y="180" width="370" height="222" rx="12"/>
+  <text class="h3" x="498" y="204">Its users</text>
+  <text class="muted small" x="566" y="204">created by the group, in a random order</text>
+  <text class="muted small" x="498" y="224">default 8000 (≈ 640 KiB), big 200,000 (≈ 16 MiB)</text>
+  <g>
+    <circle class="user" cx="520" cy="250" r="9"/><circle class="user" cx="564" cy="250" r="9"/><circle class="user" cx="608" cy="250" r="9"/><circle class="user-hot" cx="652" cy="250" r="9"/><circle class="user" cx="696" cy="250" r="9"/><circle class="user-hot" cx="740" cy="250" r="9"/><circle class="user" cx="784" cy="250" r="9"/><circle class="user" cx="828" cy="250" r="9"/>
+    <circle class="user-hot" cx="520" cy="282" r="9"/><circle class="user" cx="564" cy="282" r="9"/><circle class="user" cx="608" cy="282" r="9"/><circle class="user" cx="652" cy="282" r="9"/><circle class="user" cx="696" cy="282" r="9"/><circle class="user" cx="740" cy="282" r="9"/><circle class="user" cx="784" cy="282" r="9"/><circle class="user" cx="828" cy="282" r="9"/>
+    <circle class="user" cx="520" cy="314" r="9"/><circle class="user" cx="564" cy="314" r="9"/><circle class="user" cx="608" cy="314" r="9"/><circle class="user" cx="652" cy="314" r="9"/><circle class="user" cx="696" cy="314" r="9"/><circle class="user" cx="740" cy="314" r="9"/><circle class="user" cx="784" cy="314" r="9"/><circle class="user-hot" cx="828" cy="314" r="9"/>
+    <circle class="user" cx="520" cy="346" r="9"/><circle class="user" cx="564" cy="346" r="9"/><circle class="user-hot" cx="608" cy="346" r="9"/><circle class="user" cx="652" cy="346" r="9"/><circle class="user" cx="696" cy="346" r="9"/><circle class="user" cx="740" cy="346" r="9"/><circle class="user-hot" cx="784" cy="346" r="9"/><circle class="user" cx="828" cy="346" r="9"/>
+  </g>
+  <line class="walk" x1="531" y1="280" x2="728" y2="252" marker-end="url(#m-walk)"/>
+  <line class="walk" x1="731" y1="256" x2="618" y2="339" marker-end="url(#m-walk)"/>
+  <line class="walk" x1="619" y1="344" x2="816" y2="316" marker-end="url(#m-walk)"/>
+  <line class="walk" x1="818" y1="310" x2="663" y2="254" marker-end="url(#m-walk)"/>
+  <line class="walk" x1="661" y1="256" x2="774" y2="339" marker-end="url(#m-walk)"/>
+  <text class="small" x="498" y="378">the walk: --depth users (256), each gives the next</text>
+  <text class="muted small" x="498" y="394">it writes in each one; the friends form one cycle</text>
+
+  <!-- Step 5: the walk -->
+  <line class="walk-step" x1="425" y1="282" x2="508" y2="282" marker-end="url(#m-walk)"/>
+  <circle class="badge-walk" cx="452" cy="264" r="10"/><text class="badge-text" x="452" y="268">5</text>
+
+  <!-- Client messages -->
+  <line class="msg" x1="200" y1="270" x2="283" y2="270" marker-end="url(#m-msg)"/>
+  <circle class="badge-msg" cx="222" cy="248" r="10"/><text class="badge-text" x="222" y="252">1</text>
+  <text class="small" x="236" y="252">ask</text>
+
+  <line class="msg" x1="285" y1="330" x2="202" y2="330" marker-end="url(#m-msg)"/>
+  <circle class="badge-msg" cx="222" cy="352" r="10"/><text class="badge-text" x="222" y="356">6</text>
+  <text class="small" x="236" y="356">answer</text>
+
+  <!-- The GET on a virtual thread -->
+  <line class="start" x1="325" y1="360" x2="325" y2="418" marker-end="url(#m-start)"/>
+  <circle class="badge-start" cx="305" cy="389" r="10"/><text class="badge-text" x="305" y="393">2</text>
+  <line class="msg" x1="385" y1="420" x2="385" y2="362" marker-end="url(#m-msg)"/>
+  <circle class="badge-msg" cx="405" cy="389" r="10"/><text class="badge-text" x="405" y="393">4</text>
+  <rect class="vt" x="295" y="420" width="120" height="28" rx="14"/>
+  <text class="mid small" x="355" y="438">virtual thread</text>
+  <line class="call" x1="355" y1="448" x2="355" y2="493" marker-end="url(#m-call)"/>
+  <circle class="badge-call" cx="377" cy="471" r="10"/><text class="badge-text" x="377" y="475">3</text>
+
+  <!-- Pool of the group -->
+  <rect class="pool" x="290" y="495" width="320" height="95" rx="12"/>
+  <text class="h3 mid" x="450" y="518">ConnectionPool of the group</text>
+  <text class="muted mid small" x="450" y="536">8 connections; a GET waits if none is free</text>
+  <rect class="slot-busy" x="334" y="552" width="22" height="22" rx="5"/>
+  <rect class="slot-busy" x="364" y="552" width="22" height="22" rx="5"/>
+  <rect class="slot-busy" x="394" y="552" width="22" height="22" rx="5"/>
+  <rect class="slot" x="424" y="552" width="22" height="22" rx="5"/>
+  <rect class="slot" x="454" y="552" width="22" height="22" rx="5"/>
+  <rect class="slot" x="484" y="552" width="22" height="22" rx="5"/>
+  <rect class="slot" x="514" y="552" width="22" height="22" rx="5"/>
+  <rect class="slot" x="544" y="552" width="22" height="22" rx="5"/>
+
+  <!-- Pool to backend -->
+  <line class="call" x1="612" y1="545" x2="943" y2="545" marker-start="url(#m-call)" marker-end="url(#m-call)"/>
+  <text class="mid small" x="760" y="533">GET /user</text>
+  <text class="mid small" x="760" y="565">200 OK, a small body</text>
+
+  <!-- Backend JVM -->
+  <rect class="backend" x="945" y="450" width="230" height="170" rx="14"/>
+  <text class="h1 mid" x="1060" y="482">Backend JVM</text>
+  <text class="mid" x="1060" y="508">BackendServer</text>
+  <text class="muted mid small" x="1060" y="530">a plain NIO server,</text>
+  <text class="muted mid small" x="1060" y="548">reactor threads, no actors</text>
+  <text class="mid small" x="1060" y="578">answers at once</text>
+  <text class="muted mid small" x="1060" y="604">on its own CPUs</text>
+
+  <!-- Legend -->
+  <text class="h2" x="945" y="50">Legend</text>
+  <line class="msg" x1="945" y1="78" x2="1000" y2="78" marker-end="url(#m-msg)"/>
+  <text x="1012" y="82">actor message</text>
+  <line class="call" x1="945" y1="106" x2="1000" y2="106" marker-end="url(#m-call)"/>
+  <text x="1012" y="110">backend call</text>
+  <rect class="slot-busy" x="945" y="124" width="18" height="18" rx="4"/>
+  <rect class="slot" x="969" y="124" width="18" height="18" rx="4"/>
+  <text x="1012" y="138">connection in use / free</text>
+  <circle class="user-hot" cx="954" cy="164" r="8"/>
+  <circle class="user" cx="978" cy="164" r="8"/>
+  <text x="1012" y="168">user read by the walk / not</text>
+  <line class="start" x1="945" y1="192" x2="1000" y2="192" marker-end="url(#m-start)"/>
+  <text x="1012" y="196">starts a virtual thread</text>
+
+  <!-- The next message -->
+  <text class="h3" x="945" y="232">The next message</text>
+  <text class="muted small" x="945" y="250">The scheduler picks its carrier.</text>
+  <rect class="core" x="945" y="266" width="62" height="44" rx="6"/>
+  <rect class="user-hot" x="953" y="274" width="12" height="12" rx="2"/><rect class="user-hot" x="970" y="274" width="12" height="12" rx="2"/><rect class="user-hot" x="987" y="274" width="12" height="12" rx="2"/>
+  <rect class="user-hot" x="953" y="290" width="12" height="12" rx="2"/><rect class="user-hot" x="970" y="290" width="12" height="12" rx="2"/><rect class="user-hot" x="987" y="290" width="12" height="12" rx="2"/>
+  <text class="h3" x="1018" y="282">same carrier</text>
+  <text class="small" x="1018" y="300">users still in its cache</text>
+  <rect class="core" x="945" y="324" width="62" height="44" rx="6"/>
+  <rect class="cold" x="953" y="332" width="12" height="12" rx="2"/><rect class="cold" x="970" y="332" width="12" height="12" rx="2"/><rect class="cold" x="987" y="332" width="12" height="12" rx="2"/>
+  <rect class="cold" x="953" y="348" width="12" height="12" rx="2"/><rect class="cold" x="970" y="348" width="12" height="12" rx="2"/><rect class="cold" x="987" y="348" width="12" height="12" rx="2"/>
+  <text class="h3" x="1018" y="340">other carrier</text>
+  <text class="small" x="1018" y="358">users read again</text>
+  <text class="muted small" x="945" y="398">Under mpsc with affinity, a</text>
+  <text class="muted small" x="945" y="416">group stays on its carrier.</text>
+
+  <!-- Steps -->
+  <line class="divider" x1="20" y1="642" x2="1180" y2="642"/>
+  <text class="h2" x="40" y="670">One request</text>
+
+  <circle class="badge-msg" cx="52" cy="694" r="10"/><text class="badge-text" x="52" y="698">1</text>
+  <text x="72" y="698">The client asks the group that owns the user.</text>
+  <circle class="badge-start" cx="52" cy="720" r="10"/><text class="badge-text" x="52" y="724">2</text>
+  <text x="72" y="724">The group starts a virtual thread for the GET.</text>
+  <circle class="badge-call" cx="52" cy="746" r="10"/><text class="badge-text" x="52" y="750">3</text>
+  <text x="72" y="750">The thread borrows a connection from the pool, and GETs the backend.</text>
+
+  <circle class="badge-msg" cx="642" cy="694" r="10"/><text class="badge-text" x="642" y="698">4</text>
+  <text x="662" y="698">The thread tells the answer to the group.</text>
+  <circle class="badge-walk" cx="642" cy="720" r="10"/><text class="badge-text" x="642" y="724">5</text>
+  <text x="662" y="724">The group walks its users from the one asked for, and writes in each.</text>
+  <circle class="badge-msg" cx="642" cy="746" r="10"/><text class="badge-text" x="642" y="750">6</text>
+  <text x="662" y="750">The group answers the client.</text>
+</svg>

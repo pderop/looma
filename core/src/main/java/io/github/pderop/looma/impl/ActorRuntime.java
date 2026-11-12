@@ -239,12 +239,26 @@ final class ActorRuntime {
 	 * over the carriers.
 	 */
 	CarrierTimer timerForCaller() {
-		CarrierTimer marked = CarrierTimer.callerCarrier();
-		if (marked != null && marked.belongsTo(this)) {
-			return marked;
+		CarrierTimer bound = boundTimer();
+		if (bound != null) {
+			return bound;
 		}
 		long threadId = Thread.currentThread().threadId();
 		return dispatchers.timer((int) Math.floorMod(threadId, (long) dispatchers.carrierCount()));
+	}
+
+	/**
+	 * Returns the wheel of this system that the calling mailbox thread has bound,
+	 * or null. Only the wheels of this system are looked at.
+	 */
+	CarrierTimer boundTimer() {
+		for (int carrierId = 0; carrierId < dispatchers.carrierCount(); carrierId++) {
+			CarrierTimer timer = dispatchers.mailboxThreadTimer(carrierId);
+			if (timer != null && timer.isCaller()) {
+				return timer;
+			}
+		}
+		return null;
 	}
 
 	/**

@@ -1,0 +1,18 @@
+WARNING: Using experimental MPSC virtual thread scheduler
+scheduler    io.github.pderop.looma.scheduler.mpsc.MpscActorScheduler, Mpsc[count=10, pinned=false, affinity=true]
+poller mode  not set
+sessions     100,000, 8 backend connection(s) per container
+state        10,000 products; a cart keeps 20 lines, a profile 20 viewed products
+fraud        a table of 1024 KiB per container, 256 features per check
+load         150,000 req/s, 4 client thread(s) on CPUs [0, 1, 16, 17]
+backend      127.0.0.1:8081
+window       10s warm-up, 20s measured
+
+measure      started, 20s
+throughput   149,977 req/s (answered with a 200)
+cpu          33.50 us/req (5.02 cores busy) -- server: process minus clients
+client cpu   26.59 us/req (3.99 cores busy)
+migrations   0.0% of 93,768 sampled messages of the fraud detectors ran on another carrier than the one before
+backend cpu  1.82 CPUs busy
+latency      p50 48.0  p90 62.0  p99 77.3  p99.9 4612.1  max 9551.9 us (from the scheduled send)
+send lag     p50 0.1  p99 0.2 us (how late the clients sent)

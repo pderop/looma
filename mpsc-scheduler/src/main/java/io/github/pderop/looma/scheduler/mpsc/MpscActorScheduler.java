@@ -22,9 +22,12 @@ import io.github.pderop.looma.spi.ActorScheduler;
  * The {@link ActorScheduler} view over the JDK's MPSC scheduler.
  *
  * <p>
- * An actor's mailbox threads are created with the affinity of its carrier: they
- * run there, and are never stolen. The threads an actor offloads have no
- * affinity: they start on the actor's carrier, and an idle carrier may steal
+ * With affinity (the default of {@code Carriers.mpsc}), an actor's mailbox
+ * threads are created with the affinity of its carrier: they run there, and are
+ * never stolen. Without ({@code affinity(false)}), they have none: an actor can
+ * run on any carrier. Its thread starts on the carrier of its sender, and an
+ * idle carrier may steal it. The threads an actor offloads never have affinity:
+ * they start on the carrier that starts them, and an idle carrier may steal
  * them.
  *
  * <p>
@@ -39,11 +42,14 @@ final class MpscActorScheduler implements ActorScheduler {
 
 	private final ThreadFactory offloadFactory = Thread.ofVirtual().factory();
 
-	MpscActorScheduler(MpscPool pool) {
+	private final boolean affinity;
+
+	MpscActorScheduler(MpscPool pool, boolean affinity) {
 		this.pool = pool;
+		this.affinity = affinity;
 		this.mailboxThreadFactories = new ThreadFactory[pool.count()];
 		for (int i = 0; i < mailboxThreadFactories.length; i++) {
-			mailboxThreadFactories[i] = Thread.ofVirtual().affinity(pool.home(i)).factory();
+			mailboxThreadFactories[i] = affinity ? Thread.ofVirtual().affinity(pool.home(i)).factory() : offloadFactory;
 		}
 	}
 
@@ -62,17 +68,20 @@ final class MpscActorScheduler implements ActorScheduler {
 		return mailboxThreadFactories[index];
 	}
 
+	/**
+	 * Only with affinity. Without, the timers of an actor go through the queues.
+	 */
 	@Override
 	public boolean mailboxThreadsStayOnCarrier() {
-		return true;
+		return affinity;
 	}
 
 	/**
 	 * {@inheritDoc}
 	 *
 	 * <p>
-	 * The carrier the calling thread runs on. For an actor's mailbox thread, it is
-	 * its home: it never moves.
+	 * The carrier the calling thread runs on. For an actor's mailbox thread with
+	 * affinity, it is its home: it never moves.
 	 */
 	@Override
 	public int currentCarrierId() {

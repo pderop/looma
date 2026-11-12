@@ -67,7 +67,9 @@
                 <version>3.10.4</version>
                 <configuration>
                     <java>
-                        <eclipse/>
+                        <eclipse>
+                            <file>${maven.multiModuleProjectDirectory}/eclipse-formatter.prefs</file>
+                        </eclipse>
                         <licenseHeader>
                             <content>/*
  * Licensed under the Apache License, Version 2.0 (the "License");

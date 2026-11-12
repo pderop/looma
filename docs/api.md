@@ -126,7 +126,7 @@ ActorRef account = system.spawn("account", Account::new);
 
 ```java
 ActorSystem system = ActorSystem.builder()
-        .carriers(Carriers.affine(8))        // chooses and sizes the JVM's scheduler, in code
+        .carriers(Carriers.mpsc(8))          // chooses and sizes the JVM's scheduler, in code
         .mpscQueueFactory(myQueueFactory)    // every MPSC queue: mailboxes and timer queues; default ConcurrentLinkedQueue
         .timerTick(Duration.ofMillis(10))    // precision of delayed and periodic tell; default 10 ms
         .build();
@@ -134,8 +134,9 @@ ActorSystem system = ActorSystem.builder()
 ActorSystem.builder().scheduler(someScheduler);    // bypasses everything — tests only
 ```
 
-`carriers(...)` is `Carriers.affine(n)` (an actor never leaves its home carrier) or
-`Carriers.builtin(n)` (the JDK's default scheduler). Without it, the system takes whatever the JVM
+`carriers(...)` is `Carriers.mpsc(n)` (an actor never leaves its home carrier; add
+`.pinned(false)` to leave the carriers unpinned, `.affinity(false)` to let an actor run on any
+carrier) or `Carriers.builtin(n)` (the JDK's default scheduler). Without it, the system takes whatever the JVM
 flags chose. `build()` must run **before the JVM's first virtual thread**, and throws rather than
 run on the wrong scheduler: [`schedulers.md`](schedulers.md#in-code).
 
@@ -237,7 +238,7 @@ ref.tell(msg, 50 ms)                      ref's home carrier is carrier-3
 
 - The wheel's virtual thread starts at the first timer of its carrier. While the wheel holds a
   timer, even one far in the future, the thread wakes at every tick.
-- Under `affine`, once a timer has run on its carrier, an actor arms and cancels the timers of its
+- Under `mpsc` with affinity, once a timer has run on its carrier, an actor arms and cancels the timers of its
   own carrier with no queue; any other caller goes through a queue of the wheel:
   [`schedulers.md`](schedulers.md#the-wheel-thread).
 - The queues of the wheel have no limit, like the mailboxes: an arm is never refused. A queue set
@@ -367,7 +368,8 @@ public void onReceive(Message message, ActorRef sender, ActorContext context) {
 `vThreadFactory()` is the only way to offload:
 
 ```
-under affine     -> the thread starts on the actor's home carrier; an idle carrier may steal it
+under mpsc       -> the thread starts on the carrier of the thread that starts it (with affinity:
+                    the actor's carrier); an idle carrier may steal it
 under builtin    -> a plain virtual thread
 every thread     -> counted as in-flight work: awaitTermination waits for it
 created, never started -> the count never drops: awaitTermination times out (a caller bug)
@@ -376,9 +378,52 @@ created, never started -> the count never drops: awaitTermination times out (a c
 `ActorContext` is thread-safe: a forked thread may use it, as above. It must **not** touch the
 actor's fields: take what it needs by value, and send the outcome back as a message.
 
+### The hello example
+
+[`examples/hello`](../examples/src/main/java/io/github/pderop/looma/examples/hello) runs this on
+two `mpsc` carriers, with affinity. One actor, `/hello`, gets three asks at once. For each one, it tells its child
+`/hello/audit` and forks a thread that blocks 50 ms, then replies.
+
+It needs the Loom JDK and the build of the README,
+[With carrier affinity](../README.md#with-carrier-affinity). From the project root:
+
+```sh
+java --enable-native-access=ALL-UNNAMED \
+     -cp core/target/looma-core-1.0-SNAPSHOT.jar:mpsc-scheduler/target/looma-mpsc-scheduler-1.0-SNAPSHOT.jar:examples/target/classes \
+     io.github.pderop.looma.examples.hello.Main
+```
+
+The JVM first prints `WARNING: Using experimental MPSC virtual thread scheduler`, then:
+
+```
+[/hello] handling 'Pierre' on VirtualThread[#41,looma-/hello]/runnable@mpsc-carrier-0
+[/hello] handling 'John' on VirtualThread[#41,looma-/hello]/runnable@mpsc-carrier-0
+[/hello] handling 'Bob' on VirtualThread[#41,looma-/hello]/runnable@mpsc-carrier-0
+[/hello] blocking (simulated I/O) for 'Pierre' on VirtualThread[#43]/runnable@mpsc-carrier-1
+[/hello] blocking (simulated I/O) for 'John' on VirtualThread[#44]/runnable@mpsc-carrier-1
+[/hello] blocking (simulated I/O) for 'Bob' on VirtualThread[#45]/runnable@mpsc-carrier-1
+[/hello/audit] audited Hello[name=Pierre] from /hello on VirtualThread[#42,looma-/hello/audit]/runnable@mpsc-carrier-0
+[/hello/audit] audited Hello[name=John] from /hello on VirtualThread[#42,looma-/hello/audit]/runnable@mpsc-carrier-0
+[/hello/audit] audited Hello[name=Bob] from /hello on VirtualThread[#42,looma-/hello/audit]/runnable@mpsc-carrier-0
+[/hello] greeting 'Pierre' on VirtualThread[#43]/runnable@mpsc-carrier-1
+[/hello] greeting 'John' on VirtualThread[#44]/runnable@mpsc-carrier-0
+Greeting[text=Greeting Pierre]
+...
+```
+
+How to read it:
+
+```
+/hello, /hello/audit -> always mpsc-carrier-0: an actor never leaves its carrier,
+                        and a child gets its parent's (§9)
+3 asks at once       -> one mailbox thread, #41; each forked thread is new, #43 to #45
+forked threads       -> start on carrier-0; carrier-1 is idle and steals them;
+                        after the 50 ms, they may run on either carrier
+```
+
 ### Platform threads started from an actor
 
-Under `affine` on Linux, a carrier runs on one CPU, and a thread started from it would keep that
+Under `mpsc` on Linux, a pinned carrier runs on one CPU, and a thread started from it would keep that
 CPU. Looma covers the threads the JDK starts. For your own threads and executors, take the factory
 from the system:
 
@@ -389,7 +434,7 @@ ExecutorService workers = Executors.newFixedThreadPool(4, platform);
 
 An executor starts its threads at its first tasks, so this matters even for one created in `main`.
 Under the builtin, the factory is `Thread.ofPlatform().factory()`. What the install covers:
-[`mpsc-scheduler/README.md`](../mpsc-scheduler/README.md#threads-started-from-an-actor).
+[`docs/mpsc-install.md`](mpsc-install.md).
 
 ### Native calls hold the carrier
 
@@ -398,17 +443,11 @@ virtual thread, so it holds its carrier:
 
 ```
 builtin -> that ForkJoinPool worker is lost until the call returns; the pool grows to compensate
-affine  -> the pool is fixed: every actor homed on that carrier waits
+mpsc    -> the pool is fixed: every thread waiting for that carrier waits
 ```
 
 Keep native calls out of mailbox threads and out of anything forked from them. `synchronized` no
 longer pins ([JEP 491](https://openjdk.org/jeps/491), JDK 24).
-
-### StructuredTaskScope
-
-Under `affine`, a `StructuredTaskScope` opened in `onReceive` must be closed before `onReceive`
-returns, as the JDK requires. Once a timer has run on the carrier, a scope left open makes the JDK
-throw `StructureViolationException` when the mailbox thread ends.
 
 ## 7. The hierarchy
 
@@ -424,7 +463,7 @@ public class Db implements Actor {
         if (worker == null) {
             worker = context.spawn("worker", Worker::new);   // path: /db/worker
         }
-        worker.tell(message, context.self());            // same carrier under affine: no cross-core hop
+        worker.tell(message, context.self());            // same carrier under mpsc with affinity
     }
 }
 ```
@@ -491,8 +530,8 @@ Pass it at spawn time, or keep the counter in a field of the actor.
 
 ## 9. Placement
 
-Every actor gets a **home carrier** at spawn, fixed for its life. Under `affine`, its mailbox
-threads run only there. Defaults:
+Every actor gets a **home carrier** at spawn, fixed for its life. Under `mpsc` with affinity, its
+mailbox threads run only there. Defaults:
 
 - `ActorSystem.spawn` → `Placement.roundRobin()`, the next carrier from a system-wide cursor;
 - `ActorContext.spawn` → `Placement.inherit()`, the parent's carrier: messages between them stay
@@ -718,7 +757,7 @@ if (!system.awaitTermination(5, TimeUnit.SECONDS)) {
   parent↔child `tell` into a cross-carrier hop: do it only when the actor's own load wants it.
 - **A pool needs no spread for blocking work:** a blocked virtual thread unmounts, so the `n`
   mailboxes are what buy the responsiveness. Spreading matters when the members compute.
-- **`homeCarrierIdOf`, not the running carrier, in tests:** under `affine` a thread an actor
+- **`homeCarrierIdOf`, not the running carrier, in tests:** under `mpsc` a thread an actor
   offloads may be stolen, and under the builtin anything may run anywhere.
 - **One timer wheel per carrier, run by a thread of that carrier**: the timer's `tell` needs no
   hand-over between threads, for the same reason actors keep to their home carrier. After the

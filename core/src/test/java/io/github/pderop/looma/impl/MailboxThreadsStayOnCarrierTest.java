@@ -111,7 +111,7 @@ class MailboxThreadsStayOnCarrierTest {
 			});
 			warm.tell(new Ping(), 1, TimeUnit.HOURS);
 			ActorRef probe = system.spawn("probe",
-					() -> (message, sender, context) -> seen.complete(CarrierTimer.callerCarrier()));
+					() -> (message, sender, context) -> seen.complete(((ActorCell) context).runtime().boundTimer()));
 			probe.tell(new Ping());
 			return seen.get(5, TimeUnit.SECONDS);
 		} finally {

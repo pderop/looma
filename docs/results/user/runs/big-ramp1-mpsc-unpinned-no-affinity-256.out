@@ -1,0 +1,39 @@
+WARNING: Using experimental MPSC virtual thread scheduler
+scheduler    io.github.pderop.looma.scheduler.mpsc.MpscActorScheduler, Mpsc[count=10, pinned=false, affinity=false]
+poller mode  not set
+groups       10, 200000 users each (~16015 KiB), depth 256
+load         150,000 req/s, 4 connection(s) on CPUs [0, 1, 16, 17]
+backend      127.0.0.1:8081, 8 connections per group
+window       10s warm-up, 20s measured
+
+ramp         from 150,000 req/s, 20,000 more at each step; at each step 10s measured and 3s to go up to it
+
+step         150,000 req/s, 10s measured
+throughput   150,004 req/s
+cpu          64.89 us/req (9.73 cores busy) -- server: process minus clients
+client cpu   26.65 us/req (4.00 cores busy)
+migrations   7.0% of 46,925 sampled messages ran on another carrier than the one before
+backend cpu  0.79 CPUs busy
+latency      p50 301.3  p90 683.0  p99 1409.0  p99.9 7708.7  max 34406.4 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         170,000 req/s, 10s measured
+throughput   170,010 req/s
+cpu          58.40 us/req (9.93 cores busy) -- server: process minus clients
+client cpu   23.52 us/req (4.00 cores busy)
+migrations   1.6% of 53,172 sampled messages ran on another carrier than the one before
+backend cpu  0.84 CPUs busy
+latency      p50 1150.0  p90 2791.4  p99 13983.7  p99.9 67502.1  max 307757.1 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         190,000 req/s, 10s measured
+throughput   189,200 req/s
+cpu          52.45 us/req (9.92 cores busy) -- server: process minus clients
+client cpu   21.14 us/req (4.00 cores busy)
+migrations   0.9% of 59,486 sampled messages ran on another carrier than the one before
+backend cpu  0.84 CPUs busy
+latency      p50 3276.8  p90 22380.5  p99 105906.2  p99.9 173932.5  max 1303380.0 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+*** did not keep up with 190,000 req/s: sent 189,605 req/s, 3,938 dropped, 0 unanswered, 0 failed -- not a measurement ***
+
+ramp         kept up with 170,000 req/s

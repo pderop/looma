@@ -29,20 +29,22 @@ import io.github.pderop.looma.Carriers;
  * {@link MyActor} and {@link AuditLogActor}).
  *
  * <p>
- * Asks for two carrier-affine carriers, which run the JDK's MPSC scheduler,
- * through {@link ActorSystem.Builder#carriers}, so it needs no scheduler flag —
- * run it with {@code scripts/run-hello.sh}. On a JDK without the MPSC
- * scheduler, {@code build()} says so.
+ * Asks for two carriers of the JDK's MPSC scheduler, with affinity, through
+ * {@link ActorSystem.Builder#carriers}, so it needs no scheduler flag. The
+ * command line is in {@code docs/api.md}. On a JDK without the MPSC scheduler,
+ * {@code build()} says so.
  */
 public class Main {
 
 	public static void main(String[] args) throws InterruptedException {
-		ActorSystem actorSystem = ActorSystem.builder().carriers(Carriers.affine(2)).build();
+		ActorSystem actorSystem = ActorSystem.builder().carriers(Carriers.mpsc(2)).build();
 
 		ActorRef hello = actorSystem.spawn("hello", MyActor::new);
 
-		List<CompletableFuture<Greeting>> replies = List.of("Pierre", "John", "Bob").stream()
-				.map(name -> hello.ask(new Hello(name), Greeting.class).orTimeout(5, TimeUnit.SECONDS)).toList();
+		List<CompletableFuture<Greeting>> replies = List.of("Pierre", "John", "Bob")
+				.stream()
+				.map(name -> hello.ask(new Hello(name), Greeting.class).orTimeout(5, TimeUnit.SECONDS))
+				.toList();
 
 		replies.forEach(reply -> reply.thenAccept(System.out::println));
 

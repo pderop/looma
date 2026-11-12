@@ -1,0 +1,129 @@
+scheduler    io.github.pderop.looma.impl.JdkActorScheduler, Builtin[parallelism=10]
+poller mode  not set
+sessions     100,000, 8 backend connection(s) per container
+state        10,000 products; a cart keeps 20 lines, a profile 20 viewed products
+fraud        a table of 1024 KiB per container, 256 features per check
+load         150,000 req/s, 4 client thread(s) on CPUs [0, 1, 16, 17]
+backend      127.0.0.1:8081
+window       10s warm-up, then a ramp from 150,000 req/s, 20,000 more at each step; at each step 10s measured and 3s to go up to it
+
+step         150,000 req/s, 10s measured
+throughput   149,934 req/s (answered with a 200)
+cpu          54.02 us/req (8.10 cores busy) -- server: process minus clients
+client cpu   26.60 us/req (3.99 cores busy)
+migrations   69.4% of 46,899 sampled messages of the fraud detectors ran on another carrier than the one before
+backend cpu  1.78 CPUs busy
+latency      p50 66.8  p90 82.2  p99 104.6  p99.9 5210.1  max 7819.3 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         170,000 req/s, 10s measured
+throughput   169,996 req/s (answered with a 200)
+cpu          51.70 us/req (8.79 cores busy) -- server: process minus clients
+client cpu   23.48 us/req (3.99 cores busy)
+migrations   68.0% of 53,130 sampled messages of the fraud detectors ran on another carrier than the one before
+backend cpu  2.02 CPUs busy
+latency      p50 68.1  p90 86.2  p99 111.7  p99.9 3835.9  max 7929.9 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         190,000 req/s, 10s measured
+throughput   189,989 req/s (answered with a 200)
+cpu          48.60 us/req (9.23 cores busy) -- server: process minus clients
+client cpu   21.04 us/req (4.00 cores busy)
+migrations   69.8% of 59,381 sampled messages of the fraud detectors ran on another carrier than the one before
+backend cpu  2.25 CPUs busy
+latency      p50 72.6  p90 90.8  p99 114.8  p99.9 640.5  max 2006.0 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         210,000 req/s, 10s measured
+throughput   209,987 req/s (answered with a 200)
+cpu          45.12 us/req (9.47 cores busy) -- server: process minus clients
+client cpu   19.04 us/req (4.00 cores busy)
+migrations   68.9% of 65,629 sampled messages of the fraud detectors ran on another carrier than the one before
+backend cpu  2.48 CPUs busy
+latency      p50 78.8  p90 99.5  p99 129.4  p99.9 771.1  max 2111.5 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         230,000 req/s, 10s measured
+throughput   229,987 req/s (answered with a 200)
+cpu          42.20 us/req (9.71 cores busy) -- server: process minus clients
+client cpu   17.38 us/req (4.00 cores busy)
+migrations   65.1% of 71,889 sampled messages of the fraud detectors ran on another carrier than the one before
+backend cpu  2.72 CPUs busy
+latency      p50 89.5  p90 115.6  p99 172.2  p99.9 917.0  max 2314.2 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         250,000 req/s, 10s measured
+throughput   249,989 req/s (answered with a 200)
+cpu          39.49 us/req (9.87 cores busy) -- server: process minus clients
+client cpu   15.99 us/req (4.00 cores busy)
+migrations   58.6% of 78,139 sampled messages of the fraud detectors ran on another carrier than the one before
+backend cpu  2.94 CPUs busy
+latency      p50 109.7  p90 145.9  p99 286.7  p99.9 1228.8  max 3489.8 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         270,000 req/s, 10s measured
+throughput   269,985 req/s (answered with a 200)
+cpu          36.89 us/req (9.96 cores busy) -- server: process minus clients
+client cpu   14.80 us/req (4.00 cores busy)
+migrations   48.6% of 84,383 sampled messages of the fraud detectors ran on another carrier than the one before
+backend cpu  3.14 CPUs busy
+latency      p50 150.8  p90 201.5  p99 475.1  p99.9 1493.0  max 4743.2 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         290,000 req/s, 10s measured
+throughput   289,982 req/s (answered with a 200)
+cpu          34.42 us/req (9.98 cores busy) -- server: process minus clients
+client cpu   13.78 us/req (4.00 cores busy)
+migrations   32.5% of 90,636 sampled messages of the fraud detectors ran on another carrier than the one before
+backend cpu  3.32 CPUs busy
+latency      p50 258.6  p90 359.9  p99 653.8  p99.9 1610.8  max 3491.8 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         310,000 req/s, 10s measured
+throughput   309,991 req/s (answered with a 200)
+cpu          32.21 us/req (9.99 cores busy) -- server: process minus clients
+client cpu   12.89 us/req (4.00 cores busy)
+migrations   19.4% of 96,886 sampled messages of the fraud detectors ran on another carrier than the one before
+backend cpu  3.43 CPUs busy
+latency      p50 490.0  p90 694.3  p99 1067.0  p99.9 2189.3  max 4366.3 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         330,000 req/s, 10s measured
+throughput   329,992 req/s (answered with a 200)
+cpu          30.27 us/req (9.99 cores busy) -- server: process minus clients
+client cpu   12.11 us/req (3.99 cores busy)
+migrations   11.8% of 103,138 sampled messages of the fraud detectors ran on another carrier than the one before
+backend cpu  3.51 CPUs busy
+latency      p50 885.8  p90 1257.5  p99 1897.5  p99.9 3407.9  max 6737.9 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         350,000 req/s, 10s measured
+throughput   349,971 req/s (answered with a 200)
+cpu          28.55 us/req (9.99 cores busy) -- server: process minus clients
+client cpu   11.41 us/req (3.99 cores busy)
+migrations   7.4% of 109,387 sampled messages of the fraud detectors ran on another carrier than the one before
+backend cpu  3.63 CPUs busy
+latency      p50 1585.2  p90 2347.0  p99 3858.4  p99.9 5730.3  max 8847.4 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         370,000 req/s, 10s measured
+throughput   369,969 req/s (answered with a 200)
+cpu          27.00 us/req (9.99 cores busy) -- server: process minus clients
+client cpu   10.78 us/req (3.99 cores busy)
+migrations   4.5% of 115,640 sampled messages of the fraud detectors ran on another carrier than the one before
+backend cpu  3.77 CPUs busy
+latency      p50 3379.2  p90 5476.4  p99 8978.4  p99.9 12664.8  max 23527.4 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         390,000 req/s, 10s measured
+throughput   386,264 req/s (answered with a 200)
+cpu          25.86 us/req (9.99 cores busy) -- server: process minus clients
+client cpu   10.32 us/req (3.99 cores busy)
+migrations   2.5% of 120,746 sampled messages of the fraud detectors ran on another carrier than the one before
+backend cpu  3.90 CPUs busy
+latency      p50 7503.9  p90 11952.1  p99 18956.3  p99.9 25215.0  max 33538.0 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+*** did not keep up with 390,000 req/s: sent 386,264 req/s, 37,352 dropped, 0 unanswered, 0 failed -- not a measurement ***
+
+ramp         kept up with 370,000 req/s
+pinning      10 of 10 workers pinned to a carrier CPU

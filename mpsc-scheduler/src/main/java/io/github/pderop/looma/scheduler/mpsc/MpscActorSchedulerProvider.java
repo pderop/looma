@@ -29,7 +29,9 @@ import io.github.pderop.looma.spi.ActorSchedulerProvider;
 /**
  * Publishes the JDK's MPSC scheduler (openjdk/loom pull request 227) to
  * {@code core}'s {@link ActorSchedulerProvider} discovery, and installs it for
- * {@link Carriers#affine(int)}.
+ * {@link Carriers#mpsc(int)}. Every {@code mpsc} pool sets the same JDK
+ * properties: the pinning of the carriers and the affinity of the actors'
+ * threads are Looma's.
  *
  * <p>
  * The MPSC scheduler is the JDK's builtin one when
@@ -50,8 +52,8 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 
 	static final String COMMON_FACTORY = "java.util.concurrent.ForkJoinPool.common.threadFactory";
 
-	/** What {@link #install(Carriers.Affine)} installed in this JVM, or null. */
-	private static Carriers.Affine installed;
+	/** What an install put in this JVM, or null. */
+	private static Carriers.Mpsc installed;
 
 	/** The carriers, once found. Static because the scheduler is. */
 	private static MpscPool pool;
@@ -80,8 +82,9 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 
 	/**
 	 * A system found by discovery: the flags chose the MPSC scheduler, or an
-	 * earlier {@link #install(Carriers.Affine)} did. Looma pins the carriers only
-	 * in the second case.
+	 * earlier install did. Looma pins the carriers only in the second case, and
+	 * only if that install asked for it. Actors keep their carrier, unless that
+	 * install asked for no affinity.
 	 */
 	@Override
 	public ActorScheduler create() {
@@ -92,14 +95,14 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 				Integer max = Integer.getInteger(MAX_POOL_SIZE);
 				pool = MpscPool.probe(max == null ? count : Math.min(count, max), false);
 			}
-			return new MpscActorScheduler(pool);
+			return new MpscActorScheduler(pool, installed == null || installed.affinity());
 		}
 	}
 
 	@Override
-	public ActorScheduler create(Carriers.Affine carriers) {
+	public ActorScheduler create(Carriers.Mpsc carriers) {
 		synchronized (MpscActorSchedulerProvider.class) {
-			return new MpscActorScheduler(pool);
+			return new MpscActorScheduler(pool, carriers.affinity());
 		}
 	}
 
@@ -109,9 +112,10 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 	 * <p>
 	 * Sets the properties, then starts the JDK's pollers, then checks that the
 	 * scheduler is the MPSC one, and only then sets the factory of the common pool.
-	 * Then finds the carriers, checks that there are as many as asked, and pins
-	 * each one to one CPU last. If a step fails once the JDK runs the scheduler,
-	 * nothing can be undone: this install, and every later one, throws.
+	 * Then finds the carriers. If they are to be pinned, it checks that there are
+	 * as many as asked, and pins each one to one CPU last. Unpinned, the carriers
+	 * keep every CPU. If a step fails once the JDK runs the scheduler, nothing can
+	 * be undone: this install, and every later one, throws.
 	 *
 	 * <p>
 	 * A new thread runs only on the CPUs of the thread that starts it. The JDK
@@ -122,7 +126,8 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 	 * factory gives them back every CPU.
 	 */
 	@Override
-	public boolean install(Carriers.Affine carriers) {
+	public boolean install(Carriers.Mpsc carriers) {
+		int count = carriers.count();
 		synchronized (MpscActorSchedulerProvider.class) {
 			if (installed != null) {
 				if (!installed.equals(carriers)) {
@@ -168,7 +173,7 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 				AllCpus.save();
 				startCommonPoolTimer();
 				boolean commonPool = adoptCommonPool();
-				pool = MpscPool.probe(carriers.count(), true);
+				pool = MpscPool.probe(count, carriers.pinned());
 				if (!commonPool && pool.cluster(0) >= 0) {
 					System.err.println("WARNING: the common pool does not use " + AllCpus.class.getName() + ": it"
 							+ " started before the MPSC scheduler was installed, or the system class loader cannot"
@@ -190,14 +195,15 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 	 * set to another value, and that no {@code maxPoolSize} caps the carriers.
 	 * Returns those it added.
 	 */
-	private static List<String> set(Carriers.Affine carriers) {
+	private static List<String> set(Carriers.Mpsc carriers) {
+		int count = carriers.count();
 		String max = System.getProperty(MAX_POOL_SIZE);
-		if (max != null && !(max.matches("[0-9]{1,9}") && Integer.parseInt(max) >= carriers.count())) {
+		if (max != null && !(max.matches("[0-9]{1,9}") && Integer.parseInt(max) >= count)) {
 			throw new IllegalStateException("-D" + MAX_POOL_SIZE + "=" + max + " is set: the JDK would not start the "
-					+ carriers.count() + " carriers of " + carriers);
+					+ count + " carriers of " + carriers);
 		}
 		Map<String, String> properties = new LinkedHashMap<>();
-		properties.put(PARALLELISM, Integer.toString(carriers.count()));
+		properties.put(PARALLELISM, Integer.toString(count));
 		properties.put(STEAL, "true");
 		properties.put(USE_MPSC, "true");
 		properties.forEach((key, value) -> {

@@ -146,8 +146,8 @@ public abstract class AskTest {
 
 		ActorRef echo = system.spawn("echo", () -> new EchoActor(release));
 
-		CompletableFuture<Message> future = echo.ask(new ReplyWhenReleased("late")).orTimeout(100,
-				TimeUnit.MILLISECONDS);
+		CompletableFuture<Message> future = echo.ask(new ReplyWhenReleased("late"))
+				.orTimeout(100, TimeUnit.MILLISECONDS);
 
 		ExecutionException e = assertThrows(ExecutionException.class, future::get);
 		assertInstanceOf(TimeoutException.class, e.getCause());

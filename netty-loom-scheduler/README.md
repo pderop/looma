@@ -1,7 +1,7 @@
 # `netty-loom-scheduler`
 
 **This module is no longer built, since 2026-10-31.** It stays in the repository for a possible
-patch upstream. Looma's `Carriers.affine(n)` now runs the JDK's MPSC scheduler, in
+patch upstream. Looma's `Carriers.mpsc(n)` runs the JDK's MPSC scheduler, in
 [`mpsc-scheduler`](../mpsc-scheduler/README.md).
 
 What follows describes the module as it was when it was last built, with the root `pom.xml` that

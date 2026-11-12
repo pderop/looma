@@ -60,7 +60,7 @@
                             </includes>
                         </configuration>
                     </execution>
-                    <!-- ActorSystem.Builder.carriers(Carriers.affine(n)) installing the scheduler itself. -->
+                    <!-- ActorSystem.Builder.carriers(Carriers.mpsc(n)) installing the scheduler itself. -->
                     <execution>
                         <id>install-test</id>
                         <phase>test</phase>

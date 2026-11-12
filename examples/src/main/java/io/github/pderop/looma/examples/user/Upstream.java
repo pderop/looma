@@ -14,6 +14,7 @@
 package io.github.pderop.looma.examples.user;
 
 import java.io.EOFException;
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
@@ -30,7 +31,7 @@ import java.nio.charset.StandardCharsets;
  * {@link BackendServer} sends: headers, then a body of {@code Content-Length}
  * bytes.
  */
-final class Upstream {
+final class Upstream implements Closeable {
 
 	/** Big enough for several responses. */
 	private static final int BUFFER_BYTES = 4096;
@@ -43,10 +44,7 @@ final class Upstream {
 	/** The GET request, always the same. */
 	private final ByteBuffer request;
 
-	/**
-	 * The bytes received and not yet used. They may include the start of the next
-	 * response.
-	 */
+	/** The bytes received and not yet used. */
 	private final ByteBuffer response = ByteBuffer.allocate(BUFFER_BYTES);
 
 	private Upstream(SocketChannel channel, ByteBuffer request) {
@@ -60,6 +58,8 @@ final class Upstream {
 		try {
 			channel.connect(address);
 			channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
+			// Closing resets the connection, so it leaves no TIME_WAIT behind.
+			channel.setOption(StandardSocketOptions.SO_LINGER, 0);
 		} catch (IOException | RuntimeException e) {
 			try {
 				channel.close();
@@ -162,7 +162,7 @@ final class Upstream {
 		return b >= 'A' && b <= 'Z' ? (byte) (b + ('a' - 'A')) : b;
 	}
 
-	void close() {
+	public void close() {
 		try {
 			channel.close();
 		} catch (IOException e) {

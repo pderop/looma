@@ -54,23 +54,11 @@ final class CarrierTimer {
 	private static final int RUNNING = 1;
 	private static final int STOPPED = 2;
 
-	/**
-	 * The timers of the carrier the calling mailbox thread runs on. A mailbox
-	 * thread binds it for its whole run, only on a scheduler that keeps mailbox
-	 * threads on their carrier, and only once the wheel of that carrier has
-	 * started. A thread forked in a {@code StructuredTaskScope} inherits it, and
-	 * may run elsewhere: so the binding counts only for the mailbox thread itself,
-	 * see {@link #mailboxThread}.
-	 */
-	private static final ScopedValue<CarrierTimer> CALLER = ScopedValue.newInstance();
-
 	private final ThreadFactory rawFactory;
 	private final MpscQueue<Timer> inbox;
 	private final MpscQueue<Timer> cancelled;
 	private final TimerWheel wheel;
 	private final long tickNanos;
-	/** The system this wheel belongs to, or null in tests. */
-	private final Object system;
 	/** The name of the wheel thread. */
 	private final String name;
 	private final AtomicInteger state = new AtomicInteger(NEW);
@@ -78,21 +66,23 @@ final class CarrierTimer {
 	private volatile boolean sleeping;
 	private volatile Thread wheelThread;
 	/**
-	 * The mailbox thread that bound this carrier last, or null. Only mailbox
-	 * threads of this carrier write it, and they run on one OS thread. A thread
-	 * compares it to itself: only the mailbox thread that wrote it can match, never
-	 * a forked thread. When two mailbox threads interleave, the first one no longer
-	 * matches, and takes the queues.
+	 * The mailbox thread that bound this carrier last, or null. A mailbox thread
+	 * binds it for its whole run, only on a scheduler that keeps mailbox threads on
+	 * their carrier, and only once the wheel of that carrier has started. Only
+	 * mailbox threads of this carrier write it, and they run on one OS thread. Any
+	 * thread may read it, to compare it to itself: only the mailbox thread that
+	 * wrote it can match, never a forked thread. When two mailbox threads
+	 * interleave, the first one no longer matches, and takes the queues.
 	 */
 	private Thread mailboxThread;
 
-	/** A wheel of no system, for tests. */
+	/** A wheel for tests. */
 	CarrierTimer(ThreadFactory rawFactory, MpscQueue<Timer> inbox, MpscQueue<Timer> cancelled, long tickNanos) {
-		this(rawFactory, inbox, cancelled, tickNanos, null, "looma-timer");
+		this(rawFactory, inbox, cancelled, tickNanos, "looma-timer");
 	}
 
 	CarrierTimer(ThreadFactory rawFactory, MpscQueue<Timer> inbox, MpscQueue<Timer> cancelled, long tickNanos,
-			Object system, String name) {
+			String name) {
 		if (tickNanos <= 0) {
 			throw new IllegalArgumentException("tickNanos must be positive: " + tickNanos);
 		}
@@ -100,7 +90,6 @@ final class CarrierTimer {
 		this.inbox = inbox;
 		this.cancelled = cancelled;
 		this.tickNanos = tickNanos;
-		this.system = system;
 		this.name = name;
 		this.wheel = new TimerWheel(System.nanoTime(), tickNanos);
 	}
@@ -113,7 +102,7 @@ final class CarrierTimer {
 		Thread self = Thread.currentThread();
 		timer.mailboxThread = self;
 		try {
-			ScopedValue.where(CALLER, timer).run(messages);
+			messages.run();
 		} finally {
 			if (timer.mailboxThread == self) {
 				timer.mailboxThread = null;
@@ -122,21 +111,12 @@ final class CarrierTimer {
 	}
 
 	/**
-	 * The timers of the carrier the calling mailbox thread runs on, or null. Null
-	 * also for a thread that inherited the binding, and for a mailbox thread
-	 * another mailbox thread has overtaken.
+	 * True if the calling thread is the mailbox thread that bound this carrier.
+	 * False for a forked thread, and for a mailbox thread another mailbox thread
+	 * has overtaken.
 	 */
-	static CarrierTimer callerCarrier() {
-		if (!CALLER.isBound()) {
-			return null;
-		}
-		CarrierTimer timer = CALLER.get();
-		return timer.mailboxThread == Thread.currentThread() ? timer : null;
-	}
-
-	/** True if this wheel belongs to {@code system}. */
-	boolean belongsTo(Object system) {
-		return this.system == system;
+	boolean isCaller() {
+		return mailboxThread == Thread.currentThread();
 	}
 
 	/**
@@ -152,7 +132,7 @@ final class CarrierTimer {
 	void schedule(Timer timer) {
 		if (state.get() == STOPPED) {
 			timer.discard();
-		} else if (callerCarrier() == this) {
+		} else if (isCaller()) {
 			scheduleLocal(timer);
 		} else {
 			scheduleRemote(timer);
@@ -195,7 +175,7 @@ final class CarrierTimer {
 	 * next tick.
 	 */
 	void timerCancelled(Timer timer) {
-		if (callerCarrier() == this) {
+		if (isCaller()) {
 			wheel.remove(timer);
 		} else {
 			cancelled.offer(timer);

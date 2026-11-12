@@ -33,8 +33,8 @@ import io.github.pderop.looma.spi.MpscQueueFactory;
  * hierarchy, a virtual thread per actor while it has messages, supervision,
  * {@code ask}, graceful stop). What varies is which
  * {@code io.github.pderop.looma.spi.ActorScheduler} supplies the factories that
- * start those threads — two ship in this project: a carrier-affine one,
- * {@link Carriers#affine(int)}, discovered through the SPI and backed by a
+ * start those threads — two ship in this project: {@link Carriers#mpsc(int)},
+ * carrier-affine by default, discovered through the SPI and backed by a
  * JVM-wide pool of carrier threads installed once per process — by
  * {@link Builder#carriers(Carriers)} or by JVM flags — and outliving any single
  * {@code ActorSystem}; or, when none is installed, the JDK builtin scheduler,
@@ -93,9 +93,9 @@ public interface ActorSystem {
 		 * threads, and cannot be changed afterwards. So {@link #build()} throws
 		 * {@link IllegalStateException}:
 		 * <ul>
-		 * <li>for {@link Carriers#affine(int)}, when no provider on the classpath can
+		 * <li>for {@link Carriers#mpsc(int)}, when no provider on the classpath can
 		 * install it: no scheduler module, or a JDK without the MPSC scheduler;
-		 * <li>for {@link Carriers#affine(int)}, when a virtual thread already ran under
+		 * <li>for {@link Carriers#mpsc(int)}, when a virtual thread already ran under
 		 * another scheduler;
 		 * <li>when {@code -Djdk.virtualThreadScheduler.implClass} or
 		 * {@code -Djdk.virtualThreadScheduler.useMpsc} is set: the pool is configured

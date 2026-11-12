@@ -292,7 +292,7 @@ class CarrierTimerTest {
 		Timer timer = timerIn(carrierTimer, new CountingRef(), 60_000, 0);
 		CountDownLatch bound = new CountDownLatch(1);
 		CountDownLatch overtaken = new CountDownLatch(1);
-		CompletableFuture<CarrierTimer> seen = new CompletableFuture<>();
+		CompletableFuture<Boolean> seen = new CompletableFuture<>();
 
 		Thread first = Thread.ofVirtual().start(() -> CarrierTimer.runOnCarrier(carrierTimer, () -> {
 			bound.countDown();
@@ -301,7 +301,7 @@ class CarrierTimerTest {
 			} catch (InterruptedException e) {
 				Thread.currentThread().interrupt();
 			}
-			seen.complete(CarrierTimer.callerCarrier());
+			seen.complete(carrierTimer.isCaller());
 			carrierTimer.schedule(timer);
 		}));
 		bound.await();
@@ -310,7 +310,7 @@ class CarrierTimerTest {
 		overtaken.countDown();
 		first.join();
 
-		assertNull(seen.get(5, TimeUnit.SECONDS));
+		assertFalse(seen.get(5, TimeUnit.SECONDS));
 		assertEquals(0, carrierTimer.pending());
 		assertFalse(inbox.isEmpty());
 	}
@@ -527,8 +527,12 @@ class CarrierTimerTest {
 		timers.forEach(carrierTimer::schedule);
 		Thread.sleep(20);
 
-		var cancellers = IntStream.range(0, 4).mapToObj(part -> Thread.ofVirtual().start(() -> IntStream
-				.range(0, timers.size()).filter(i -> i % 4 == part).forEach(i -> timers.get(i).cancel(false))))
+		var cancellers = IntStream.range(0, 4)
+				.mapToObj(part -> Thread.ofVirtual()
+						.start(() -> IntStream
+								.range(0, timers.size())
+								.filter(i -> i % 4 == part)
+								.forEach(i -> timers.get(i).cancel(false))))
 				.toList();
 		for (Thread canceller : cancellers) {
 			canceller.join();

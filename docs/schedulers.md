@@ -1,15 +1,19 @@
 # The schedulers
 
-One actor engine, two schedulers. The scheduler picks the carrier of each virtual thread, so of
+One actor engine, two JDK schedulers. The scheduler picks the carrier of each virtual thread, so of
 each actor's [mailbox thread](api.md#2-writing-an-actor).
 
 | In code | What it is | Benchmark name | Carriers pinned | An actor moves | An idle carrier steals |
 | --- | --- | --- | --- | --- | --- |
-| `Carriers.affine(n)` | the JDK's MPSC scheduler, from [openjdk/loom pull request 227](https://github.com/openjdk/loom/pull/227) | `mpsc` | yes, one CPU each (Linux) | never | offloaded threads only |
+| `Carriers.mpsc(n)` | the JDK's MPSC scheduler, from [openjdk/loom pull request 227](https://github.com/openjdk/loom/pull/227) | `mpsc` | yes, one CPU each (Linux) | never | offloaded threads only |
+| `Carriers.mpsc(n).pinned(false)` | the same | `mpsc-unpinned` | no | never | offloaded threads only |
+| `Carriers.mpsc(n).affinity(false)` | the same | `mpsc-no-affinity` | yes, one CPU each (Linux) | may: its thread starts on the carrier of its sender, and an idle carrier may take it | anything |
+| `Carriers.mpsc(n).pinned(false).affinity(false)` | the same | `mpsc-unpinned-no-affinity` | no | may | anything |
 | `Carriers.builtin(n)` | the JDK's default scheduler, a `ForkJoinPool` | `jdk` | no | may, each time a mailbox thread starts | anything |
 
-Offloaded threads are those an actor starts through `ActorContext.vThreadFactory()`. Neither
-scheduler has options.
+Offloaded threads are those an actor starts through `ActorContext.vThreadFactory()`.
+`pinned(false)` gives the same pool, and the OS places the carriers. `affinity(false)` gives the
+same pool, but no actor is kept on its carrier.
 
 ## Choosing one
 
@@ -17,7 +21,7 @@ scheduler has options.
 
 ```java
 ActorSystem system = ActorSystem.builder()
-        .carriers(Carriers.affine(8))       // or Carriers.builtin(8)
+        .carriers(Carriers.mpsc(8))         // or Carriers.builtin(8)
         .build();
 ```
 
@@ -25,7 +29,7 @@ ActorSystem system = ActorSystem.builder()
 
 | `Carriers` | Properties it sets |
 | --- | --- |
-| `affine(n)` | `jdk.virtualThreadScheduler.useMpsc=true`, `jdk.virtualThreadScheduler.mpscSteal=true`, `jdk.virtualThreadScheduler.parallelism=n`, and `java.util.concurrent.ForkJoinPool.common.threadFactory` unless already set: see [Threads started from an actor](../mpsc-scheduler/README.md#threads-started-from-an-actor) |
+| `mpsc(n)`, with any `pinned` and `affinity` | `jdk.virtualThreadScheduler.useMpsc=true`, `jdk.virtualThreadScheduler.mpscSteal=true`, `jdk.virtualThreadScheduler.parallelism=n`, and `java.util.concurrent.ForkJoinPool.common.threadFactory` unless already set: see [Installing the MPSC scheduler](mpsc-install.md) |
 | `builtin(n)` | `jdk.virtualThreadScheduler.parallelism=n` |
 
 The JDK reads them once. So `build()` must run **before the JVM's first virtual thread**. It
@@ -38,25 +42,26 @@ throws `IllegalStateException` when:
 - no provider: no `looma-mpsc-scheduler` on the classpath, or a JDK without the MPSC scheduler;
 - `-Djdk.virtualThreadScheduler.maxPoolSize` is below `n`;
 - an earlier system in this JVM uses another pool (the same pool is fine);
-- an earlier `affine(n)` failed after the JDK started the scheduler: it fails again, with the
+- an earlier `mpsc(n)` failed after the JDK started the scheduler: it fails again, with the
   first reason.
 
 Not detected: `builtin(n)` after a virtual thread ran. The JDK keeps the size it already chose.
 
-`affine(n)` pins through native calls, so `--enable-native-access=ALL-UNNAMED` stays on the
+`mpsc(n)` pins through native calls, so `--enable-native-access=ALL-UNNAMED` stays on the
 command line. Without it, the JVM warns. With `--illegal-native-access=deny`, nothing is pinned,
-and Looma says so.
+and Looma says so. `pinned(false)` pins nothing, but it still reads the CPUs of the process
+through a native call: the flag is still needed.
 
 ### As JVM flags
 
 Without `carriers(...)`, the flags of the table above choose the scheduler, and `build()` finds
-it. With the MPSC flags, actors still never move, but the carriers are not pinned: only
-`affine(n)` pins them. Looma reads no system property of its own.
+it. With the MPSC flags, actors still never move, but the carriers are not pinned, as with
+`mpsc(n).pinned(false)`: only `carriers(...)` pins them. Looma reads no system property of its own.
 
 ### On the classpath
 
-`affine` needs `looma-mpsc-scheduler` (built locally, like `looma-core`). Without it, discovery
-falls back to the builtin, and `carriers(Carriers.affine(n))` throws. A provider that fails to link
+`mpsc` needs `looma-mpsc-scheduler` (built locally, like `looma-core`). Without it, discovery
+falls back to the builtin, and `carriers(Carriers.mpsc(n))` throws. A provider that fails to link
 (compiled for a newer JDK) is skipped.
 
 ```xml
@@ -67,14 +72,19 @@ falls back to the builtin, and `carriers(Carriers.affine(n))` throws. A provider
 </dependency>
 ```
 
-## `affine`: the JDK's MPSC scheduler
+## `mpsc`: the JDK's MPSC scheduler
 
 From the JDK of openjdk/loom pull request 227, a draft. Each carrier, `mpsc-carrier-<id>`, has its
 own queues.
 
 - An actor's mailbox threads have its carrier's `Thread.Affinity`: never stolen.
-- Offloaded threads have none: they start on the actor's carrier, and an idle carrier may take them.
-- Each carrier is pinned to one CPU, after the JDK's pollers and timers started.
+- Offloaded threads have none: they start on the carrier that starts them, and an idle carrier may
+  take them.
+- Each carrier is pinned to one CPU, after the JDK's pollers and timers started. Not with
+  `pinned(false)`.
+- `affinity(false)`: the mailbox threads have no affinity either. An actor can run on any carrier:
+  its thread starts on the carrier of its sender, and an idle carrier may take it. Its timers then always go through the queues of
+  the wheels.
 - On Linux each carrier has its own epoll for reads.
 
 ```
@@ -85,8 +95,8 @@ carrier-0
                         still nothing -> epoll_wait(-1): sleep in its epoll
 ```
 
-The two queues, the pollers, the threads the JDK starts and the install, step by step:
-[`mpsc-scheduler/README.md`](../mpsc-scheduler/README.md).
+The two queues and the pollers: [`mpsc-scheduler/README.md`](../mpsc-scheduler/README.md). The
+install, and the threads the JDK starts: [`mpsc-install.md`](mpsc-install.md).
 
 ## `builtin`: the JDK's default scheduler
 
@@ -151,15 +161,16 @@ the carrier, named `looma-timer-<carrier>`.
 ```
 a carrier gets its first timer       (delayed or periodic tell)
   -> Looma starts the wheel thread on that carrier, from mailboxThreadFactory(carrier)
-     (under `builtin` it is a plain virtual thread, and the system has one wheel)
+     (under `mpsc` without affinity, that factory gives a plain virtual thread, which may run
+     on any carrier; under `builtin` it is a plain virtual thread, and the system has one wheel)
   -> each round it drains the inbox and the cancelled queue, then fires the timers that are due
   -> it parks when the wheel is empty, and wakes at each tick while the wheel holds a timer
 shutdown()
   -> it cancels every pending timer, soon after, then ends; awaitTermination does not wait for it
 ```
 
-On an MPSC carrier an actor's mailbox thread never leaves its carrier, so it may touch the wheel
-of its carrier directly. It marks itself when it starts:
+Under `mpsc` with affinity, an actor's mailbox thread never leaves its carrier, so it may touch the
+wheel of its carrier directly. It marks itself when it starts:
 
 ```
 the mailbox thread starts on carrier-3
@@ -169,7 +180,7 @@ the mailbox thread starts on carrier-3
 an arm or a cancel on the wheel of carrier-3
   -> the caller is the thread that marked itself ?   yes -> the direct path
                                                      no  -> the queues
-     (a thread forked in a StructuredTaskScope inherits the mark, but is not that thread)
+     (a thread it forks is not that thread: it takes the queues)
 ```
 
 **A delayed tell to an actor of carrier-3:**
@@ -199,17 +210,18 @@ future.cancel(false)
 A tell to a pool has no single carrier: the marked mailbox thread uses the wheel of its carrier,
 any other caller a wheel chosen from its thread id, always a wheel of the same system.
 
-Under `builtin` no thread counts as local: every arm and every cancel goes through the queues. The
+Under `builtin`, and under `mpsc` without affinity, no thread counts as local: every arm and every
+cancel goes through the queues. The
 switch is `mailboxThreadsStayOnCarrier()` (below).
 
 ## The SPI
 
 ```java
 public interface ActorScheduler extends AutoCloseable {
-    int carrierCount();                          // builtin: 1 | affine: one per carrier
+    int carrierCount();                          // builtin: 1 | mpsc: one per carrier
     ThreadFactory vThreadFactory(int i);         // the threads an actor offloads
     default ThreadFactory mailboxThreadFactory(int i) { return vThreadFactory(i); }   // its mailbox threads
-    default boolean mailboxThreadsStayOnCarrier() { return false; }   // affine: true; they never move
+    default boolean mailboxThreadsStayOnCarrier() { return false; }   // mpsc with affinity: true; they never move
     int currentCarrierId();                      // the calling thread's carrier; builtin: -1
     OptionalInt pinnedCpu();
     OptionalInt clusterOf(int i);                // builtin: empty
@@ -222,7 +234,7 @@ public interface ActorScheduler extends AutoCloseable {
 - `mailboxThreadsStayOnCarrier()`: true only if every thread from `mailboxThreadFactory(i)` runs on
   carrier i alone, one at a time, never stolen. Looma starts its wheel thread from that factory
   too, and then arms and cancels timers on that carrier without a queue.
-- `ActorSchedulerProvider`: creates one, `isAvailable()`, can install itself for `Carriers.Affine`.
+- `ActorSchedulerProvider`: creates one, `isAvailable()`, can install itself for `Carriers.Mpsc`.
 - A third-party scheduler: implement both, register the provider in
   `META-INF/services/io.github.pderop.looma.spi.ActorSchedulerProvider`.
 - `ActorRuntime` wraps every factory, so each thread counts as in-flight work.
@@ -257,5 +269,8 @@ mailbox thread at every `tell` after an empty mailbox: each one is a chance to m
 With a home carrier pinned to a CPU, the state stays on one core, and the children too. Offloaded
 work may be stolen: it reads none of the actor's state.
 
-Affinity keeps the **L2**, not the L1. The [benchmark](benchmark.md) measures it with two sizes of
-state: one that fits a core's L2, one that does not.
+Affinity keeps the **L2**, not the L1. The [user benchmark](benchmark-user.md) measures it with two
+sizes of state: one that fits a core's L2, one that does not.
+
+`affinity(false)` keeps the same pool without affinity. With it, the benchmarks measure what keeping
+an actor on its carrier brings, all else being equal.

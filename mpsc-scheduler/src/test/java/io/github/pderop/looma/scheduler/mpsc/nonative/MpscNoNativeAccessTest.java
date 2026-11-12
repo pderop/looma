@@ -25,7 +25,7 @@ import io.github.pderop.looma.Carriers;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
- * {@link Carriers#affine(int)} in a JVM that refuses native calls, started with
+ * {@link Carriers#mpsc(int)} in a JVM that refuses native calls, started with
  * {@code --illegal-native-access=deny}: the system runs, and its carriers are
  * not pinned.
  */
@@ -33,12 +33,14 @@ class MpscNoNativeAccessTest {
 
 	@Test
 	void runsWithoutPinning() throws Exception {
-		ActorSystem system = ActorSystem.builder().carriers(Carriers.affine(2)).build();
+		ActorSystem system = ActorSystem.builder().carriers(Carriers.mpsc(2)).build();
 
 		assertEquals(2, system.carrierCount());
 		assertEquals(OptionalInt.empty(), system.scheduler().clusterOf(0));
 		CompletableFuture<OptionalInt> cpu = new CompletableFuture<>();
-		system.scheduler().mailboxThreadFactory(0).newThread(() -> cpu.complete(system.scheduler().pinnedCpu()))
+		system.scheduler()
+				.mailboxThreadFactory(0)
+				.newThread(() -> cpu.complete(system.scheduler().pinnedCpu()))
 				.start();
 		assertEquals(OptionalInt.empty(), cpu.get(5, TimeUnit.SECONDS));
 		system.shutdown();

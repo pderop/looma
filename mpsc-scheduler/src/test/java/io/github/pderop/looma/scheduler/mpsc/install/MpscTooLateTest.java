@@ -23,8 +23,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * {@link Carriers#affine(int)} asked for after a virtual thread already made
- * the JDK settle on its default scheduler: refused, not run on the default.
+ * {@link Carriers#mpsc(int)} asked for after a virtual thread already made the
+ * JDK settle on its default scheduler: refused, not run on the default.
  */
 class MpscTooLateTest {
 
@@ -34,7 +34,7 @@ class MpscTooLateTest {
 		}).join();
 
 		IllegalStateException e = assertThrows(IllegalStateException.class,
-				() -> ActorSystem.builder().carriers(Carriers.affine(2)).build());
+				() -> ActorSystem.builder().carriers(Carriers.mpsc(2)).build());
 
 		assertTrue(e.getMessage().contains("before"), e.getMessage());
 		// The properties it set are removed again.
