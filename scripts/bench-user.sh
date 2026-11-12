@@ -78,6 +78,7 @@ for n in ${USERS_PER_GROUP//,/ }; do
 	esac
 done
 CASE_DEPTH=$DEPTH
+[ "$SUMMARY_ONLY" = 0 ] || { resummarize; exit 0; }
 
 setup
 BACKEND_MAIN=io.github.pderop.looma.examples.user.BackendServer
