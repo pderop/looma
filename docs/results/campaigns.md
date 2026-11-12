@@ -65,6 +65,7 @@ What each column means:
 | **cpu µs/req** | CPU per request, mean of r1 to r3. The main number |
 | **cpu range** | lowest and highest of r1 to r3 |
 | **max req/s** | the highest rate each ramp run kept up with: its line `ramp kept up with`. One value per ramp run |
+| **max req/s with p99 < 1 ms** | in each ramp run, the last step before the p99 first goes above 1 ms: a rate with an acceptable latency. One value per ramp run |
 | **backend CPUs** | the CPU time of the backend process during the measure, read from `/proc`, divided by its length |
 | **vs jdk** | against `jdk`, same case and depth (servlet: same rate) |
 | **walk cycles/req** | the cycles of `UserGroupActor.walk` alone, per request of the measure |
@@ -207,4 +208,7 @@ missed req/s                 the next step: its block says the run or its client
                              or that a GET got no answer
 achieved req/s, p99 µs       at that missed step: lines throughput and latency of its block
 max req/s (At a glance)      the same as kept up with req/s
+max req/s with p99 < 1 ms    (At a glance) from the first step up, the last step kept up with before
+                             the first step whose p99 is above 1 ms, line latency of each block.
+                             none: the p99 of the first step is already above
 ```

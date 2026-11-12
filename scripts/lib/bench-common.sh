@@ -51,6 +51,8 @@ with commas and ranges only (2-7,10-13), and no CPU in two lists:
                            jdk-pinned, mpsc-unpinned, mpsc-no-affinity and
                            mpsc-unpinned-no-affinity. Default: all six.
   --out <dir>              Default: bench/<bench>-<date>-<time>, in the project.
+  --summary-only           Runs nothing: writes again the tables of <out>/summary.md, from the
+                           files of its runs. Give --out and the options of the campaign.
 
 USAGE
 }
@@ -65,8 +67,11 @@ RAMP_RUNS=2
 PERF=1
 REPS=3
 OUT=
+SUMMARY_ONLY=0
 MEASURE=20
 STEP_SECONDS=10
+# A ramp also gives the last step with a p99 under this, in µs: a rate with an acceptable latency.
+P99_LIMIT=1000
 SETTLE_SECONDS=3
 CONNECTIONS=8
 BACKEND_THREADS=
@@ -81,6 +86,7 @@ parse_options() {
 		case $1 in
 			-h | --help) usage; exit 0 ;;
 			--no-perf) PERF=0; shift; continue ;;
+			--summary-only) SUMMARY_ONLY=1; shift; continue ;;
 		esac
 		! bench_flag "$1" || { shift; continue; }
 		[ $# -ge 2 ] || die "$1: unknown option, or it needs a value (try --help)"
@@ -432,7 +438,7 @@ epsilon_heap() {
 # from its files: the console, the GC log, and the perf stat file, the c2c or the walk report. The
 # servlet runs have no depth: an empty <depth>.
 row() {
-	local c=$1 label=$2 s=$3 depth=$4 mode=${5:-} name=$1-$2-$3${4:+-$4} gcs late stats=" | | " c2cs=" | | " heap= walks=" | "
+	local c=$1 label=$2 s=$3 depth=$4 mode=${5:-} name=$1-$2-$3${4:+-$4} gcs late stats=" | | " c2cs=" | | " heap= walks=" | " fast=
 	# The full GCs of the StackChunk counts are not the run's.
 	gcs=$(grep Pause "$RUNS/$name.gc.log" | grep -vc 'Heap Inspection' || true)
 	late=$(grep -q 'did not keep up\|no backend response\|pinning failed' "$RUNS/$name.out" && echo "not a measurement" || echo)
@@ -440,8 +446,9 @@ row() {
 	[ "$mode" != stat ] || stats=$(stat_counts "$RUNS/$c-stat-$s.csv")
 	[ "$mode" != epsilon ] || heap=$(epsilon_heap "$RUNS/$name.gc.log")
 	[ "$mode" != walk ] || walks=$(walk_counts "$OUT/$c-walk-$s.txt")
+	[ "$mode" != ramp ] || fast=$(fast_rate "$RUNS/$name.out")
 	awk -v c="$c" -v s="$s" -v d="$depth" -v r="$label" -v gcs="$gcs" -v late="$late" -v stats="$stats" -v c2cs="$c2cs" \
-		-v heap="$heap" -v walks="$walks" '
+		-v heap="$heap" -v walks="$walks" -v fast="$fast" '
 		/^ramp +kept up with /      { held = $5; gsub(/,/, "", held) }
 		/^throughput/  { gsub(/,/, "", $2); rps = $2 }
 		/^cpu /        { cpu = $2 }
@@ -449,8 +456,48 @@ row() {
 		/^latency/     { p50 = $3; p99 = $7; p999 = $9 }
 		/^stackchunks/ { chunks = $2 " → " $7 }
 		/^backend cpu/ { bcpu = $3 }
-		END { printf "| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |\n",
-			c, s, d, r, rps, cpu, mig, p50, p99, p999, gcs, stats, c2cs, chunks, late, heap, walks, held, bcpu }' "$RUNS/$name.out"
+		END { printf "| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |\n",
+			c, s, d, r, rps, cpu, mig, p50, p99, p999, gcs, stats, c2cs, chunks, late, heap, walks, held, bcpu, fast }' "$RUNS/$name.out"
+}
+
+# resummarize: --summary-only. Writes again the tables of $OUT/summary.md, from the files of its
+# runs: one line per run in rows.md, as run does, then the tables. The header and The runs stay as
+# they are. The options must be those of the campaign: the tables use them.
+resummarize() {
+	local f name rest c s d label mode
+	[ -n "$OUT" ] && [ -f "$OUT/summary.md" ] || die "--summary-only needs --out <dir>, the directory of a campaign"
+	RUNS=$OUT/runs
+	: >"$OUT/rows.md"
+	for f in "$RUNS"/*.out; do
+		name=$(basename "$f" .out)
+		for c in "${CASES[@]}"; do
+			c=${c%%:*}
+			[[ $name == "$c"-* ]] || continue
+			rest=${name#"$c"-} d=
+			if [ -n "$CASE_DEPTH" ]; then
+				[[ $rest =~ -([0-9]+)$ ]] || continue
+				d=${BASH_REMATCH[1]} rest=${rest%-"$d"}
+			fi
+			for s in $SCHEDULERS; do
+				label=${rest%-"$s"}
+				[ "$label" != "$rest" ] && [[ $label =~ ^(r[0-9]+|c2c|stat|walk|epsilon|ramp[0-9]+)$ ]] || continue
+				case $label in
+					r[0-9]*) mode= ;;
+					ramp*) mode=ramp ;;
+					*) mode=$label ;;
+				esac
+				row "$c" "$label" "$s" "$d" "$mode" >>"$OUT/rows.md"
+			done
+		done
+	done
+	{
+		awk '/^## At a glance/ { exit } { print }' "$OUT/summary.md"
+		summary_tables
+		[ "$STEP" = 0 ] || ramp_table
+	} >"$OUT/summary.md.new"
+	mv "$OUT/summary.md.new" "$OUT/summary.md"
+	rm -f "$OUT/rows.md"
+	echo "$BENCH benchmark: $OUT/summary.md"
 }
 
 # The sections of the summary after "The runs", from rows.md: perf stat, perf c2c, the walk, the controls,
@@ -460,7 +507,7 @@ summary_tables() {
 	local names=() c
 	for c in "${CASES[@]}"; do names+=("${c%%:*}"); done
 	SCHEDULER_LINES=$(scheduler_lines) awk -F'|' -v cases="${names[*]}" -v order="$SCHEDULERS" -v depth="$CASE_DEPTH" -v reps="$REPS" \
-		-v rate="$RATE" -v window=$((MEASURE - 6)) -v ramp="$STEP" -v ramps="$RAMP_RUNS" -v perf="$PERF" -v user="$([ "$BENCH" = user ] && echo 1 || echo 0)" '
+		-v rate="$RATE" -v window=$((MEASURE - 6)) -v ramp="$STEP" -v ramps="$RAMP_RUNS" -v perf="$PERF" -v limit="$(p99_limit)" -v user="$([ "$BENCH" = user ] && echo 1 || echo 0)" '
 		function trim(v) { gsub(/^ +| +$/, "", v); return v }
 		function keep(k, v) {
 			if (!(k in lo) || v + 0 < lo[k]) lo[k] = v + 0
@@ -489,7 +536,7 @@ summary_tables() {
 		# "| <case> | <scheduler> | <depth> |" for the user benchmark, "| <scheduler> |" for the servlet one.
 		function lead(c, s, d) { return user ? sprintf("| %s | %s | %s |", c, s, d) : sprintf("| %s |", s) }
 		function plead(c, s) { return user ? sprintf("| %s | %s |", c, s) : sprintf("| %s |", s) }
-		{ for (i = 2; i <= 25; i++) f[i] = trim($i); c = f[2]; s = f[3]; d = f[4]; r = f[5]; cs = c SUBSEP s }
+		{ for (i = 2; i <= 26; i++) f[i] = trim($i); c = f[2]; s = f[3]; d = f[4]; r = f[5]; cs = c SUBSEP s }
 		r ~ /^r[0-9]+$/ {
 			k = cs SUBSEP d; n[k]++; cpu[k] += f[7]; mig[k] += f[8]
 			keep(k SUBSEP "rps", f[6]); keep(k SUBSEP "cpu", f[7]); keep(k SUBSEP "p50", f[9])
@@ -500,7 +547,7 @@ summary_tables() {
 		r == "stat" { stat[cs] = 1; ins[cs] = f[13]; cyc[cs] = f[14]; req[cs] = f[15]; snote[cs] = f[20] }
 		r == "walk" { wrun[cs] = 1; wcyc[cs] = f[22]; wreq[cs] = f[23]; wnote[cs] = f[20] }
 		r == "epsilon" { eps[cs] = 1; ecpu[cs] = f[7]; enote[cs] = f[20]; eheap[cs] = f[21] }
-		r ~ /^ramp[0-9]+$/ { held[cs, substr(r, 5) + 0] = f[24] == "" ? "none" : f[24] }
+		r ~ /^ramp[0-9]+$/ { held[cs, substr(r, 5) + 0] = f[24] == "" ? "none" : f[24]; fast[cs, substr(r, 5) + 0] = f[26] }
 		r == "c2c" {
 			c2c[cs] = 1; cmig[cs] = f[8]; loads[cs] = f[16]; hitm[cs] = f[17]; dram[cs] = f[18]
 			chunks[cs] = f[19]; cnote[cs] = f[20]
@@ -523,10 +570,11 @@ summary_tables() {
 			printf "| scheduler |"
 			for (a = 1; a <= nc; a++) printf " %s, cpu µs/req |", user ? cas[a] : "servlet"
 			if (ramp > 0) for (a = 1; a <= nc; a++) printf " %s, max req/s |", user ? cas[a] : "servlet"
+			if (ramp > 0) for (a = 1; a <= nc; a++) printf " %s, max req/s with p99 < %s |", user ? cas[a] : "servlet", limit
 			print ""
 			printf "|---|"
 			for (a = 1; a <= nc; a++) printf "---|"
-			if (ramp > 0) for (a = 1; a <= nc; a++) printf "---|"
+			if (ramp > 0) for (a = 1; a <= 2 * nc; a++) printf "---|"
 			print ""
 			for (i = 1; i <= ns; i++) {
 				printf "| %s |", sch[i]
@@ -543,6 +591,14 @@ summary_tables() {
 					}
 					printf " %s |", v
 				}
+				if (ramp > 0) for (a = 1; a <= nc; a++) {
+					cs = cas[a] SUBSEP sch[i]; v = ""
+					for (k = 1; k <= ramps; k++) {
+						if (!((cs, k) in fast)) continue
+						v = v (v == "" ? "" : " / ") (fast[cs, k] == "none" ? "none" : group(fast[cs, k]))
+					}
+					printf " %s |", v
+				}
 				print ""
 			}
 			print ""
@@ -550,6 +606,9 @@ summary_tables() {
 			if (ramp > 0) {
 				print "max req/s: the highest rate kept up with by each ramp run" at ", ramp1 / ramp2 ...: the line"
 				print "ramp kept up with of its console, as in The ramp."
+				print "max req/s with p99 < " limit ": a rate with an acceptable latency. In each ramp run, from the first step"
+				print "up, the last step kept up with before the first step whose p99 is above " limit ": the lines latency"
+				print "of its console, step by step. none: the p99 of the first step is already above."
 			}
 			print ""
 			print ENVIRON["SCHEDULER_LINES"]
@@ -773,6 +832,20 @@ ramp_steps() {
 		/^backend cpu / { backend = $3 }
 		/did not keep up|no backend response/ { late = 1 }
 		END { row() }' "$1"
+}
+
+# fast_rate <out>: in a ramp's console, the last step kept up with before the first step whose p99
+# is above $P99_LIMIT µs, or before the first step not kept up with. none: not even the first step.
+fast_rate() {
+	ramp_steps "$1" | awk -F'\t' -v limit="$P99_LIMIT" '
+		$10 != "yes" || $6 == "-" || $6 + 0 > limit { exit }
+		{ v = $1; gsub(/,/, "", v) }
+		END { print (v == "" ? "none" : v) }'
+}
+
+# p99_limit: $P99_LIMIT for a reader: "1 ms", or "500 µs".
+p99_limit() {
+	((P99_LIMIT % 1000)) && echo "$P99_LIMIT µs" || echo "$((P99_LIMIT / 1000)) ms"
 }
 
 # The ramp section of the summary: one row per ramp run, per case and scheduler, with the last step

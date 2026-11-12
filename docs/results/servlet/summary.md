@@ -51,18 +51,21 @@ seconds for the late answers, then 3 seconds to go up to the next rate.
 
 ## At a glance
 
-| scheduler | servlet, cpu µs/req | servlet, max req/s |
-|---|---|---|
-| mpsc | 31.88 | 430,000 / 430,000 |
-| mpsc-unpinned | 31.91 | 430,000 / 390,000 |
-| mpsc-no-affinity | 39.58 | 310,000 / 310,000 |
-| mpsc-unpinned-no-affinity | 40.23 | 310,000 / 310,000 |
-| jdk | 54.48 | 350,000 / 330,000 |
-| jdk-pinned | 54.15 | 370,000 / 330,000 |
+| scheduler | servlet, cpu µs/req | servlet, max req/s | servlet, max req/s with p99 < 1 ms |
+|---|---|---|---|
+| mpsc | 31.88 | 430,000 / 430,000 | 430,000 / 410,000 |
+| mpsc-unpinned | 31.91 | 430,000 / 390,000 | 390,000 / 350,000 |
+| mpsc-no-affinity | 39.58 | 310,000 / 310,000 | 310,000 / 310,000 |
+| mpsc-unpinned-no-affinity | 40.23 | 310,000 / 310,000 | 310,000 / 290,000 |
+| jdk | 54.48 | 350,000 / 330,000 | none / none |
+| jdk-pinned | 54.15 | 370,000 / 330,000 | 290,000 / 290,000 |
 
 cpu µs/req, the mean of r1 to r3, as in In short.
 max req/s: the highest rate kept up with by each ramp run, ramp1 / ramp2 ...: the line
 ramp kept up with of its console, as in The ramp.
+max req/s with p99 < 1 ms: a rate with an acceptable latency. In each ramp run, from the first step
+up, the last step kept up with before the first step whose p99 is above 1 ms: the lines latency
+of its console, step by step. none: the p99 of the first step is already above.
 
 #### The schedulers
 

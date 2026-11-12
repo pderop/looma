@@ -162,6 +162,8 @@ scripts/bench-user.sh --step 0                            # no ramp
 scripts/bench-user.sh --ramp-runs 1                       # one ramp run per scheduler
 scripts/bench-user.sh --no-perf                           # no c2c, stat, walk or epsilon run
 scripts/bench-user.sh --max-rate 400000                   # the ramp stops after 400,000 req/s
+scripts/bench-user.sh --summary-only --out bench/user-<date>-<time>
+                                                          # runs nothing: writes the tables of a campaign again
 ```
 
 `--help` lists every option of a script.

@@ -80,6 +80,7 @@ done
 CASE=servlet
 CASES=(servlet:0)
 CASE_DEPTH=
+[ "$SUMMARY_ONLY" = 0 ] || { resummarize; exit 0; }
 
 setup
 ((${#CARRIER_CPUS[@]} >= 2)) || die "the servlet benchmark needs at least 2 carrier CPUs: its container pool has a selector"

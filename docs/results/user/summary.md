@@ -56,18 +56,21 @@ seconds for the late answers, then 3 seconds to go up to the next rate.
 
 ## At a glance
 
-| scheduler | default, cpu µs/req | big, cpu µs/req | default, max req/s | big, max req/s |
-|---|---|---|---|---|
-| mpsc | 14.60 | 53.85 | 1,070,000 / 1,090,000 | 190,000 / 190,000 |
-| mpsc-unpinned | 15.37 | 53.54 | 890,000 / 930,000 | 190,000 / 190,000 |
-| mpsc-no-affinity | 26.76 | 65.19 | 630,000 / 630,000 | 190,000 / 170,000 |
-| mpsc-unpinned-no-affinity | 27.57 | 64.77 | 610,000 / 630,000 | 170,000 / 170,000 |
-| jdk | 40.34 | 64.54 | 670,000 / 690,000 | 170,000 / 170,000 |
-| jdk-pinned | 39.81 | 65.03 | 670,000 / 690,000 | 190,000 / 190,000 |
+| scheduler | default, cpu µs/req | big, cpu µs/req | default, max req/s | big, max req/s | default, max req/s with p99 < 1 ms | big, max req/s with p99 < 1 ms |
+|---|---|---|---|---|---|---|
+| mpsc | 14.60 | 53.85 | 1,070,000 / 1,090,000 | 190,000 / 190,000 | 1,070,000 / 1,070,000 | 170,000 / 190,000 |
+| mpsc-unpinned | 15.37 | 53.54 | 890,000 / 930,000 | 190,000 / 190,000 | 830,000 / 850,000 | 170,000 / 170,000 |
+| mpsc-no-affinity | 26.76 | 65.19 | 630,000 / 630,000 | 190,000 / 170,000 | 570,000 / 570,000 | none / none |
+| mpsc-unpinned-no-affinity | 27.57 | 64.77 | 610,000 / 630,000 | 170,000 / 170,000 | 550,000 / 550,000 | none / none |
+| jdk | 40.34 | 64.54 | 670,000 / 690,000 | 170,000 / 170,000 | 530,000 / 510,000 | none / none |
+| jdk-pinned | 39.81 | 65.03 | 670,000 / 690,000 | 190,000 / 190,000 | 530,000 / 530,000 | none / none |
 
 cpu µs/req at depth 256, the mean of r1 to r3, as in In short.
 max req/s: the highest rate kept up with by each ramp run at depth 256, ramp1 / ramp2 ...: the line
 ramp kept up with of its console, as in The ramp.
+max req/s with p99 < 1 ms: a rate with an acceptable latency. In each ramp run, from the first step
+up, the last step kept up with before the first step whose p99 is above 1 ms: the lines latency
+of its console, step by step. none: the p99 of the first step is already above.
 
 #### The schedulers
 
