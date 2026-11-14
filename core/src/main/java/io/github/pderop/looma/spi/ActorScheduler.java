@@ -27,7 +27,8 @@ import java.util.concurrent.TimeUnit;
  * This interface is deliberately small. The engine no longer dispatches
  * per-message tasks onto an {@code Executor}: an actor runs on a virtual thread
  * only while it has messages, its mailbox thread. The first message of an empty
- * mailbox starts it, from {@link #mailboxThreadFactory(int)}. Resist growing
+ * mailbox starts it, from {@link #mailboxThreadFactory(int)}, unless
+ * {@link #keepMailboxThreadsAlive()} keeps the last one waiting. Resist growing
  * this interface. A concern that is not placement or topology (topology probing
  * aside, which is diagnostics-only, see below) belongs somewhere else, never
  * here.
@@ -97,6 +98,20 @@ public interface ActorScheduler extends AutoCloseable {
 	 * {@code false}.
 	 */
 	default boolean mailboxThreadsStayOnCarrier() {
+		return false;
+	}
+
+	/**
+	 * Returns {@code true} if a mailbox thread with an empty mailbox should wait
+	 * for the next message, instead of ending. The next message then wakes it, and
+	 * no new thread starts. Looma reads it once, when the system is built. Default
+	 * {@code false}.
+	 *
+	 * <p>
+	 * The cost: each idle actor keeps one parked virtual thread, with its stack,
+	 * and the wait has no time limit. Its thread ends only when the actor stops.
+	 */
+	default boolean keepMailboxThreadsAlive() {
 		return false;
 	}
 

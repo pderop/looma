@@ -53,6 +53,12 @@ public sealed interface Carriers {
 	 * {@link Mpsc#affinity(boolean)} and {@link Mpsc#pinned(boolean)} turn each
 	 * setting off.
 	 *
+	 * <p>
+	 * A later JDK of that pull request has no {@code Thread.Affinity}. There, only
+	 * {@code mpsc(count).pinned(false).affinity(false)} is accepted, and the thread
+	 * of an idle actor waits for its next message instead of ending: each idle
+	 * actor keeps one parked thread, with its stack.
+	 *
 	 * @throws IllegalArgumentException
 	 *             if {@code count} is less than 1
 	 */

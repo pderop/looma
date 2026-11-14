@@ -56,6 +56,13 @@ import io.github.pderop.looma.spi.MpscQueue;
  * receiving.
  *
  * <p>
+ * When the scheduler asks for it, a spawn creates a {@link KeepAliveActorCell}
+ * instead: its mailbox thread does not end when the count is back to 0, it
+ * waits for the next {@code tell}. Two methods make the difference,
+ * {@link #wakeMailboxThread()} and {@link #awaitNextTell()}. Here they start a
+ * new thread, and end the current one.
+ *
+ * <p>
  * The first {@code preStart} and the final {@code postStop} are threaded
  * through this exact same mailbox as {@link Envelope#lifecycle(Runnable)
  * lifecycle envelopes}: this is what guarantees {@code preStart} always
@@ -64,7 +71,7 @@ import io.github.pderop.looma.spi.MpscQueue;
  * envelope: they run in the mailbox thread that caught the failure, between two
  * messages.
  */
-final class ActorCell implements ActorContext {
+sealed class ActorCell implements ActorContext permits KeepAliveActorCell {
 
 	/**
 	 * A cell's life-cycle state, transitioned exclusively by compare-and-swap so
@@ -364,7 +371,10 @@ final class ActorCell implements ActorContext {
 			throw new IllegalStateException("cannot spawn \"" + name + "\" under a stopping actor: " + parent.path());
 		}
 		String path = parent == null ? "/" + name : parent.path() + "/" + name;
-		ActorCell cell = new ActorCell(name, path, parent, factory, explicitStrategy, dispatcher, runtime);
+		// The only check of the mode: one per spawn, never one per message.
+		ActorCell cell = runtime.keepMailboxThreadsAlive()
+				? KeepAliveActorCell.create(name, path, parent, factory, explicitStrategy, dispatcher, runtime)
+				: new ActorCell(name, path, parent, factory, explicitStrategy, dispatcher, runtime);
 		if (!runtime.register(cell)) {
 			throw new IllegalStateException("an actor already exists at path: " + path);
 		}
@@ -421,7 +431,7 @@ final class ActorCell implements ActorContext {
 	 * then runs nothing more: its count stays above zero, so no later {@code tell}
 	 * starts a mailbox thread.
 	 */
-	private void startMailboxThread() {
+	void startMailboxThread() {
 		Thread thread = mailboxThreadFactory.newThread(this::drainMailbox);
 		try {
 			thread.start();
@@ -542,17 +552,36 @@ final class ActorCell implements ActorContext {
 		}
 		mailbox.offer(envelope);
 		if (pending.getAndIncrement() == 0) {
-			startMailboxThread();
+			wakeMailboxThread();
 		}
 		return true;
 	}
 
 	/**
+	 * Called by the {@code tell} that takes {@link #pending} from 0 to 1. Here it
+	 * starts a new mailbox thread. {@link KeepAliveActorCell} wakes the waiting one
+	 * first.
+	 */
+	void wakeMailboxThread() {
+		startMailboxThread();
+	}
+
+	/**
+	 * Called by a mailbox thread once {@link #pending} is back to 0. Returns
+	 * {@code true} if a {@code tell} woke it, and it runs again. Here it returns
+	 * {@code false}: the mailbox thread ends. {@link KeepAliveActorCell} waits.
+	 */
+	boolean awaitNextTell() {
+		return false;
+	}
+
+	/**
 	 * One mailbox thread: runs one envelope per count of {@link #pending}, until
-	 * the count is back to 0, then ends. The count that {@link #start()} holds
-	 * finds no envelope of its own. Once this cell is {@link State#STOPPED}, the
-	 * envelopes are only counted down, not run. A throwing envelope does not end
-	 * the mailbox thread — {@link #runEnvelope} already contains every failure.
+	 * the count is back to 0, then ends, unless {@link #awaitNextTell()} says a
+	 * {@code tell} woke it: it then runs again. The count that {@link #start()}
+	 * holds finds no envelope of its own. Once this cell is {@link State#STOPPED},
+	 * the envelopes are only counted down, not run. A throwing envelope does not
+	 * end the mailbox thread — {@link #runEnvelope} already contains every failure.
 	 * {@link Thread#interrupted()} is cleared after every envelope.
 	 *
 	 * <p>
@@ -578,17 +607,19 @@ final class ActorCell implements ActorContext {
 	private void runEnvelopes() {
 		Thread.currentThread().setName(mailboxThreadName);
 		do {
-			if (state.get() != State.STOPPED) {
-				Envelope envelope = mailbox.poll();
-				if (envelope != null) {
-					runEnvelope(envelope);
-					Thread.interrupted();
+			do {
+				if (state.get() != State.STOPPED) {
+					Envelope envelope = mailbox.poll();
+					if (envelope != null) {
+						runEnvelope(envelope);
+						Thread.interrupted();
+					}
 				}
+			} while (pending.decrementAndGet() > 0);
+			if (state.get() == State.TERMINATING && !cascadeStarted.get() && pending.get() == 0) {
+				tryFinishDraining();
 			}
-		} while (pending.decrementAndGet() > 0);
-		if (state.get() == State.TERMINATING && !cascadeStarted.get() && pending.get() == 0) {
-			tryFinishDraining();
-		}
+		} while (awaitNextTell());
 	}
 
 	/**

@@ -123,6 +123,13 @@ final class ActorRuntime {
 	private final Runnable afterTermination;
 
 	/**
+	 * Whether the mailbox thread of an actor waits for the next message instead of
+	 * ending, read once from the scheduler. A spawn reads it to choose the kind of
+	 * cell, so no message ever does.
+	 */
+	private final boolean keepMailboxThreadsAlive;
+
+	/**
 	 * @param dispatchers
 	 *            the seam to whoever owns the dispatcher array, used to resolve
 	 *            every {@link Placement} into an {@link ActorDispatcher}
@@ -132,11 +139,24 @@ final class ActorRuntime {
 	 *            invoked exactly once, after {@link #beginShutdown()} has been
 	 *            called and every actor and every in-flight unit of work has
 	 *            finished
+	 * @param keepMailboxThreadsAlive
+	 *            whether a mailbox thread waits for the next message instead of
+	 *            ending: {@code ActorScheduler.keepMailboxThreadsAlive()}
 	 */
-	public ActorRuntime(DispatcherSource dispatchers, MpscQueueFactory mpscQueueFactory, Runnable afterTermination) {
+	public ActorRuntime(DispatcherSource dispatchers, MpscQueueFactory mpscQueueFactory, Runnable afterTermination,
+			boolean keepMailboxThreadsAlive) {
 		this.dispatchers = dispatchers;
 		this.mpscQueueFactory = mpscQueueFactory;
 		this.afterTermination = afterTermination;
+		this.keepMailboxThreadsAlive = keepMailboxThreadsAlive;
+	}
+
+	/**
+	 * Returns whether the mailbox thread of an actor waits for the next message
+	 * instead of ending. Read at spawn only.
+	 */
+	boolean keepMailboxThreadsAlive() {
+		return keepMailboxThreadsAlive;
 	}
 
 	/**

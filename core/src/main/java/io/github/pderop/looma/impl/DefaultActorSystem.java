@@ -130,7 +130,8 @@ public final class DefaultActorSystem implements ActorSystem {
 		for (int i = 0; i < dispatchers.length; i++) {
 			dispatchers[i] = new CarrierDispatcher(scheduler.vThreadFactory(i), scheduler.mailboxThreadFactory(i), i);
 		}
-		this.runtime = new ActorRuntime(new Dispatchers(), mpscQueueFactory, this::afterTermination);
+		this.runtime = new ActorRuntime(new Dispatchers(), mpscQueueFactory, this::afterTermination,
+				scheduler.keepMailboxThreadsAlive());
 		this.timers = IntStream.range(0, dispatchers.length)
 				.mapToObj(i -> new CarrierTimer(scheduler.mailboxThreadFactory(i), mpscQueueFactory.create(),
 						mpscQueueFactory.create(), timerTick.toNanos(), "looma-timer-" + i))
