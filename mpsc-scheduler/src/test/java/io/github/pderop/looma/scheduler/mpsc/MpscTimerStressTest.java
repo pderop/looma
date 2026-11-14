@@ -87,6 +87,7 @@ class MpscTimerStressTest {
 	@Test
 	void remoteAndLocalArmAndCancelLeaveNoTimerAndNoLostOrDuplicateMessage() throws Exception {
 		assumeTrue(system.carrierCount() >= 2, "needs two carriers");
+		assumeTrue(system.scheduler().mailboxThreadsStayOnCarrier(), "needs Thread.Affinity");
 		CountDownLatch finished = new CountDownLatch(2 * ACTORS_PER_CARRIER);
 		startWheelOfCarrierOne();
 		long endNanos = System.nanoTime() + TimeUnit.MILLISECONDS.toNanos(RUN_MILLIS);

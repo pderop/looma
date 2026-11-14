@@ -34,7 +34,7 @@ class MpscMaxPoolSizeTest {
 		System.setProperty("jdk.virtualThreadScheduler.maxPoolSize", "2");
 
 		IllegalStateException e = assertThrows(IllegalStateException.class,
-				() -> ActorSystem.builder().carriers(Carriers.mpsc(3)).build());
+				() -> ActorSystem.builder().carriers(Carriers.mpsc(3).pinned(false).affinity(false)).build());
 
 		assertTrue(e.getMessage().contains("maxPoolSize"), e.getMessage());
 		assertNull(System.getProperty("jdk.virtualThreadScheduler.useMpsc"));

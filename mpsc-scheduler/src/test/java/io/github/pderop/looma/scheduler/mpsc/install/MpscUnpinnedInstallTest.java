@@ -19,8 +19,10 @@ import java.util.OptionalInt;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import io.github.pderop.looma.scheduler.mpsc.JdkSupport;
 import io.github.pderop.looma.ActorSystem;
 import io.github.pderop.looma.Carriers;
 import io.github.pderop.looma.spi.ActorScheduler;
@@ -43,6 +45,11 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * the pool, and the others find it.
  */
 class MpscUnpinnedInstallTest {
+
+	@BeforeAll
+	static void needsThreadAffinity() {
+		assumeTrue(JdkSupport.hasThreadAffinity(), "needs Thread.Affinity");
+	}
 
 	private static final Carriers.Mpsc CARRIERS = Carriers.mpsc(3).pinned(false);
 

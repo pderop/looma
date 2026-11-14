@@ -8,9 +8,12 @@ guarantees; this page says how it works.
 - `MpscActorSchedulerProvider`: sets the properties, starts the JDK's pollers and timers, finds
   the carriers and pins them (not with `pinned(false)`).
 - `MpscPool`: one `Thread.Affinity` per carrier, drawn from one group. Looma does not need to know
-  which carrier each one lands on: the carrier of affinity `i` is pinned to CPU `i`.
+  which carrier each one lands on: the carrier of affinity `i` is pinned to CPU `i`. None on a JDK
+  without `Thread.Affinity`.
 - `MpscActorScheduler`: an actor's mailbox threads get the affinity of its carrier (none with
-  `affinity(false)`), its offloaded threads get none.
+  `affinity(false)`), its offloaded threads get none. On a JDK without `Thread.Affinity`, it keeps
+  the mailbox threads alive: the thread of an idle actor waits for the next message.
+- `JdkAffinity`: finds `Thread.Affinity` once, by reflection. The only class that names it.
 - `LinuxCpus`: pins a carrier to one CPU with `sched_setaffinity`, and groups the CPUs by L3.
 - `AllCpus`: makes threads that run on every CPU, even when an actor starts them. It is the
   factory of the common pool, and of `platformThreadFactory()`.
@@ -81,11 +84,18 @@ carrier, they would keep its one CPU. What the install does about it, step by st
 
 ## The JDK
 
-The MPSC scheduler and `Thread.Affinity` exist only in the JDK of
-[openjdk/loom pull request 227](https://github.com/openjdk/loom/pull/227), at commit `5766f815f7`,
-on the [`fibers` branch of `openjdk/loom`](https://github.com/openjdk/loom/tree/fibers). There is
-no binary. `Thread.Affinity` is not a preview API, so this module compiles at `release=28` without
-`--enable-preview`. The root `pom.xml`'s `loom-jdk` profile adds it to the build on a JDK 28 or
+The MPSC scheduler exists only in the JDK of
+[openjdk/loom pull request 227](https://github.com/openjdk/loom/pull/227), on the
+[`fibers` branch of `openjdk/loom`](https://github.com/openjdk/loom/tree/fibers). Looma runs on two
+of its commits:
+
+- `5766f815f7`, the commit of the pull request. It has `Thread.Affinity`: every setting of
+  `Carriers.mpsc(n)` works.
+- `33d7cd32dc`, a later commit of the branch `mpsc-without-affinity` of `franz1981/loom`. It has no
+  `Thread.Affinity`: only `Carriers.mpsc(n).pinned(false).affinity(false)` works.
+
+There is no binary. Looma finds `Thread.Affinity` by reflection, so this module compiles at
+`release=28` on both, without `--enable-preview`. The root `pom.xml`'s `loom-jdk` profile adds it to the build on a JDK 28 or
 newer.
 
 Building it takes about 15 minutes on 16 cores, and about 3 GB of disk.
@@ -111,7 +121,8 @@ curl -fsSL https://builds.shipilev.net/openjdk-jdk-loom/openjdk-jdk-loom-linux-x
 
 Other systems have their tarball next to this one on builds.shipilev.net.
 
-**3. The sources** of the pull request, at the commit Looma uses:
+**3. The sources** of the pull request, at the commit Looma uses. For the JDK without
+`Thread.Affinity`, the same with `33d7cd32dc9402386565878b8fcb0d5b664362e1`, in a folder of its own:
 
 ```sh
 mkdir -p "$HOME/openjdk-loom-pr227" && cd "$HOME/openjdk-loom-pr227"
@@ -160,8 +171,11 @@ SDKMAN only links to that folder: keep it.
 sdk install java 28-loom-pr227 "$HOME/openjdk-loom-pr227/build/linux-x86_64-server-release/images/jdk"
 sdk env                                            # in this project
 java -version                                      # ... (build 28-internal-pr227-5766f81)
-javap 'java.lang.Thread$Affinity'                  # no error: this is the right JDK
+javap 'java.lang.MpscVirtualThreadScheduler'       # no error: this is a JDK of the pull request
 ```
+
+The JDK without `Thread.Affinity` goes under another name, for example `28-loom-noaff`. Switch with
+`sdk use java 28-loom-noaff`.
 
 ## Tests
 
@@ -173,5 +187,9 @@ executions. `core` runs the same contract suites on the builtin.
 | `default-test` | the MPSC scheduler, 4 carriers, stealing | the actor suites of `core`; `MpscAffinityTest`: an actor never leaves its carrier, an offloaded thread can be stolen; `MpscTimerTest` and `MpscTimerStressTest`: timers on the target's carrier, direct and queued arms and cancels |
 | `install-test` | no scheduler flag, one JVM per class | `carriers(...)` installing `mpsc` (also unpinned, and without affinity), and refusing to once a virtual thread has run, or below a `maxPoolSize`. On Linux: each carrier on its own CPU, and the threads an actor makes keep every CPU: the JDK's pollers and timers, the common pool, `platformThreadFactory()`. Elsewhere: the carriers have no cluster |
 | `no-native-access-test` | `--illegal-native-access=deny` | the same install in a JVM that refuses native calls: it runs, and nothing is pinned |
+
+On the JDK without `Thread.Affinity`, the tests that need it are skipped. `MpscJdkTest` checks
+that the scheduler follows the JDK, and `MpscNoThreadAffinityTest` that only
+`pinned(false).affinity(false)` installs.
 
 Without `-am`, Maven takes `looma-core` from `~/.m2`, which may be older than the sources.

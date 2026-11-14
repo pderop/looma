@@ -136,6 +136,11 @@ Carriers.mpsc(2).pinned(false).affinity(false)     // both off: the OS places th
                                                    // can run on any carrier
 ```
 
+A later JDK of the same pull request, commit `33d7cd3` of the branch `mpsc-without-affinity`, has
+no `Thread.Affinity`. Looma runs on it too, with `Carriers.mpsc(n).pinned(false).affinity(false)`
+only: the other settings are refused. There, a mailbox thread does not end when its mailbox is
+empty: it waits for the next message. So each idle actor keeps one parked thread.
+
 Pinning a carrier is a native call. Add `--enable-native-access=ALL-UNNAMED` to the `java` command,
 or the JVM prints a warning; the carriers are pinned either way.
 
@@ -182,6 +187,7 @@ Cid (100 ms)  -> a new virtual thread, #43, on the same carrier
 carrier           an OS thread that runs virtual threads
 mailbox thread    the virtual thread that runs an actor's messages, one at a time;
                   the first message of an empty mailbox starts it, it ends once the mailbox is empty
+                  (on a JDK without Thread.Affinity, it waits for the next message instead)
 home carrier      the carrier an actor gets at spawn
 mpsc              Carriers.mpsc(n): the JDK's MPSC scheduler (pull request 227). By default, an
                   actor's mailbox threads run only on its home carrier, each carrier pinned to
@@ -211,8 +217,8 @@ mvn -B verify -P '!dev'      # what CI runs: formatting checked, not applied
 ```
 
 On a JDK 25 this builds and tests `core` and `examples`. With the Loom JDK it also builds
-`mpsc-scheduler` and runs its tests; on a JDK 28 or newer without pull request 227, Maven fails in
-`mpsc-scheduler` with `cannot find symbol`. Without SDKMAN, export `JAVA_HOME`; `LOOM_JDK_HOME`
+`mpsc-scheduler` and runs its tests; on a JDK 28 or newer without pull request 227, the tests of
+`mpsc-scheduler` fail: that JDK has no MPSC scheduler. Without SDKMAN, export `JAVA_HOME`; `LOOM_JDK_HOME`
 overrides it for the scripts.
 
 The tests run in several Surefire executions, one per scheduler setup:

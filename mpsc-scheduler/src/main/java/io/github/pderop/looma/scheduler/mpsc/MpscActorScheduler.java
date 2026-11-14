@@ -31,6 +31,10 @@ import io.github.pderop.looma.spi.ActorScheduler;
  * them.
  *
  * <p>
+ * On a JDK without {@code Thread.Affinity}, there is never affinity, and the
+ * mailbox threads are kept alive: see {@link #keepMailboxThreadsAlive()}.
+ *
+ * <p>
  * This class owns nothing: the carriers belong to the JDK. {@link #close()}
  * does nothing.
  */
@@ -44,12 +48,21 @@ final class MpscActorScheduler implements ActorScheduler {
 
 	private final boolean affinity;
 
+	/**
+	 * @throws IllegalStateException
+	 *             if {@code affinity} on a JDK without {@code Thread.Affinity}
+	 */
 	MpscActorScheduler(MpscPool pool, boolean affinity) {
+		if (affinity && !JdkAffinity.SUPPORTED) {
+			throw new IllegalStateException("this JDK has no Thread.Affinity: use affinity(false)");
+		}
 		this.pool = pool;
 		this.affinity = affinity;
 		this.mailboxThreadFactories = new ThreadFactory[pool.count()];
 		for (int i = 0; i < mailboxThreadFactories.length; i++) {
-			mailboxThreadFactories[i] = affinity ? Thread.ofVirtual().affinity(pool.home(i)).factory() : offloadFactory;
+			mailboxThreadFactories[i] = affinity
+					? JdkAffinity.withAffinity(Thread.ofVirtual(), pool.home(i)).factory()
+					: offloadFactory;
 		}
 	}
 
@@ -74,6 +87,16 @@ final class MpscActorScheduler implements ActorScheduler {
 	@Override
 	public boolean mailboxThreadsStayOnCarrier() {
 		return affinity;
+	}
+
+	/**
+	 * Only on a JDK without {@code Thread.Affinity}. A mailbox thread woken by a
+	 * tell keeps running where it is, or moves to the sender's carrier: the JDK
+	 * then sees the same thread again, not a new one each time.
+	 */
+	@Override
+	public boolean keepMailboxThreadsAlive() {
+		return !JdkAffinity.SUPPORTED;
 	}
 
 	/**

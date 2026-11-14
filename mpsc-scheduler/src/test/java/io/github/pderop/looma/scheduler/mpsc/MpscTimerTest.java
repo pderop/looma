@@ -32,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * Runs the shared {@link TimerTest} suite against the MPSC scheduler, chosen by
@@ -56,6 +57,7 @@ class MpscTimerTest extends TimerTest {
 	 */
 	@Test
 	void aDelayedMessageIsProcessedOnTheTargetsHomeCarrier() throws Exception {
+		assumeTrue(system().scheduler().mailboxThreadsStayOnCarrier(), "needs Thread.Affinity");
 		int carriers = system().carrierCount();
 		List<CompletableFuture<int[]>> results = new ArrayList<>();
 		for (int c = 0; c < carriers; c++) {
@@ -89,6 +91,7 @@ class MpscTimerTest extends TimerTest {
 	 */
 	@Test
 	void armAndCancelOnSelfTouchTheWheelDirectly() throws Exception {
+		assumeTrue(system().scheduler().mailboxThreadsStayOnCarrier(), "needs Thread.Affinity");
 		startWheelOfCarrierZero();
 		CompletableFuture<int[]> counts = new CompletableFuture<>();
 		ActorRef ref = system().spawn("direct", () -> (message, sender, context) -> {
@@ -135,6 +138,7 @@ class MpscTimerTest extends TimerTest {
 	 */
 	@Test
 	void aPoolTimerOfAnActorGoesStraightIntoItsWheel() throws Exception {
+		assumeTrue(system().scheduler().mailboxThreadsStayOnCarrier(), "needs Thread.Affinity");
 		startWheelOfCarrierZero();
 		ActorRef pool = system().spawn("pool", () -> (message, sender, context) -> {
 		}, SpawnOptions.pooled(2));

@@ -33,6 +33,7 @@ import io.github.pderop.looma.Message;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * What the MPSC scheduler promises an actor, with stealing on: an actor runs
@@ -71,6 +72,7 @@ class MpscAffinityTest {
 
 	@Test
 	void anActorRunsOnlyOnItsHomeCarrier() throws Exception {
+		assumeTrue(system.scheduler().mailboxThreadsStayOnCarrier(), "needs Thread.Affinity");
 		int actors = system.carrierCount() * 4;
 		int messages = 500;
 		AtomicInteger away = new AtomicInteger();

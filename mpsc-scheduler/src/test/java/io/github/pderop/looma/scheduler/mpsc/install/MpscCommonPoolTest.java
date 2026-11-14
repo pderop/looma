@@ -23,10 +23,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.github.pderop.looma.ActorSystem;
 import io.github.pderop.looma.Carriers;
+import io.github.pderop.looma.scheduler.mpsc.JdkSupport;
 
 import static io.github.pderop.looma.scheduler.mpsc.install.LinuxThreads.SELF;
 import static io.github.pderop.looma.scheduler.mpsc.install.LinuxThreads.TASKS;
@@ -45,6 +47,11 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * from another thread before.
  */
 class MpscCommonPoolTest {
+
+	@BeforeAll
+	static void needsThreadAffinity() {
+		assumeTrue(JdkSupport.hasThreadAffinity(), "needs Thread.Affinity");
+	}
 
 	@Test
 	void theCommonPoolKeepsEveryCpu() throws Exception {
