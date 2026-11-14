@@ -28,10 +28,12 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import io.github.pderop.looma.ActorSystem;
 import io.github.pderop.looma.Carriers;
+import io.github.pderop.looma.scheduler.mpsc.JdkSupport;
 import io.github.pderop.looma.spi.ActorScheduler;
 
 import static io.github.pderop.looma.scheduler.mpsc.install.LinuxThreads.SELF;
@@ -61,6 +63,11 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * carriers float.
  */
 class MpscInstallTest {
+
+	@BeforeAll
+	static void needsThreadAffinity() {
+		assumeTrue(JdkSupport.hasThreadAffinity(), "needs Thread.Affinity");
+	}
 
 	private static final Carriers.Mpsc CARRIERS = Carriers.mpsc(3);
 

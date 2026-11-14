@@ -19,10 +19,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.jupiter.api.Test;
 
+import io.github.pderop.looma.scheduler.mpsc.JdkSupport;
 import io.github.pderop.looma.ActorSystem;
 import io.github.pderop.looma.Carriers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * {@link Carriers#mpsc(int)} in a JVM that refuses native calls, started with
@@ -33,6 +35,9 @@ class MpscNoNativeAccessTest {
 
 	@Test
 	void runsWithoutPinning() throws Exception {
+		// Without Thread.Affinity, a pinned pool is refused before native access
+		// matters.
+		assumeTrue(JdkSupport.hasThreadAffinity(), "needs Thread.Affinity");
 		ActorSystem system = ActorSystem.builder().carriers(Carriers.mpsc(2)).build();
 
 		assertEquals(2, system.carrierCount());

@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import io.github.pderop.looma.ActorSystem;
+import io.github.pderop.looma.scheduler.mpsc.JdkSupport;
 import io.github.pderop.looma.Carriers;
 import io.github.pderop.looma.spi.ActorScheduler;
 
@@ -64,6 +65,8 @@ class MpscUnpinnedNoAffinityInstallTest {
 		assertEquals("true", System.getProperty("jdk.virtualThreadScheduler.useMpsc"));
 		assertEquals("3", System.getProperty("jdk.virtualThreadScheduler.parallelism"));
 		assertFalse(system.scheduler().mailboxThreadsStayOnCarrier());
+		// Kept alive only on a JDK without Thread.Affinity.
+		assertEquals(!JdkSupport.hasThreadAffinity(), system.scheduler().keepMailboxThreadsAlive());
 	}
 
 	/** A mailbox thread is made like an offloaded one: with no affinity. */

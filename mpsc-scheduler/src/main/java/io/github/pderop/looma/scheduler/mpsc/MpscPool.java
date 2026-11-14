@@ -18,27 +18,34 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
 /**
- * The JDK's MPSC carriers, as Looma sees them: one {@link Thread.Affinity} per
- * carrier, and the CPU topology when the carriers are pinned.
+ * The JDK's MPSC carriers, as Looma sees them: one {@code Thread.Affinity} per
+ * carrier if the JDK has it, and the CPU topology when the carriers are pinned.
  *
  * <p>
  * An affinity does not say which carrier it lands on, and Looma does not need
  * to know. Home {@code i} is the {@code i}-th affinity of one group. The
  * affinities of a group land on different carriers. When pinned, the carrier of
  * home {@code i} is pinned to CPU {@code i}.
+ *
+ * <p>
+ * On a JDK without {@code Thread.Affinity}, every home is null, and the
+ * carriers cannot be pinned: see {@link JdkAffinity}.
  */
 final class MpscPool {
 
 	/** The name the JDK gives each MPSC carrier, followed by its id. */
 	static final String CARRIER_PREFIX = "mpsc-carrier-";
 
-	/** Home index to its affinity: one affinity per carrier. */
-	private final Thread.Affinity[] homes;
+	/**
+	 * Home index to its {@code Thread.Affinity}: one per carrier. Null entries on a
+	 * JDK without it.
+	 */
+	private final Object[] homes;
 
 	/** The CPUs the carriers are pinned to, or null if any of them floats. */
 	private final LinuxCpus cpus;
 
-	private MpscPool(Thread.Affinity[] homes, LinuxCpus cpus) {
+	private MpscPool(Object[] homes, LinuxCpus cpus) {
 		this.homes = homes;
 		this.cpus = cpus;
 	}
@@ -59,14 +66,15 @@ final class MpscPool {
 	 * ends. If one of them changes, {@code MpscInstallTest} fails.
 	 *
 	 * @throws IllegalStateException
-	 *             if two homes share a carrier once pinned
+	 *             if two homes share a carrier once pinned, or if {@code pinned} on
+	 *             a JDK without {@code Thread.Affinity}: a carrier is pinned from a
+	 *             thread with its affinity
 	 */
 	static MpscPool probe(int count, boolean pinned) {
-		Thread.Affinity.Group group = Thread.Affinity.newGroup();
-		Thread.Affinity[] homes = new Thread.Affinity[count];
-		for (int i = 0; i < count; i++) {
-			homes[i] = group.newAffinity();
+		if (pinned && !JdkAffinity.SUPPORTED) {
+			throw new IllegalStateException("this JDK has no Thread.Affinity: the carriers cannot be pinned");
 		}
+		Object[] homes = JdkAffinity.SUPPORTED ? JdkAffinity.newHomes(count) : new Object[count];
 		LinuxCpus cpus = null;
 		if (pinned) {
 			LinuxCpus found = LinuxCpus.discover();
@@ -111,7 +119,8 @@ final class MpscPool {
 		return homes.length;
 	}
 
-	Thread.Affinity home(int index) {
+	/** The {@code Thread.Affinity} of home {@code index}, or null without it. */
+	Object home(int index) {
 		return homes[index];
 	}
 
@@ -145,17 +154,20 @@ final class MpscPool {
 	}
 
 	/** The carrier a virtual thread with {@code affinity} runs on, or -1. */
-	private static int carrierOf(Thread.Affinity affinity) {
+	private static int carrierOf(Object affinity) {
 		int[] id = new int[1];
 		run(affinity, () -> id[0] = currentCarrier());
 		return id[0];
 	}
 
-	/** Runs {@code task} on a virtual thread with {@code affinity}, and waits. */
-	private static void run(Thread.Affinity affinity, Runnable task) {
+	/**
+	 * Runs {@code task} on a virtual thread with {@code affinity}, or with none if
+	 * null, and waits.
+	 */
+	private static void run(Object affinity, Runnable task) {
 		Thread.Builder.OfVirtual builder = Thread.ofVirtual();
 		if (affinity != null) {
-			builder.affinity(affinity);
+			builder = JdkAffinity.withAffinity(builder, affinity);
 		}
 		AtomicReference<Throwable> failure = new AtomicReference<>();
 		Thread thread = builder.start(() -> {

@@ -27,12 +27,14 @@ import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import io.github.pderop.looma.ActorRef;
 import io.github.pderop.looma.ActorSystem;
 import io.github.pderop.looma.Carriers;
 import io.github.pderop.looma.Message;
 import io.github.pderop.looma.impl.TimerProbe;
+import io.github.pderop.looma.scheduler.mpsc.JdkSupport;
 import io.github.pderop.looma.spi.ActorScheduler;
 
 import static io.github.pderop.looma.scheduler.mpsc.install.LinuxThreads.TASKS;
@@ -55,6 +57,11 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  * the pool, and the others find it.
  */
 class MpscNoAffinityInstallTest {
+
+	@BeforeAll
+	static void needsThreadAffinity() {
+		assumeTrue(JdkSupport.hasThreadAffinity(), "needs Thread.Affinity");
+	}
 
 	private static final Carriers.Mpsc CARRIERS = Carriers.mpsc(3).affinity(false);
 
