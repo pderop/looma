@@ -93,6 +93,14 @@ own queues.
   once, then parks until the next message. A message that comes during the yield finds it still
   on its carrier. Each idle actor keeps one parked thread.
 
+The keep-alive depends on the JDK, not on `affinity(false)`:
+
+| JDK | Setting | When the mailbox is empty, the mailbox thread |
+| --- | --- | --- |
+| with `Thread.Affinity` (`5766f81`) | any, `affinity(false)` included | ends |
+| without `Thread.Affinity` (`33d7cd3`) | `pinned(false).affinity(false)` only | waits for the next message |
+| any | `Carriers.builtin(n)` | ends |
+
 ```
 carrier-0
   1. run the virtual threads of its queues, for one round
