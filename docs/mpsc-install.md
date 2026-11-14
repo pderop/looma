@@ -48,7 +48,8 @@ actor on carrier-0: the first sleep(10 ms) of carrier-0
 
 ```
 main, with every CPU of the process
-  1. checks: not installed yet, no other scheduler, no -D flag that conflicts
+  1. checks: not installed yet, the JDK has Thread.Affinity (unless pinned(false).affinity(false)),
+     no other scheduler, no -D flag that conflicts
   2. set the properties: useMpsc, parallelism = n, mpscSteal
   3. load sun.nio.ch.Poller          -> Read-Poller and Write-Poller start from main
                                         on Linux, the carriers and the unblocker too
@@ -60,6 +61,7 @@ main, with every CPU of the process
   7. orTimeout(1 ns)                 -> the delayScheduler starts from main
   8. check that the common pool uses AllCpus
   9. one Thread.Affinity per carrier, from one group: home 0 to home n-1
+     (none on a JDK without Thread.Affinity)
      pinned(true) only:
        a. on each home: park 1 ms    -> its VirtualThread-unparker starts,
                                         while no carrier is pinned yet

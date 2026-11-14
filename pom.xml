@@ -12,10 +12,10 @@
 
     <!--
         Two JDKs, on purpose: core and examples compile at release=25 and run on a stock
-        JDK 25. mpsc-scheduler needs the JDK of openjdk/loom pull request 227, for
-        Thread.Affinity. It joins the reactor only under the loom-jdk profile below, activated
-        automatically when the build JDK is 28 or newer (see .sdkmanrc). A stock JDK fails at
-        compile time only inside that module.
+        JDK 25. mpsc-scheduler needs a JDK of openjdk/loom pull request 227, for its MPSC
+        scheduler. It joins the reactor only under the loom-jdk profile below, activated
+        automatically when the build JDK is 28 or newer (see .sdkmanrc). On another JDK 28, only
+        the tests of that module fail.
 
         netty-loom-scheduler, Looma's copy of the Netty-VirtualThread-Scheduler, is no longer
         built: it stays in the repository for a possible patch upstream.

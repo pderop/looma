@@ -13,7 +13,9 @@ each actor's [mailbox thread](api.md#2-writing-an-actor).
 
 Offloaded threads are those an actor starts through `ActorContext.vThreadFactory()`.
 `pinned(false)` gives the same pool, and the OS places the carriers. `affinity(false)` gives the
-same pool, but no actor is kept on its carrier.
+same pool, but no actor is kept on its carrier. On a later JDK of the pull request, without
+`Thread.Affinity`, only `pinned(false).affinity(false)` is accepted:
+[`mpsc`](#mpsc-the-jdks-mpsc-scheduler).
 
 ## Choosing one
 
@@ -86,6 +88,10 @@ own queues.
   its thread starts on the carrier of its sender, and an idle carrier may take it. Its timers then always go through the queues of
   the wheels.
 - On Linux each carrier has its own epoll for reads.
+- On a JDK without `Thread.Affinity` (a later commit of the pull request): only
+  `pinned(false).affinity(false)`. The mailbox thread of an idle actor does not end. It yields
+  once, then parks until the next message. A message that comes during the yield finds it still
+  on its carrier. Each idle actor keeps one parked thread.
 
 ```
 carrier-0
