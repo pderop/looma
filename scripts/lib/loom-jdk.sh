@@ -35,13 +35,14 @@ if [ ! -x "$LOOM_JAVA" ]; then
 fi
 
 # A stock JDK 28, or another Loom build, sits right next to this one in SDKMAN and reports the same
-# version; it only fails much later, with "cannot find symbol: Thread.Affinity". Only the build of
-# openjdk/loom pull request 227 has Thread.Affinity.
+# version; it only fails much later, when the MPSC scheduler is missing. Only the builds of
+# openjdk/loom pull request 227 have it: the first one, with Thread.Affinity, and the later one,
+# without it. Both pass.
 # Same probe for every entry point, so a shell and a build cannot silently disagree.
 if [ "${LOOM_JDK_REQUIRED:-1}" = 1 ] \
-	&& ! "$_loom_jdk_home/bin/javap" 'java.lang.Thread$Affinity' >/dev/null 2>&1; then
-	echo "$_loom_jdk_home ($_loom_jdk_origin) is not the Loom build of openjdk/loom pull request 227 --" >&2
-	echo "it has no Thread.Affinity. Run 'sdk env' in the project root, or point JAVA_HOME at it." >&2
+	&& ! "$_loom_jdk_home/bin/javap" 'java.lang.MpscVirtualThreadScheduler' >/dev/null 2>&1; then
+	echo "$_loom_jdk_home ($_loom_jdk_origin) is not a Loom build of openjdk/loom pull request 227 --" >&2
+	echo "it has no MPSC scheduler. Run 'sdk env' in the project root, or point JAVA_HOME at it." >&2
 	exit 1
 fi
 
