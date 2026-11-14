@@ -47,7 +47,9 @@ carriers, so cores: **treat them as immutable.** Nothing enforces it.
 
 An actor runs on a virtual thread only while it has messages: its **mailbox thread**. The first
 message of an empty mailbox starts it; it runs the messages one at a time, then ends once the
-mailbox is empty. The next message starts a new one.
+mailbox is empty. The next message starts a new one. With the MPSC scheduler on a JDK without
+`Thread.Affinity`, the thread waits instead, and the next message wakes it:
+[`schedulers.md`](schedulers.md#mpsc-the-jdks-mpsc-scheduler).
 
 ```java
 public class Account implements Actor {

@@ -84,7 +84,9 @@ Here, each request asks for a random user.
 ```
 
 When the mailbox is empty, the actor's virtual thread ends. The next message starts a new one, and
-the scheduler picks its carrier:
+the scheduler picks its carrier. With the keep-alive (the MPSC scheduler on a JDK without
+`Thread.Affinity`), the thread waits instead, and the scheduler picks its carrier when the next
+message wakes it:
 
 ```
 same carrier   -> the users are still in that core's cache -> fast walk

@@ -93,6 +93,14 @@ own queues.
   once, then parks until the next message. A message that comes during the yield finds it still
   on its carrier. Each idle actor keeps one parked thread.
 
+The keep-alive depends on the JDK, not on `affinity(false)`:
+
+| JDK | Setting | When the mailbox is empty, the mailbox thread |
+| --- | --- | --- |
+| with `Thread.Affinity` (`5766f81`) | any, `affinity(false)` included | ends |
+| without `Thread.Affinity` (`33d7cd3`) | `pinned(false).affinity(false)` only | waits for the next message |
+| any | `Carriers.builtin(n)` | ends |
+
 ```
 carrier-0
   1. run the virtual threads of its queues, for one round
@@ -131,25 +139,32 @@ The engine is in `io.github.pderop.looma.impl`, once, for both schedulers:
 ```
 tell
   1. mailbox.offer(envelope)
-  2. pending.getAndIncrement()   0 -> 1 ?  start a mailbox thread, from the carrier's mailboxThreadFactory
+  2. pending.getAndIncrement()   0 -> 1 ?  wakeMailboxThread():
+                                            start a mailbox thread, from the carrier's mailboxThreadFactory
+                                            (keep-alive: unpark the waiting one, if any)
 mailbox thread
-  runs one envelope per count, then ends
+  runs one envelope per count, then awaitNextTell():
+    ends                          (keep-alive: yields once, then parks until the next tell)
 ```
 
 ```
 do {
-  if (state != STOPPED) {
-    envelope = mailbox.poll();
-    if (envelope != null) { runEnvelope; interrupted(); }
-  }
-} while (pending.decrementAndGet() > 0);
-if (TERMINATING && !cascadeStarted && pending == 0) tryFinishDraining();
+  do {
+    if (state != STOPPED) {
+      envelope = mailbox.poll();
+      if (envelope != null) { runEnvelope; interrupted(); }
+    }
+  } while (pending.decrementAndGet() > 0);
+  if (TERMINATING && !cascadeStarted && pending == 0) tryFinishDraining();
+} while (awaitNextTell());       // false: the thread ends. Keep-alive: true once a tell woke it
 ```
 
-- One mailbox thread at a time: only the `tell` from 0 starts one. An actor's fields need no lock.
-- Idle actor: no virtual thread, no stack.
-- A mailbox thread never yields. An actor whose mailbox never empties keeps its carrier; the others
-  on it wait. Fairness is a non-goal.
+- One mailbox thread at a time: only the `tell` from 0 starts or wakes one. An actor's fields need no lock.
+- Idle actor: no virtual thread, no stack. With the keep-alive (the MPSC scheduler on a JDK without
+  `Thread.Affinity`): one parked virtual thread, with its stack.
+- A mailbox thread never yields while its mailbox has envelopes. An actor whose mailbox never
+  empties keeps its carrier; the others on it wait. Fairness is a non-goal. The keep-alive yields
+  once, only when the mailbox is empty.
 - Offer, then count: a counted envelope is always there. A `tell` while the mailbox thread runs
   only counts.
 - The count starts at 1, held by `start()`: a `tell` before `start()` waits for it. `preStart` is
