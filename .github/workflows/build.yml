@@ -1,14 +1,15 @@
-# Builds and tests looma on the Loom JDK of openjdk/loom pull request 227, built from source.
+# Builds and tests looma on two Loom JDKs of openjdk/loom pull request 227, built from source:
+# the first one, with Thread.Affinity, and a later one, without it.
 # Adapted from the upstream Netty-VirtualThread-Scheduler project's
 # .github/workflows/loom-tests.yml.
 #
-# One JDK: Maven runs on the Loom JDK itself, so there is nothing to set up beyond pointing
+# One JDK per job: Maven runs on the Loom JDK itself, so there is nothing to set up beyond pointing
 # JAVA_HOME at it. The runner's preinstalled Maven is used as-is.
 #
-# There is no binary of that JDK. The job builds it once per commit of the pull request and keeps
-# it in the Actions cache: the first run builds it, the next ones restore it. A cache saved on main
-# serves every pull request. GitHub drops a cache that no run has read for 7 days; the next run
-# then builds it again. The boot JDK is the Loom build of builds.shipilev.net, a JDK 28.
+# There is no binary of these JDKs. The job builds each one once per commit and keeps it in the
+# Actions cache: the first run builds it, the next ones restore it. A cache saved on main serves
+# every pull request. GitHub drops a cache that no run has read for 7 days; the next run then
+# builds it again. The boot JDK is the Loom build of builds.shipilev.net, a JDK 28.
 name: Build
 
 on:
@@ -19,15 +20,31 @@ on:
   workflow_dispatch:
 
 jobs:
-  # Everything, on the Loom JDK: core, examples AND mpsc-scheduler, which the root pom's
+  # Everything, on each Loom JDK: core, examples AND mpsc-scheduler, which the root pom's
   # loom-jdk profile only adds to the reactor on JDK 28+.
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 120
 
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # The commit of openjdk/loom pull request 227, the same as in the README. It has
+          # Thread.Affinity.
+          - name: pr227
+            sha: 5766f815f7248a52bae73950b1c7a32532b872c0
+            affinity: true
+          # A later commit of the same repository, branch mpsc-without-affinity. It has no
+          # Thread.Affinity. Fixed, not the branch head: update it by hand.
+          - name: noaff
+            sha: 33d7cd32dc9402386565878b8fcb0d5b664362e1
+            affinity: false
+
+    name: build (${{ matrix.name }})
+
     env:
-      # The commit of openjdk/loom pull request 227, the same as in the README.
-      PR227_SHA: 5766f815f7248a52bae73950b1c7a32532b872c0
+      LOOM_SHA: ${{ matrix.sha }}
       BOOT_JDK_URL: https://builds.shipilev.net/openjdk-jdk-loom/openjdk-jdk-loom-linux-x86_64-server.tar.xz
 
     steps:
@@ -36,14 +53,14 @@ jobs:
       # The cache refuses a path with "." or "..", so the JDK lives in the runner's temp
       # directory, an absolute path. It is set here because the job's env cannot read it.
       - name: Choose where the Loom JDK lives
-        run: echo "LOOM_JDK=$RUNNER_TEMP/loom-jdk-pr227" >> "$GITHUB_ENV"
+        run: echo "LOOM_JDK=$RUNNER_TEMP/loom-jdk-${{ matrix.name }}" >> "$GITHUB_ENV"
 
       - name: Restore the Loom JDK
         id: jdk-cache
         uses: actions/cache/restore@v6
         with:
           path: ${{ env.LOOM_JDK }}
-          key: loom-jdk-pr227-${{ env.PR227_SHA }}
+          key: loom-jdk-${{ matrix.name }}-${{ env.LOOM_SHA }}
 
       - name: Build the Loom JDK
         if: steps.jdk-cache.outputs.cache-hit != 'true'
@@ -57,11 +74,11 @@ jobs:
           curl -fsSL "$BOOT_JDK_URL" | tar -xJ -C "$boot" --strip-components=1
           src="$RUNNER_TEMP/loom-src"
           mkdir -p "$src"
-          curl -fsSL "https://github.com/franz1981/loom/archive/$PR227_SHA.tar.gz" \
+          curl -fsSL "https://github.com/franz1981/loom/archive/$LOOM_SHA.tar.gz" \
             | tar -xz -C "$src" --strip-components=1
           cd "$src"
           bash configure --with-boot-jdk="$boot" --disable-warnings-as-errors \
-            --with-native-debug-symbols=none --with-version-opt="pr227-${PR227_SHA:0:7}"
+            --with-native-debug-symbols=none --with-version-opt="${{ matrix.name }}-${LOOM_SHA:0:7}"
           make images
           mkdir -p "$LOOM_JDK"
           cp -a build/linux-x86_64-server-release/images/jdk/. "$LOOM_JDK/"
@@ -72,13 +89,23 @@ jobs:
         uses: actions/cache/save@v6
         with:
           path: ${{ env.LOOM_JDK }}
-          key: loom-jdk-pr227-${{ env.PR227_SHA }}
+          key: loom-jdk-${{ matrix.name }}-${{ env.LOOM_SHA }}
 
+      # The tests skip what this JDK cannot do: check that it is the JDK the matrix names.
       - name: Check the Loom JDK
         run: |
           set -euo pipefail
           "$LOOM_JDK/bin/java" -version
-          "$LOOM_JDK/bin/javap" 'java.lang.Thread$Affinity' >/dev/null
+          if "$LOOM_JDK/bin/javap" 'java.lang.Thread$Affinity' >/dev/null 2>&1; then
+            has=true
+          else
+            has=false
+          fi
+          echo "Thread.Affinity: $has (expected ${{ matrix.affinity }})"
+          if [ "$has" != "${{ matrix.affinity }}" ]; then
+            echo "::error::Thread.Affinity is $has in this JDK, expected ${{ matrix.affinity }}"
+            exit 1
+          fi
 
       # The Loom JDK's major version must be mpsc-scheduler's <java.version>. Without this
       # check a mismatch surfaces as an opaque compiler error.
@@ -133,7 +160,7 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: test-reports
+          name: test-reports-${{ matrix.name }}
           path: |
             **/target/surefire-reports/
           if-no-files-found: ignore
