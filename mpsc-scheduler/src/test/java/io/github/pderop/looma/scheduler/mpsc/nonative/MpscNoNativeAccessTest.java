@@ -38,7 +38,7 @@ class MpscNoNativeAccessTest {
 		// Without Thread.Affinity, a pinned pool is refused before native access
 		// matters.
 		assumeTrue(JdkSupport.hasThreadAffinity(), "needs Thread.Affinity");
-		ActorSystem system = ActorSystem.builder().carriers(Carriers.mpsc(2)).build();
+		ActorSystem system = ActorSystem.builder().carriers(Carriers.mpsc(2).affine(true).pinned(true)).build();
 
 		assertEquals(2, system.carrierCount());
 		assertEquals(OptionalInt.empty(), system.scheduler().clusterOf(0));

@@ -82,7 +82,7 @@ echo "$BENCH backend started, pid $BACKEND_PID, $REACTORS reactors on CPUs $BACK
 
 if [ "$WARMUP" -gt 0 ]; then
 	echo "backend warm-up: ${WARMUP}s, please wait"
-	"scripts/jmh-$BENCH.sh" --schedulers mpsc-unpinned-no-affinity --profilers none \
+	"scripts/jmh-$BENCH.sh" --schedulers mpsc --profilers none \
 		--warmup-iterations "$(((WARMUP + 4) / 5))" --warmup-seconds 5 --iterations 1 --seconds 1 \
 		--out "$OUT/warmup" "$@" >"$OUT/warmup.log" 2>&1 || true
 	grep -qs 'phase=measure' "$OUT/warmup/steps.txt" || die "the backend warm-up failed: see $OUT/warmup.log"

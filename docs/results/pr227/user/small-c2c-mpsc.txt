@@ -1,0 +1,102 @@
+WARNING: failed to find node
+=================================================
+            Trace Event Information              
+=================================================
+  Total records                     :     125136
+  Locked Load/Store Operations      :        107
+  Load Operations                   :      36643
+  Loads - uncacheable               :          0
+  Loads - IO                        :          0
+  Loads - Miss                      :          0
+  Loads - no mapping                :      11193
+  Load Fill Buffer Hit              :          0
+  Load L1D hit                      :      20993
+  Load L2D hit                      :        766
+  Load LLC hit                      :       1582
+  Load Local HITM                   :        794
+  Load Remote HITM                  :       1464
+  Load Remote HIT                   :          0
+  Load Local DRAM                   :        180
+  Load Remote DRAM                  :          0
+  Load MESI State Exclusive         :        180
+  Load MESI State Shared            :          0
+  Load LLC Misses                   :       1644
+  Load access blocked by data       :          0
+  Load access blocked by address    :          0
+  Load HIT Local Peer               :          0
+  Load HIT Remote Peer              :          0
+  LLC Misses to Local DRAM          :       10.9%
+  LLC Misses to Remote DRAM         :        0.0%
+  LLC Misses to Remote cache (HIT)  :        0.0%
+  LLC Misses to Remote cache (HITM) :       89.1%
+  Store Operations                  :       9430
+  Store - uncacheable               :          3
+  Store - no mapping                :        959
+  Store L1D Hit                     :       7779
+  Store L1D Miss                    :          0
+  Store No available memory level   :        538
+  No Page Map Rejects               :       7056
+  Unable to parse data source       :      79063
+
+=================================================
+    Global Shared Cache Line Event Information   
+=================================================
+  Total Shared Cache Lines          :       2215
+  Load HITs on shared lines         :       3139
+  Fill Buffer Hits on shared lines  :          0
+  L1D hits on shared lines          :        841
+  L2D hits on shared lines          :         11
+  LLC hits on shared lines          :        808
+  Load hits on peer cache or nodes  :          0
+  Locked Access on shared lines     :         26
+  Blocked Access on shared lines    :          0
+  Store HITs on shared lines        :         54
+  Store L1D hits on shared lines    :         41
+  Store No available memory level   :          9
+  Total Merged records              :       2312
+
+=================================================
+                 c2c details                     
+=================================================
+  Events                            : ibs_op/ldlat=0/
+  Cachelines sort on                : Total HITMs
+  Cacheline data grouping           : offset,iaddr
+
+=================================================
+           Shared Data Cache Line Table          
+=================================================
+#
+#        ----------- Cacheline ----------      Tot  ------- Load Hitm -------    Total    Total    Total  --------- Stores --------  ----- Core Load Hit -----  - LLC Load Hit --  - RMT Load Hit --  --- Load Dram ----
+# Index             Address  Node  PA cnt     Hitm    Total  LclHitm  RmtHitm  records    Loads   Stores    L1Hit   L1Miss      N/A       FB       L1       L2    LclHit  LclHitm    RmtHit  RmtHitm       Lcl       Rmt
+# .....  ..................  ....  ......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  ........  .......  ........  .......  ........  ........
+#
+      0          0xde44c100     1      18    0.27%        6        2        4       20       20        0        0        0        0        0       14        0         0        2         0        4         0         0
+      1  0xffff88c2c3415840     0       1    0.13%        3        1        2        3        3        0        0        0        0        0        0        0         0        1         0        2         0         0
+      2          0xde4111c0     0       1    0.13%        3        1        2        3        3        0        0        0        0        0        0        0         0        1         0        2         0         0
+
+=================================================
+      Shared Cache Line Distribution Pareto      
+=================================================
+#
+#        ----- HITM -----  ------- Store Refs ------  --------- Data address ---------                      ---------- cycles ----------    Total       cpu                                                                                                             Shared                                                                                                       
+#   Num  RmtHitm  LclHitm   L1 Hit  L1 Miss      N/A              Offset  Node  PA cnt        Code address  rmt hitm  lcl hitm      load  records       cnt                                                                                           Symbol            Object                                                                                      Source:Line  Node
+# .....  .......  .......  .......  .......  .......  ..................  ....  ......  ..................  ........  ........  ........  .......  ........  ...............................................................................................  ................  ...............................................................................................  ....
+#
+  ----------------------------------------------------------------------
+      0        4        2        0        0        0          0xde44c100
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x18     1       1      0x77a31bf7b6d0         0        99         0       10         7  [.] void io.github.pderop.looma.impl.ActorRuntime.workFinished()                                 [JIT] tid 103579  void io.github.pderop.looma.impl.ActorRuntime.workFinished()+80                                   0  1
+          25.00%    0.00%    0.00%    0.00%    0.00%                0x28     1       1      0x77a31bf5d421       481         0         0        3         2  [.] boolean io.github.pderop.looma.impl.ActorCell.enqueue(io.github.pderop.looma.impl.Envelope)  [JIT] tid 103579  boolean io.github.pderop.looma.impl.ActorCell.enqueue(io.github.pderop.looma.impl.Envelope)+673   0
+          25.00%    0.00%    0.00%    0.00%    0.00%                0x28     1       1      0x77a31bf7b6c6       460         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorRuntime.workFinished()                                 [JIT] tid 103579  void io.github.pderop.looma.impl.ActorRuntime.workFinished()+70                                   0  1
+          25.00%    0.00%    0.00%    0.00%    0.00%                0x34     1       1      0x77a31bf72334       375         0       365        1         2  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)               [JIT] tid 103579  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+308                1
+          25.00%   50.00%    0.00%    0.00%    0.00%                0x38     1       1      0x77a31bf72349       383        94         0        4         4  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)               [JIT] tid 103579  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+329                0  1
+
+  ----------------------------------------------------------------------
+      1        2        1        0        0        0  0xffff88c2c3415840
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x38     0       1  0xffffffff991b9d1f       416       145         0        3         3  [k] aa_file_perm  [kernel.kallsyms]  aa_file_perm+79   0  1
+
+  ----------------------------------------------------------------------
+      2        2        1        0        0        0          0xde4111c0
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1      0x77a31bf4b08b       385        86         0        3         3  [.] void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)  [JIT] tid 103579  void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)+3979   0  1

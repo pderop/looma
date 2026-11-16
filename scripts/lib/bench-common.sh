@@ -21,13 +21,24 @@ die() {
 
 common_usage() {
 	cat <<'USAGE'
-Each run is one JVM, with one scheduler. For each scheduler:
+Each run is one JVM, with one scheduler. Each scheduler gets --rounds rounds. A round:
 
-  r1 to r<reps>  a measure at --rate: a warm-up, then 20 seconds measured
-  c2c, stat      the same, with perf c2c, then with perf stat (on Linux, the script needs perf)
-  ramp1 to ramp<ramp-runs>
-                 after the warm-up, the rate starts at --rate and goes up by --step at each step,
+  r<n>           a measure at --rate: a warm-up, then 20 seconds measured
+  c2c, stat      round 1 only: the same, with perf c2c, then with perf stat (on Linux, the script
+                 needs perf)
+  r<n>-ramp      after the warm-up, the rate starts at --rate and goes up by --step at each step,
                  each step 10 seconds measured, until a step is not kept up with
+
+In a round, each of these goes through every scheduler before the next one starts.
+
+Part of a campaign (combine them; --rounds 1 for a shorter one):
+
+  --step 0 --no-perf                only the measure at --rate: no ramp, no perf or epsilon run
+  --step 0                          only the measure at --rate and the perf runs: no ramp
+  --ramps-only                      only the ramps: no measure at --rate, so no perf or epsilon run
+  --schedulers <list>               only these schedulers
+
+A ramps-only run has no measure: publishing it replaces the measures of that benchmark.
 
 All runs use the same jar and the same JVM flags: only the scheduler changes.
 
@@ -44,15 +55,20 @@ with commas and ranges only (2-7,10-13), and no CPU in two lists:
   --step <n>               The ramp: requests per second added at each step, 0 for no ramp.
                            Default: 20000.
   --max-rate <n>           The ramp stops after this rate, 0 for no limit. Default: 0.
-  --ramp-runs <n>          Ramp runs per scheduler, each in a JVM of its own. Default: 2.
-  --reps <n>               Repetitions. Default: 3.
-  --no-perf                No c2c, stat, walk or epsilon run: only r1 to r<reps>, and the ramps.
-  --schedulers <list>      The schedulers to run, comma-separated, among mpsc, jdk,
-                           jdk-pinned, mpsc-unpinned, mpsc-no-affinity and
-                           mpsc-unpinned-no-affinity. Default: all six.
+  --rounds <n>             Rounds per scheduler: r1 and r1-ramp, r2 and r2-ramp... Default: 2.
+  --no-perf                No c2c, stat, walk or epsilon run: only the measures and the ramps.
+  --ramps-only             Only the ramps: no measure at --rate, so no c2c, stat, walk or epsilon
+                           run either. The summary then has only the max req/s.
+  --schedulers <list>      The schedulers to run, comma-separated, among mpsc,
+                           mpsc-affine, mpsc-pinned, mpsc-affine-pinned, jdk and
+                           jdk-pinned. Default: all six. On a JDK without
+                           Thread.Affinity: mpsc and jdk; it can also run
+                           jdk-pinned, and refuses the others.
   --out <dir>              Default: bench/<bench>-<date>-<time>, in the project.
   --summary-only           Runs nothing: writes again the tables of <out>/summary.md, from the
-                           files of its runs. Give --out and the options of the campaign.
+                           files of its runs. Give --out and the options of the campaign; the
+                           schedulers and the number of measures and of ramps come from the
+                           files.
 
 USAGE
 }
@@ -63,9 +79,9 @@ BACKEND_LIST=8,9,14,15,24,25,30,31
 RATE=150000
 STEP=20000
 MAX_RATE=0
-RAMP_RUNS=2
 PERF=1
-REPS=3
+RAMPS_ONLY=0
+ROUNDS=2
 OUT=
 SUMMARY_ONLY=0
 MEASURE=20
@@ -75,17 +91,23 @@ P99_LIMIT=1000
 SETTLE_SECONDS=3
 CONNECTIONS=8
 BACKEND_THREADS=
-SCHEDULERS="mpsc mpsc-unpinned mpsc-no-affinity mpsc-unpinned-no-affinity jdk jdk-pinned"
+SCHEDULERS="mpsc mpsc-affine mpsc-pinned mpsc-affine-pinned jdk jdk-pinned"
 KNOWN_SCHEDULERS=$SCHEDULERS
+# The schedulers a JDK without Thread.Affinity can run, and its default: jdk-pinned is pinned by
+# the script, and is run only when asked.
+NO_AFFINITY_SCHEDULERS="mpsc jdk jdk-pinned"
+NO_AFFINITY_DEFAULT="mpsc jdk"
+SCHEDULERS_GIVEN=0
 
 # parse_options "$@": the shared options, then those of the benchmark, through bench_flag and
 # bench_option.
 parse_options() {
-	COMMAND_LINE="$0 $*"
+	COMMAND_LINE="$0${*:+ $*}"
 	while [ $# -gt 0 ]; do
 		case $1 in
 			-h | --help) usage; exit 0 ;;
 			--no-perf) PERF=0; shift; continue ;;
+			--ramps-only) RAMPS_ONLY=1 PERF=0; shift; continue ;;
 			--summary-only) SUMMARY_ONLY=1; shift; continue ;;
 		esac
 		! bench_flag "$1" || { shift; continue; }
@@ -98,9 +120,8 @@ parse_options() {
 			--rate) RATE=$2 ;;
 			--step) STEP=$2 ;;
 			--max-rate) MAX_RATE=$2 ;;
-			--ramp-runs) RAMP_RUNS=$2 ;;
-			--reps) REPS=$2 ;;
-			--schedulers) SCHEDULERS=${2//,/ } ;;
+			--rounds) ROUNDS=$2 ;;
+			--schedulers) SCHEDULERS=${2//,/ }; SCHEDULERS_GIVEN=1 ;;
 			--out) OUT=$2 ;;
 			--connections) CONNECTIONS=$2 ;;
 			*) bench_option "$1" "$2" || die "unknown option '$1' (try --help)" ;;
@@ -112,12 +133,17 @@ parse_options() {
 	for s in $SCHEDULERS; do
 		[[ " $KNOWN_SCHEDULERS " == *" $s "* ]] || die "unknown scheduler '$s' (try --help)"
 	done
-	for n in "$RATE" "$STEP" "$MAX_RATE" "$RAMP_RUNS" "$REPS" "$CONNECTIONS"; do
+	for n in "$RATE" "$STEP" "$MAX_RATE" "$ROUNDS" "$CONNECTIONS"; do
 		[[ $n =~ ^[0-9]+$ ]] || die "not a number: '$n'"
 	done
 	[[ -z $BACKEND_THREADS || $BACKEND_THREADS =~ ^[1-9][0-9]*$ ]] || die "--reactors needs a number above 0, not '$BACKEND_THREADS'"
-	((RATE > 0 && REPS > 0 && CONNECTIONS > 0)) || die "--rate, --reps and --connections must be above 0"
-	((STEP == 0 || RAMP_RUNS > 0)) || die "--ramp-runs must be above 0, or --step 0 for no ramp"
+	((RATE > 0 && ROUNDS > 0 && CONNECTIONS > 0)) || die "--rate, --rounds and --connections must be above 0"
+	# A round is one measure and one ramp: as many of each. --ramps-only: no measure.
+	REPS=$ROUNDS RAMP_RUNS=$ROUNDS
+	if [ "$RAMPS_ONLY" = 1 ]; then
+		((STEP > 0)) || die "--ramps-only needs a ramp: not with --step 0"
+		REPS=0
+	fi
 }
 
 # "2-7,10" -> one CPU per line.
@@ -136,7 +162,7 @@ expand_cpus() {
 setup() {
 	# The three CPU lists: commas and ranges only, and no CPU in two lists.
 	declare -gA LIST_OF=()
-	local opt name list part cpus cpu topo core
+	local opt name list part cpus cpu topo core s
 	for opt in carriers:$CARRIER_LIST client:$CLIENT_LIST backend:$BACKEND_LIST; do
 		name=${opt%%:*} list=${opt#*:}
 		[[ $list =~ ^[0-9]+(-[0-9]+)?(,[0-9]+(-[0-9]+)?)*$ ]] ||
@@ -160,6 +186,18 @@ setup() {
 	source scripts/lib/loom-jdk.sh
 	JAVA=$LOOM_JAVA
 	JCMD=$(dirname "$JAVA")/jcmd
+	# A JDK without Thread.Affinity runs fewer schedulers: they become the default, and the others
+	# are refused before any run.
+	if ! "$(dirname "$JAVA")/javap" 'java.lang.Thread$Affinity' >/dev/null 2>&1; then
+		if [ "$SCHEDULERS_GIVEN" = 0 ]; then
+			SCHEDULERS=$NO_AFFINITY_DEFAULT
+		else
+			for s in $SCHEDULERS; do
+				[[ " $NO_AFFINITY_SCHEDULERS " == *" $s "* ]] ||
+					die "$s needs a JDK with Thread.Affinity, and $JAVA has none: try --schedulers ${NO_AFFINITY_SCHEDULERS// /,}"
+			done
+		fi
+	fi
 	CP=${CP:-$(scripts/lib/classpath.sh)}
 	OUT=${OUT:-$ROOT/bench/$BENCH-$(date +%Y%m%d-%H%M%S)}
 	[ ! -e "$OUT" ] || die "$OUT already exists"
@@ -240,7 +278,8 @@ header() {
 	printf 'carriers     CPUs %s\n' "$CARRIER_LIST"
 	printf 'clients      CPUs %s\n' "$CLIENT_LIST"
 	printf 'backend      CPUs %s, %s reactors, %s connections per pool\n' "$BACKEND_LIST" "$BACKEND_THREADS" "$CONNECTIONS"
-	printf 'heap         %s\n' "$HEAP_NOTE"
+	# The epsilon runs, user benchmark only, are part of the perf runs.
+	printf 'heap         %s%s\n' "$HEAP_NOTE" "$([ "$BENCH" = user ] && [ "$PERF" = 1 ] && echo "; the epsilon runs 12g, Epsilon")"
 	printf 'command      %s\n' "$COMMAND_LINE"
 	echo '```'
 }
@@ -411,6 +450,11 @@ c2c_counts() {
 		}' "$1"
 }
 
+# walk_failed <report>: true when perf could not read its record (an empty file, or no data).
+walk_failed() {
+	[ ! -s "$1" ] || grep -q 'failed to process sample\|data size field is 0' "$1"
+}
+
 # The walk columns of a run, from its perf report: "walk cycles | requests". walk cycles is the
 # sum of the column Period on the lines of UserGroupActor.walk. The requests are the rate times the
 # window of perf record.
@@ -445,14 +489,21 @@ row() {
 	[ "$mode" != c2c ] || c2cs=$(c2c_counts "$OUT/$c-c2c-$s.txt")
 	[ "$mode" != stat ] || stats=$(stat_counts "$RUNS/$c-stat-$s.csv")
 	[ "$mode" != epsilon ] || heap=$(epsilon_heap "$RUNS/$name.gc.log")
-	[ "$mode" != walk ] || walks=$(walk_counts "$OUT/$c-walk-$s.txt")
+	if [ "$mode" = walk ]; then
+		if walk_failed "$OUT/$c-walk-$s.txt"; then
+			late="${late:+$late; }perf record failed"
+		else
+			walks=$(walk_counts "$OUT/$c-walk-$s.txt")
+		fi
+	fi
 	[ "$mode" != ramp ] || fast=$(fast_rate "$RUNS/$name.out")
 	awk -v c="$c" -v s="$s" -v d="$depth" -v r="$label" -v gcs="$gcs" -v late="$late" -v stats="$stats" -v c2cs="$c2cs" \
 		-v heap="$heap" -v walks="$walks" -v fast="$fast" '
 		/^ramp +kept up with /      { held = $5; gsub(/,/, "", held) }
 		/^throughput/  { gsub(/,/, "", $2); rps = $2 }
 		/^cpu /        { cpu = $2 }
-		/^migrations/  { mig = $2 }
+		# "migrations unknown": a fraud detector did not answer in time. Left empty.
+		/^migrations/  { mig = $2 ~ /%$/ ? $2 : "" }
 		/^latency/     { p50 = $3; p99 = $7; p999 = $9 }
 		/^stackchunks/ { chunks = $2 " → " $7 }
 		/^backend cpu/ { bcpu = $3 }
@@ -462,11 +513,18 @@ row() {
 
 # resummarize: --summary-only. Writes again the tables of $OUT/summary.md, from the files of its
 # runs: one line per run in rows.md, as run does, then the tables. The header and The runs stay as
-# they are. The options must be those of the campaign: the tables use them.
+# they are, but for the lines that both benchmarks share, written again. The schedulers are those
+# of the files. The other options must be those of the campaign: the tables use them.
 resummarize() {
-	local f name rest c s d label mode
+	local f name rest c s d label mode found
 	[ -n "$OUT" ] && [ -f "$OUT/summary.md" ] || die "--summary-only needs --out <dir>, the directory of a campaign"
 	RUNS=$OUT/runs
+	# The measures and the ramps of the campaign, from its files: an older one may have more
+	# measures than ramps.
+	REPS=$(ls "$RUNS" | grep -v -- '-r[0-9]*-ramp-' | sed -n 's/.*-r\([0-9][0-9]*\)-.*\.out$/\1/p' | sort -n | tail -1)
+	RAMP_RUNS=$(ls "$RUNS" | sed -n 's/.*-r\([0-9][0-9]*\)-ramp-.*\.out$/\1/p' | sort -n | tail -1)
+	REPS=${REPS:-0} RAMP_RUNS=${RAMP_RUNS:-0}
+	((REPS + RAMP_RUNS > 0)) || die "no run r1 or r1-ramp in $RUNS"
 	: >"$OUT/rows.md"
 	for f in "$RUNS"/*.out; do
 		name=$(basename "$f" .out)
@@ -478,20 +536,31 @@ resummarize() {
 				[[ $rest =~ -([0-9]+)$ ]] || continue
 				d=${BASH_REMATCH[1]} rest=${rest%-"$d"}
 			fi
-			for s in $SCHEDULERS; do
+			for s in $KNOWN_SCHEDULERS; do
 				label=${rest%-"$s"}
-				[ "$label" != "$rest" ] && [[ $label =~ ^(r[0-9]+|c2c|stat|walk|epsilon|ramp[0-9]+)$ ]] || continue
+				[ "$label" != "$rest" ] && [[ $label =~ ^(r[0-9]+|r[0-9]+-ramp|c2c|stat|walk|epsilon)$ ]] || continue
 				case $label in
+					*-ramp) mode=ramp ;;
 					r[0-9]*) mode= ;;
-					ramp*) mode=ramp ;;
 					*) mode=$label ;;
 				esac
 				row "$c" "$label" "$s" "$d" "$mode" >>"$OUT/rows.md"
 			done
 		done
 	done
+	# The schedulers of the campaign, in the usual order: those with a run in rows.md.
+	found=
+	for s in $KNOWN_SCHEDULERS; do
+		grep -q "^| [^|]* | $s |" "$OUT/rows.md" && found+="${found:+ }$s"
+	done
+	[ "$SCHEDULERS_GIVEN" = 1 ] || SCHEDULERS=$found
 	{
-		awk '/^## At a glance/ { exit } { print }' "$OUT/summary.md"
+		# The header and The runs, with the shared lines of shared_lines written again.
+		SHARED=$(shared_lines) awk '
+			/^## At a glance/ { exit }
+			/^- Open loop:/ { print ENVIRON["SHARED"]; skip = 1; next }
+			skip && /^- The JDK.s poller mode/ { skip = 0; next }
+			!skip { sub(/ +$/, ""); print }' "$OUT/summary.md"
 		summary_tables
 		[ "$STEP" = 0 ] || ramp_table
 	} >"$OUT/summary.md.new"
@@ -506,7 +575,7 @@ resummarize() {
 summary_tables() {
 	local names=() c
 	for c in "${CASES[@]}"; do names+=("${c%%:*}"); done
-	SCHEDULER_LINES=$(scheduler_lines) awk -F'|' -v cases="${names[*]}" -v order="$SCHEDULERS" -v depth="$CASE_DEPTH" -v reps="$REPS" \
+	SCHEDULER_LINES=$(scheduler_lines) WALK_NOTE=$(cat "$OUT/walk-note.md" 2>/dev/null || true) awk -F'|' -v cases="${names[*]}" -v order="$SCHEDULERS" -v depth="$CASE_DEPTH" -v reps="$REPS" \
 		-v rate="$RATE" -v window=$((MEASURE - 6)) -v ramp="$STEP" -v ramps="$RAMP_RUNS" -v perf="$PERF" -v limit="$(p99_limit)" -v user="$([ "$BENCH" = user ] && echo 1 || echo 0)" '
 		function trim(v) { gsub(/^ +| +$/, "", v); return v }
 		function keep(k, v) {
@@ -526,28 +595,36 @@ summary_tables() {
 			return v out
 		}
 		function grange(k,   a, b) { a = group(lo[k]); b = group(hi[k]); return a == b ? a : a "–" b }
+		# A rate of the ramp, always a whole number of thousands: 170000 -> 170k
+		function kilo(v) { return v % 1000 == 0 ? group(v / 1000) "k" : group(v) }
 		function mean(k) { return cpu[k] / n[k] }
-		function measured(k) { return n[k] > 0 && !(k in late) }
-		# The note of a perf run: its own, or that of the runs at the same depth.
-		function pnote(cs, own) {
-			if (own != "") return "this run: " own
-			return measured(cs SUBSEP depth) ? "" : runs ": not a measurement"
-		}
+		# n: the runs that are a measurement. all: every run, for Controls.
+		function measured(k) { return n[k] > 0 }
+		# The mean of the valid runs, and which ones when some are left out: "64.65 (r2)".
+		function avgcell(k) { return sprintf("%.2f", mean(k)) part(k) }
+		# The runs kept, when some are left out: " (r2)". Every cell of such a row carries it.
+		function part(k) { return late[k] == "" ? "" : " (" good[k] ")" }
+		# The note of a perf run: its own only. It is a run of its own.
+		function pnote(cs, own) { return own != "" ? "this run: " own : "" }
 		# "| <case> | <scheduler> | <depth> |" for the user benchmark, "| <scheduler> |" for the servlet one.
 		function lead(c, s, d) { return user ? sprintf("| %s | %s | %s |", c, s, d) : sprintf("| %s |", s) }
 		function plead(c, s) { return user ? sprintf("| %s | %s |", c, s) : sprintf("| %s |", s) }
 		{ for (i = 2; i <= 26; i++) f[i] = trim($i); c = f[2]; s = f[3]; d = f[4]; r = f[5]; cs = c SUBSEP s }
+		# A run that is not a measurement counts in Controls only: its numbers are left out of the others.
 		r ~ /^r[0-9]+$/ {
-			k = cs SUBSEP d; n[k]++; cpu[k] += f[7]; mig[k] += f[8]
-			keep(k SUBSEP "rps", f[6]); keep(k SUBSEP "cpu", f[7]); keep(k SUBSEP "p50", f[9])
-			keep(k SUBSEP "p99", f[10]); keep(k SUBSEP "p999", f[11]); keep(k SUBSEP "gcs", f[12])
+			k = cs SUBSEP d; all[k]++
+			keep(k SUBSEP "rps", f[6]); keep(k SUBSEP "gcs", f[12])
+			if (f[20] != "") { late[k] = late[k] (late[k] == "" ? "" : ", ") r; next }
+			n[k]++; cpu[k] += f[7]; good[k] = good[k] (good[k] == "" ? "" : ", ") r
+			if (f[8] != "") { mig[k] += f[8]; nmig[k]++ } else unknown = 1
+			keep(k SUBSEP "cpu", f[7]); keep(k SUBSEP "p50", f[9])
+			keep(k SUBSEP "p99", f[10]); keep(k SUBSEP "p999", f[11])
 			if (f[25] != "") keep(k SUBSEP "bcpu", f[25])
-			if (f[20] != "") late[k] = 1
 		}
 		r == "stat" { stat[cs] = 1; ins[cs] = f[13]; cyc[cs] = f[14]; req[cs] = f[15]; snote[cs] = f[20] }
 		r == "walk" { wrun[cs] = 1; wcyc[cs] = f[22]; wreq[cs] = f[23]; wnote[cs] = f[20] }
 		r == "epsilon" { eps[cs] = 1; ecpu[cs] = f[7]; enote[cs] = f[20]; eheap[cs] = f[21] }
-		r ~ /^ramp[0-9]+$/ { held[cs, substr(r, 5) + 0] = f[24] == "" ? "none" : f[24]; fast[cs, substr(r, 5) + 0] = f[26] }
+		r ~ /^r[0-9]+-ramp$/ { held[cs, substr(r, 2) + 0] = f[24] == "" ? "none" : f[24]; fast[cs, substr(r, 2) + 0] = f[26] }
 		r == "c2c" {
 			c2c[cs] = 1; cmig[cs] = f[8]; loads[cs] = f[16]; hitm[cs] = f[17]; dram[cs] = f[18]
 			chunks[cs] = f[19]; cnote[cs] = f[20]
@@ -555,9 +632,9 @@ summary_tables() {
 		END {
 			nc = split(cases, cas, " "); ns = split(order, sch, " ")
 			# With one repetition, a range or a mean is just the value of r1.
-			runs = reps == 1 ? "r1" : "r1 to r" reps
-			span = reps == 1 ? "the value of r1" : "the lowest and the highest of r1 to r" reps
-			avg = reps == 1 ? "the value of r1" : "the mean of r1 to r" reps
+			runs = reps == 1 ? "r1" : reps == 2 ? "r1 and r2" : "r1 to r" reps
+			span = reps == 1 ? "the value of r1" : "the lowest and the highest of " runs
+			avg = reps == 1 ? "the value of r1" : "the mean of " runs
 			at = user ? " at depth " depth : ""
 			# The files of a run: runs/<case>-<run>-<scheduler>-<depth>, or runs/servlet-<run>-<scheduler>.
 			file = user ? "runs/<case>-<run>-<scheduler>-<depth>" : "runs/servlet-<run>-<scheduler>"
@@ -567,51 +644,51 @@ summary_tables() {
 
 			print "## At a glance"
 			print ""
+			# The columns case by case: all those of the first case, then those of the next.
+			# --ramps-only: no measure, so no cpu column, no In short and no Controls.
 			printf "| scheduler |"
-			for (a = 1; a <= nc; a++) printf " %s, cpu µs/req |", user ? cas[a] : "servlet"
-			if (ramp > 0) for (a = 1; a <= nc; a++) printf " %s, max req/s |", user ? cas[a] : "servlet"
-			if (ramp > 0) for (a = 1; a <= nc; a++) printf " %s, max req/s with p99 < %s |", user ? cas[a] : "servlet", limit
+			for (a = 1; a <= nc; a++) {
+				name = user ? cas[a] : "servlet"
+				if (reps > 0) printf " %s, cpu µs/req |", name
+				if (ramp > 0) printf " %s, max req/s | %s, max req/s with p99 < %s |", name, name, limit
+			}
 			print ""
 			printf "|---|"
-			for (a = 1; a <= nc; a++) printf "---|"
-			if (ramp > 0) for (a = 1; a <= 2 * nc; a++) printf "---|"
+			for (a = 1; a <= nc; a++) {
+				if (reps > 0) printf "---|"
+				if (ramp > 0) printf "---|---|"
+			}
 			print ""
 			for (i = 1; i <= ns; i++) {
 				printf "| %s |", sch[i]
 				for (a = 1; a <= nc; a++) {
-					k = cas[a] SUBSEP sch[i] SUBSEP depth
-					printf " %s |", !n[k] ? "" : measured(k) ? sprintf("%.2f", mean(k)) : "not a measurement"
-				}
-				# One value per ramp run, in order: ramp1 / ramp2 ...
-				if (ramp > 0) for (a = 1; a <= nc; a++) {
-					cs = cas[a] SUBSEP sch[i]; v = ""
-					for (k = 1; k <= ramps; k++) {
-						if (!((cs, k) in held)) continue
-						v = v (v == "" ? "" : " / ") (held[cs, k] == "none" ? "none" : group(held[cs, k]))
+					if (reps > 0) {
+						k = cas[a] SUBSEP sch[i] SUBSEP depth
+						printf " %s |", !all[k] ? "" : measured(k) ? avgcell(k) : "not a measurement"
 					}
-					printf " %s |", v
-				}
-				if (ramp > 0) for (a = 1; a <= nc; a++) {
-					cs = cas[a] SUBSEP sch[i]; v = ""
+					if (ramp == 0) continue
+					# One value per ramp, in round order, without spaces so that a cell never wraps: r1/r2...
+					cs = cas[a] SUBSEP sch[i]; v = ""; w = ""
 					for (k = 1; k <= ramps; k++) {
-						if (!((cs, k) in fast)) continue
-						v = v (v == "" ? "" : " / ") (fast[cs, k] == "none" ? "none" : group(fast[cs, k]))
+						if ((cs, k) in held) v = v (v == "" ? "" : "/") (held[cs, k] == "none" ? "none" : kilo(held[cs, k]))
+						if ((cs, k) in fast) w = w (w == "" ? "" : "/") (fast[cs, k] == "none" ? "none" : kilo(fast[cs, k]))
 					}
-					printf " %s |", v
+					printf " %s | %s |", v, w
 				}
 				print ""
 			}
 			print ""
-			print "cpu µs/req" at ", " avg ", as in In short."
+			if (reps > 0) print "cpu µs/req" at ", " avg ", as in In short."
 			if (ramp > 0) {
-				print "max req/s: the highest rate kept up with by each ramp run" at ", ramp1 / ramp2 ...: the line"
-				print "ramp kept up with of its console, as in The ramp."
+				print "max req/s: the highest rate kept up with by the ramp of each round" at ", r1/r2 ...: the"
+				print "`ramp kept up with` line of its console, as in The ramp."
 				print "max req/s with p99 < " limit ": a rate with an acceptable latency. In each ramp run, from the first step"
-				print "up, the last step kept up with before the first step whose p99 is above " limit ": the lines latency"
-				print "of its console, step by step. none: the p99 of the first step is already above."
+				print "up, the last step kept up with before the first step whose p99 is above " limit ": the `latency`"
+				print "lines of its console, step by step. none: the p99 of the first step is already above."
 			}
 			print ""
 			print ENVIRON["SCHEDULER_LINES"]
+			if (reps == 0) exit
 
 			print ""
 			print "## In short"
@@ -620,36 +697,44 @@ summary_tables() {
 				print "| case | scheduler | depth | cpu µs/req | cpu range | vs jdk | p50 µs | p99 µs | p99.9 µs | migrations | backend CPUs |"
 				print "|---|---|---|---|---|---|---|---|---|---|---|"
 			} else {
-				print "| scheduler | cpu µs/req | cpu range | vs jdk | p50 µs | p99 µs | p99.9 µs | backend CPUs |"
-				print "|---|---|---|---|---|---|---|---|"
+				print "| scheduler | cpu µs/req | cpu range | vs jdk | p50 µs | p99 µs | p99.9 µs | migrations | backend CPUs |"
+				print "|---|---|---|---|---|---|---|---|---|"
 			}
 			for (a = 1; a <= nc; a++) for (j = 0; j < 1 + user; j++) for (i = 1; i <= ns; i++) {
 				cs = cas[a] SUBSEP sch[i]; d = j == 0 ? depth : 0; k = cs SUBSEP d
-				if (!n[k]) continue
-				cv = measured(k) ? sprintf("%.2f", mean(k)) : "not a measurement"
+				if (!all[k]) continue
+				if (!measured(k)) {
+					printf "%s not a measurement | | | | | | | |\n", lead(cas[a], sch[i], d)
+					continue
+				}
 				jk = cas[a] SUBSEP "jdk" SUBSEP d
-				vs = sch[i] != "jdk" && measured(k) && measured(jk) ? sprintf("%+.1f%%", (mean(k) / mean(jk) - 1) * 100) : ""
-				printf "%s %s | %s | %s | %s | %s | %s |", lead(cas[a], sch[i], d), cv,
-					(measured(k) ? range(k SUBSEP "cpu", "%.2f") : ""), vs, grange(k SUBSEP "p50"), grange(k SUBSEP "p99"),
-					grange(k SUBSEP "p999")
-				if (user) printf " %.1f%% |", mig[k] / n[k]
-				printf " %s |\n", ((k SUBSEP "bcpu") in lo ? range(k SUBSEP "bcpu", "%.2f") : "")
+				vs = sch[i] != "jdk" && measured(jk) ? sprintf("%+.1f%%", (mean(k) / mean(jk) - 1) * 100) : ""
+				printf "%s %s | %s | %s | %s | %s | %s |", lead(cas[a], sch[i], d), avgcell(k),
+					range(k SUBSEP "cpu", "%.2f") part(k), vs, grange(k SUBSEP "p50") part(k), grange(k SUBSEP "p99") part(k),
+					grange(k SUBSEP "p999") part(k)
+				printf " %s |", nmig[k] ? sprintf("%.1f%%", mig[k] / nmig[k]) part(k) : "unknown"
+				printf " %s |\n", ((k SUBSEP "bcpu") in lo ? range(k SUBSEP "bcpu", "%.2f") part(k) : "")
 			}
 			print ""
 			print "```"
 			print "vs jdk = cpu µs/req / cpu µs/req of jdk, same " (user ? "case and depth" : "rate") ", - 1"
 			print "```"
 			print ""
-			print "From the console of each run, " file ".out: cpu µs/req, the line cpu; latencies, the line"
+			print "From the console of each run, " file ".out: cpu µs/req, the `cpu` line; latencies, the"
 			if (user) {
-				print "latency; migrations, the line migrations; backend CPUs, the line backend cpu: the CPU time of the"
+				print "`latency` line; migrations, the `migrations` line; backend CPUs, the `backend cpu` line: the CPU time of the"
 				print "backend process, read from /proc, divided by the length of the measure. cpu µs/req and"
 				print "migrations: " avg ". cpu range, backend CPUs and"
 			} else {
-				print "latency; backend CPUs, the line backend cpu: the CPU time of the backend process, read from"
-				print "/proc, divided by the length of the measure. cpu µs/req: " avg ". cpu range, backend CPUs and"
+				print "`latency` line; migrations, the `migrations` line, the fraud detectors only; backend CPUs, the"
+				print "`backend cpu` line: the CPU time of the backend process, read from /proc, divided by the length of"
+				print "the measure. cpu µs/req and migrations: " avg ". cpu range, backend CPUs and"
 			}
 			print "latencies: " span ". vs jdk is empty when jdk is not a measurement."
+			if (unknown) print "migrations unknown: a fraud detector did not answer in time; the mean is that of the other runs."
+			print "When a run is not a measurement, its numbers are not in this table: the mean is that of the"
+			print "other runs, named in parentheses after it, as (r2). The column note of Controls says which run"
+			print "was left out."
 			print step
 
 			print ""
@@ -664,8 +749,8 @@ summary_tables() {
 			}
 			for (a = 1; a <= nc; a++) for (j = 0; j < 1 + user; j++) for (i = 1; i <= ns; i++) {
 				cs = cas[a] SUBSEP sch[i]; d = j == 0 ? depth : 0; k = cs SUBSEP d
-				if (!n[k]) continue
-				which = k in late ? runs : ""
+				if (!all[k]) continue
+				which = late[k]
 				if (d == depth && cnote[cs] != "") which = which (which == "" ? "" : ", ") "c2c run"
 				if (d == depth && snote[cs] != "") which = which (which == "" ? "" : ", ") "stat run"
 				note = which == "" ? "" : "not a measurement (" which ")"
@@ -676,10 +761,10 @@ summary_tables() {
 					printf "%s %s | %s | %s |\n", lead(cas[a], sch[i], d), grange(k SUBSEP "rps"), range(k SUBSEP "gcs"), note
 			}
 			print ""
-			print "From the files of each run, in runs/. req/s: the line throughput of its console. GCs: the Pause"
+			print "From the files of each run, in runs/. req/s: the `throughput` line of its console. GCs: the Pause"
 			if (user) {
-				print "lines of its GC log, less the full GCs of the StackChunk counts. live StackChunks: the line"
-				print "stackchunks of the console of the c2c run, during the warm-up → after the measure. req/s and"
+				print "lines of its GC log, less the full GCs of the StackChunk counts. live StackChunks: the"
+				print "`stackchunks` line of the console of the c2c run, during the warm-up → after the measure. req/s and"
 				print "GCs: " span ". A run is not a measurement when its console says it could not keep up"
 				print "with its rate, its clients sent too late, a GET failed, or a pinning failed."
 			} else {
@@ -756,7 +841,7 @@ summary_tables() {
 			print "- Load DRAM: among them, the loads served by the memory (Load Local DRAM + Load Remote DRAM)."
 			if (user) {
 				print ""
-				print "migrations: the line migrations of the console of the c2c run, runs/<case>-c2c-<scheduler>-" depth ".out."
+				print "migrations: the `migrations` line of the console of the c2c run, runs/<case>-c2c-<scheduler>-" depth ".out."
 			}
 			print step
 
@@ -786,6 +871,8 @@ summary_tables() {
 			print "cycles that perf record gives to UserGroupActor.walk, the column Period of its report,"
 			print "<case>-walk-<scheduler>.txt. It is only the walk: the scheduler and the kernel are not in it."
 			print "requests: " group(rate) " req/s × " window " s, the window of perf record."
+			# walk-note.md, when there: where some walk runs come from, if not from this campaign.
+			if (ENVIRON["WALK_NOTE"] != "") { print ""; print ENVIRON["WALK_NOTE"]; print "" }
 			print step
 
 			print ""
@@ -796,7 +883,7 @@ summary_tables() {
 			for (a = 1; a <= nc; a++) for (i = 1; i <= ns; i++) {
 				cs = cas[a] SUBSEP sch[i]; k = cs SUBSEP depth
 				if (!eps[cs]) continue
-				g = measured(k) ? sprintf("%.2f", mean(k)) : "not a measurement"
+				g = measured(k) ? avgcell(k) : "not a measurement"
 				e = enote[cs] == "" ? ecpu[cs] : "not a measurement"
 				df = measured(k) && enote[cs] == "" ? sprintf("%+.2f", ecpu[cs] - mean(k)) : ""
 				printf "| %s | %s | %s | %s | %s | %s | %s |\n", cas[a], sch[i], g, e, df,
@@ -809,7 +896,7 @@ summary_tables() {
 			print ""
 			print "The epsilon run of each scheduler, at depth " depth ": the same run with the Epsilon GC, which"
 			print "frees nothing, so no GC runs. cpu µs/req G1: " avg ", as in In short. cpu µs/req Epsilon:"
-			print "the line cpu of its console, runs/<case>-epsilon-<scheduler>-" depth ".out. heap used: from its GC log"
+			print "the `cpu` line of its console, runs/<case>-epsilon-<scheduler>-" depth ".out. heap used: from its GC log"
 			print "(.gc.log), the line of the heap at exit \"space ... used [start, top, end)\", top - start."
 			print step
 		}' "$OUT/rows.md"
@@ -854,8 +941,8 @@ p99_limit() {
 ramp_table() {
 	local c s out user=0 file
 	[ "$BENCH" != user ] || user=1
-	file="runs/<case>-ramp<n>-<scheduler>-$CASE_DEPTH.out"
-	[ "$user" = 1 ] || file="runs/servlet-ramp<n>-<scheduler>.out"
+	file="runs/<case>-r<n>-ramp-<scheduler>-$CASE_DEPTH.out"
+	[ "$user" = 1 ] || file="runs/servlet-r<n>-ramp-<scheduler>.out"
 	echo
 	echo "## The ramp"
 	echo
@@ -866,10 +953,10 @@ ramp_table() {
 	for c in "${CASES[@]}"; do
 		for s in $SCHEDULERS; do
 			for ((r = 1; r <= RAMP_RUNS; r++)); do
-				out=$RUNS/${c%%:*}-ramp$r-$s${CASE_DEPTH:+-$CASE_DEPTH}.out
+				out=$RUNS/${c%%:*}-r$r-ramp-$s${CASE_DEPTH:+-$CASE_DEPTH}.out
 				[ -f "$out" ] || continue
 				# ramp_steps fields: 1 asked, 2 achieved, 3 cpu µs/req, 6 p99, 10 kept up.
-				ramp_steps "$out" | awk -F'\t' -v c="${c%%:*}" -v s="$s" -v run="ramp$r" -v user="$user" '
+				ramp_steps "$out" | awk -F'\t' -v c="${c%%:*}" -v s="$s" -v run="r$r" -v user="$user" '
 					$10 == "yes" { held = $1; us = $3; p99 = $6 }
 					$10 == "no" && miss == "" { miss = $1; got = $2; mp99 = $6 }
 					END {
@@ -885,13 +972,13 @@ ramp_table() {
 	echo
 	echo "From the console of each ramp run$([ "$user" = 0 ] || echo ", at depth $CASE_DEPTH"), $file: from $RATE req/s,"
 	echo "$STEP req/s more at each step, ${STEP_SECONDS}s measured, until a step is not kept up with$([ "$MAX_RATE" = 0 ] || echo " or above $MAX_RATE req/s")."
-	echo "Each step is one block of the console, from its line step. The console has every step."
+	echo "Each step is one block of the console, from its \`step\` line. The console has every step."
 	echo
-	echo "- kept up with req/s: the last step kept up with, the line ramp kept up with. none: not even the first."
-	echo "- cpu µs/req, p99 µs: at that step, the lines cpu and latency of its block."
+	echo "- kept up with req/s: the last step kept up with, the \`ramp kept up with\` line. none: not even the first."
+	echo "- cpu µs/req, p99 µs: at that step, the \`cpu\` and \`latency\` lines of its block."
 	echo "- missed req/s: the next step, the first not kept up with: its block says it did not keep up$([ "$user" = 0 ] || echo ", or that a GET got no answer")."
 	echo "  -: the ramp stopped at its last rate, with no step missed."
-	echo "- achieved req/s, p99 µs: at that missed step, the lines throughput and latency of its block."
+	echo "- achieved req/s, p99 µs: at that missed step, the \`throughput\` and \`latency\` lines of its block."
 }
 
 # run <label> <scheduler> <depth> [c2c|stat|walk|epsilon|ramp]: one JVM of the case $CASE, its console in
@@ -955,53 +1042,76 @@ c2c_runs() {
 	done
 }
 
-# The lines of "The runs" that both benchmarks share: the load, the CPUs, the schedulers.
+# walk_runs <depth>: the walk run of each scheduler. perf record can stop before it writes its
+# data: the run is made again, up to 3 times.
+walk_runs() {
+	local depth=$1 s try
+	for s in $SCHEDULERS; do
+		for try in 1 2 3; do
+			run walk "$s" "$depth" walk
+			walk_failed "$OUT/$CASE-walk-$s.txt" || break
+			[ "$try" = 3 ] || {
+				grep -v "^| $CASE | $s | $depth | walk |" "$OUT/rows.md" >"$OUT/kept.md" || true
+				mv "$OUT/kept.md" "$OUT/rows.md"
+			}
+		done
+	done
+}
+
+# The lines of "The runs" that both benchmarks share: the load, the CPUs, the schedulers. From
+# "- Open loop" to "- The JDK's poller mode": resummarize writes them again.
 shared_lines() {
 	echo "- Open loop: the clients send at a fixed rate. A latency is from the planned send time of a"
 	echo "  request to its answer. cpu µs/req is the server's: the process minus the clients."
 	echo "- Each carrier has a core to itself: the script refuses two carrier CPUs on one core."
 	echo "- The schedulers: ${SCHEDULERS// /, }."
-	echo "- jdk-pinned is jdk with each of its workers pinned to one carrier CPU. The clients are pinned to"
-	echo "  their own CPUs."
-	echo "- mpsc: the MPSC scheduler of the JDK (openjdk/loom pull request 227), behind Carriers.mpsc."
-	echo "  Each carrier is pinned to one CPU, and an actor never moves to another carrier."
-	echo "  The JDK's poller mode is not set: on Linux, it is mode 4, one epoll per carrier."
-	[[ " $SCHEDULERS " != *" mpsc-unpinned "* ]] ||
-		echo "- mpsc-unpinned is mpsc with no carrier pinned (Carriers.mpsc(n).pinned(false)): the OS places them."
-	[[ " $SCHEDULERS " != *"-no-affinity "* ]] || {
-		echo "- mpsc-no-affinity is mpsc where an actor can run on any carrier: its thread starts on the carrier"
-		echo "  of its sender, and an idle carrier may take it (Carriers.mpsc(n).affinity(false))."
-		echo "  mpsc-unpinned-no-affinity: the same, no carrier pinned."
-	}
+	[[ " $SCHEDULERS " != *" jdk-pinned "* ]] ||
+		echo "- jdk-pinned is jdk with each of its workers pinned to one carrier CPU."
+	echo "- The clients are pinned to their own CPUs."
+	# One line: resummarize ends the shared lines at this one.
+	echo "- The JDK's poller mode is not set. On Linux, the JDK then uses mode 4 under the MPSC scheduler (one epoll per carrier), and mode 2 under jdk (pollers that run as virtual threads)."
 }
 
 # scheduler_lines: what each scheduler is, in one line, at the end of each At a glance.
 scheduler_lines() {
 	local s
-	echo "#### The schedulers"
+	echo "### The schedulers"
 	echo
 	for s in $SCHEDULERS; do
 		case $s in
 		mpsc)
-			echo "- mpsc: the MPSC scheduler of openjdk/loom pull request 227, with"
-			echo "  \`-Djdk.virtualThreadScheduler.useMpsc=true -Djdk.virtualThreadScheduler.mpscSteal=true\`."
-			echo "  Looma **pins each carrier to one CPU**. An actor's threads have the \`Thread.Affinity\` of its"
-			echo "  carrier: **never stolen**. The threads an actor starts have none: **an idle carrier can steal them**." ;;
-		mpsc-unpinned) echo "- mpsc-unpinned: mpsc, **no carrier pinned**." ;;
-		mpsc-no-affinity) echo "- mpsc-no-affinity: mpsc, **carriers pinned**, but an actor's threads have no affinity: **they start on the carrier of the sender, and an idle carrier can steal them**." ;;
-		mpsc-unpinned-no-affinity) echo "- mpsc-unpinned-no-affinity: both, **no carrier pinned** and **no affinity**." ;;
-		jdk) echo "- jdk: the JDK's default scheduler, **a ForkJoinPool**." ;;
+			echo "- mpsc: the JDK's MPSC scheduler, **no carrier pinned** and **no affinity**: an actor can run"
+			echo "  on any carrier (\`Carriers.mpsc(n)\`)." ;;
+		mpsc-affine) echo "- mpsc-affine: mpsc where **each actor stays on its carrier**, no carrier pinned (\`Carriers.mpsc(n).affine(true)\`)." ;;
+		mpsc-pinned) echo "- mpsc-pinned: mpsc where **each carrier is pinned to one CPU**, no affinity (\`Carriers.mpsc(n).pinned(true)\`)." ;;
+		mpsc-affine-pinned) echo "- mpsc-affine-pinned: both, **each actor stays on its carrier** and **each carrier is pinned to one CPU** (\`Carriers.mpsc(n).affine(true).pinned(true)\`)." ;;
+		jdk) echo "- jdk: the JDK's default scheduler, **a ForkJoinPool** (\`Carriers.builtin(n)\`)." ;;
 		jdk-pinned) echo "- jdk-pinned: jdk, and the script **pins each worker to one carrier CPU**." ;;
 		esac
 	done
+}
+
+# rounds_lines <depths> <perf runs> [<warm-up>]: the rounds, in "The runs" of both benchmarks.
+rounds_lines() {
+	local rounds="$ROUNDS rounds" ramp=
+	[ "$ROUNDS" != 1 ] || rounds="one round"
+	[ "$STEP" = 0 ] || ramp=", then a ramp (r<n>-ramp)"
+	if [ "$RAMPS_ONLY" = 1 ]; then
+		echo "Each scheduler ran $rounds$([ -z "$CASE_DEPTH" ] || echo " in each case"). A round: a ramp only (r<n>-ramp), in a JVM of"
+		echo "its own, after $WARMUP seconds of warm-up${3:+, $3}. No measure at $RATE req/s, and no perf run."
+		return
+	fi
+	echo "Each scheduler ran $rounds$([ -z "$CASE_DEPTH" ] || echo " in each case"). A round: a measure at $RATE req/s${1:+, $1} (r<n>)$ramp."
+	[ "$PERF" = 0 ] || echo "Round 1 also has, between the two: $2."
+	echo "In a round, each of these goes through every scheduler before the next one starts. Each run is"
+	echo "a JVM of its own: $WARMUP seconds of warm-up${3:+, $3}, then $MEASURE seconds measured."
 }
 
 # The ramp, in "The runs" of both benchmarks.
 ramp_lines() {
 	[ "$STEP" = 0 ] && return
 	echo
-	echo "Last, $RAMP_RUNS ramp runs per scheduler (ramp1 to ramp$RAMP_RUNS), each in a JVM of its own$([ -z "$CASE_DEPTH" ] || echo ", at depth $CASE_DEPTH")."
-	echo "After the warm-up of each, the rate starts at $RATE req/s and goes up by $STEP req/s at each step,"
+	echo "The ramp$([ -z "$CASE_DEPTH" ] || echo ", at depth $CASE_DEPTH"): after the warm-up, the rate starts at $RATE req/s and goes up by $STEP req/s at each step,"
 	echo "${STEP_SECONDS} seconds measured, until a step is"
 	echo "not kept up with$([ "$MAX_RATE" = 0 ] || echo " or above $MAX_RATE req/s"). Between two steps the clients go on sending, unmeasured: 2"
 	echo "seconds for the late answers, then ${SETTLE_SECONDS} seconds to go up to the next rate."

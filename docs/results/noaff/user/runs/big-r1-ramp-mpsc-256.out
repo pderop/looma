@@ -1,0 +1,30 @@
+WARNING: Using experimental MPSC virtual thread scheduler
+scheduler    io.github.pderop.looma.scheduler.mpsc.MpscActorScheduler, Mpsc[count=10, pinned=false, affine=false]
+poller mode  not set
+groups       10, 200000 users each (~16015 KiB), depth 256
+load         150,000 req/s, 4 connection(s) on CPUs [0, 1, 16, 17]
+backend      127.0.0.1:8081, 8 connections per group
+window       10s warm-up, 20s measured
+
+ramp         from 150,000 req/s, 20,000 more at each step; at each step 10s measured and 3s to go up to it
+
+step         150,000 req/s, 10s measured
+throughput   149,893 req/s
+cpu          65.08 us/req (9.76 cores busy) -- server: process minus clients
+client cpu   26.67 us/req (4.00 cores busy)
+migrations   3.7% of 46,945 sampled messages ran on another carrier than the one before
+backend cpu  0.79 CPUs busy
+latency      p50 345.9  p90 790.5  p99 4689.9  p99.9 37847.0  max 160694.3 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         170,000 req/s, 10s measured
+throughput   169,951 req/s
+cpu          58.51 us/req (9.94 cores busy) -- server: process minus clients
+client cpu   23.53 us/req (4.00 cores busy)
+migrations   0.7% of 53,125 sampled messages ran on another carrier than the one before
+backend cpu  0.85 CPUs busy
+latency      p50 613.4  p90 1439.7  p99 14802.9  p99.9 108462.1  max 341049.3 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+*** did not keep up with 170,000 req/s: sent 169,945 req/s, 584 dropped, 0 unanswered, 0 failed -- not a measurement ***
+
+ramp         kept up with 150,000 req/s

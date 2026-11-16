@@ -8,9 +8,9 @@ common_usage() {
 	cat <<'USAGE'
 
 Options:
-  --schedulers <list>     mpsc, mpsc-unpinned, mpsc-no-affinity, mpsc-unpinned-no-affinity, jdk,
+  --schedulers <list>     mpsc, mpsc-affine, mpsc-pinned, mpsc-affine-pinned, jdk,
                           jdk-pinned (needs one fork, and two warm-up iterations at least).
-                          Default: mpsc-unpinned-no-affinity and jdk.
+                          Default: mpsc and jdk.
   --rates <list>          Requests per second, with commas.
   --profilers <list>      none, gc, comp, pauses, safepoints, perf, perfnorm, perfasm, perfc2c,
                           async, jfr. One JMH run each. jfr records the whole fork, warm-up
@@ -41,7 +41,7 @@ USAGE
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 cd "$ROOT"
 
-SCHEDULERS=mpsc-unpinned-no-affinity,jdk
+SCHEDULERS=mpsc,jdk
 POOLS=${POOLS:-}
 PROFILERS=none
 CARRIER_LIST=2-7,10-13
@@ -115,7 +115,7 @@ for p in ${PROFILERS//,/ }; do
 done
 for s in ${SCHEDULERS//,/ }; do
 	case $s in
-		mpsc | mpsc-unpinned | mpsc-no-affinity | mpsc-unpinned-no-affinity | jdk | jdk-pinned) ;;
+		mpsc | mpsc-affine | mpsc-pinned | mpsc-affine-pinned | jdk | jdk-pinned) ;;
 		*) die "unknown scheduler '$s'" ;;
 	esac
 done

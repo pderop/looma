@@ -37,7 +37,7 @@ import io.github.pderop.looma.Carriers;
 public class Main {
 
 	public static void main(String[] args) throws InterruptedException {
-		ActorSystem actorSystem = ActorSystem.builder().carriers(Carriers.mpsc(2)).build();
+		ActorSystem actorSystem = ActorSystem.builder().carriers(Carriers.mpsc(2).affine(true)).build();
 
 		ActorRef hello = actorSystem.spawn("hello", MyActor::new);
 

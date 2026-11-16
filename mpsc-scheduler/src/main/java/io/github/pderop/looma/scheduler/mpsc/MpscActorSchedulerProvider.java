@@ -84,7 +84,8 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 	 * A system found by discovery: the flags chose the MPSC scheduler, or an
 	 * earlier install did. Looma pins the carriers only in the second case, and
 	 * only if that install asked for it. Actors keep their carrier, unless that
-	 * install asked for no affinity, or the JDK has no {@code Thread.Affinity}.
+	 * install did not ask for {@code affine(true)}, or the JDK has no
+	 * {@code Thread.Affinity}.
 	 */
 	@Override
 	public ActorScheduler create() {
@@ -97,14 +98,14 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 			}
 			// Without Thread.Affinity, an actor never has affinity.
 			return new MpscActorScheduler(pool,
-					JdkAffinity.SUPPORTED && (installed == null || installed.affinity()));
+					JdkAffinity.SUPPORTED && (installed == null || installed.affine()));
 		}
 	}
 
 	@Override
 	public ActorScheduler create(Carriers.Mpsc carriers) {
 		synchronized (MpscActorSchedulerProvider.class) {
-			return new MpscActorScheduler(pool, carriers.affinity());
+			return new MpscActorScheduler(pool, carriers.affine());
 		}
 	}
 
@@ -120,9 +121,8 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 	 * be undone: this install, and every later one, throws.
 	 *
 	 * <p>
-	 * On a JDK without {@code Thread.Affinity}, only
-	 * {@code pinned(false).affinity(false)} installs. Any other pool is refused
-	 * before a property is set.
+	 * On a JDK without {@code Thread.Affinity}, only {@code Carriers.mpsc(n)}
+	 * installs. Any other pool is refused before a property is set.
 	 *
 	 * <p>
 	 * A new thread runs only on the CPUs of the thread that starts it. The JDK
@@ -147,9 +147,9 @@ public final class MpscActorSchedulerProvider implements ActorSchedulerProvider 
 				throw new IllegalStateException("an earlier install of " + carriers + " failed in this JVM, after the"
 						+ " JDK started the scheduler: " + failure.getMessage(), failure);
 			}
-			if (!JdkAffinity.SUPPORTED && (carriers.pinned() || carriers.affinity())) {
+			if (!JdkAffinity.SUPPORTED && (carriers.pinned() || carriers.affine())) {
 				throw new IllegalStateException("this JDK has no Thread.Affinity, which " + carriers + " needs: use"
-						+ " Carriers.mpsc(" + count + ").pinned(false).affinity(false)");
+						+ " Carriers.mpsc(" + count + ")");
 			}
 			if (System.getProperty(IMPL_CLASS) != null) {
 				throw new IllegalStateException("-D" + IMPL_CLASS + " is set, so this JVM runs another scheduler:"

@@ -38,27 +38,27 @@ class CarriersTest {
 	}
 
 	@Test
-	void mpscIsPinnedAndAffineUnlessAskedNotTo() {
+	void mpscIsNeitherPinnedNorAffineUnlessAsked() {
 		Carriers.Mpsc mpsc = Carriers.mpsc(4);
-		assertTrue(mpsc.pinned());
-		assertTrue(mpsc.affinity());
+		assertFalse(mpsc.pinned());
+		assertFalse(mpsc.affine());
 
-		Carriers.Mpsc neither = mpsc.pinned(false).affinity(false);
-		assertFalse(neither.pinned());
-		assertFalse(neither.affinity());
-		assertEquals(4, neither.count());
-		assertEquals(mpsc, neither.pinned(true).affinity(true));
+		Carriers.Mpsc both = mpsc.pinned(true).affine(true);
+		assertTrue(both.pinned());
+		assertTrue(both.affine());
+		assertEquals(4, both.count());
+		assertEquals(mpsc, both.pinned(false).affine(false));
 	}
 
 	@Test
 	void eachSettingIsItsOwn() {
-		Carriers.Mpsc unpinned = Carriers.mpsc(4).pinned(false);
-		assertTrue(unpinned.affinity());
-		Carriers.Mpsc moving = Carriers.mpsc(4).affinity(false);
-		assertTrue(moving.pinned());
-		assertNotEquals(Carriers.mpsc(4), unpinned);
-		assertNotEquals(Carriers.mpsc(4), moving);
-		assertNotEquals(unpinned, moving);
+		Carriers.Mpsc pinned = Carriers.mpsc(4).pinned(true);
+		assertFalse(pinned.affine());
+		Carriers.Mpsc affine = Carriers.mpsc(4).affine(true);
+		assertFalse(affine.pinned());
+		assertNotEquals(Carriers.mpsc(4), pinned);
+		assertNotEquals(Carriers.mpsc(4), affine);
+		assertNotEquals(pinned, affine);
 	}
 
 	@Test

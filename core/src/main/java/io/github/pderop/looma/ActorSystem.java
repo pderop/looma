@@ -34,8 +34,8 @@ import io.github.pderop.looma.spi.MpscQueueFactory;
  * {@code ask}, graceful stop). What varies is which
  * {@code io.github.pderop.looma.spi.ActorScheduler} supplies the factories that
  * start those threads — two ship in this project: {@link Carriers#mpsc(int)},
- * carrier-affine by default, discovered through the SPI and backed by a
- * JVM-wide pool of carrier threads installed once per process — by
+ * carrier-affine with {@code affine(true)}, discovered through the SPI and
+ * backed by a JVM-wide pool of carrier threads installed once per process — by
  * {@link Builder#carriers(Carriers)} or by JVM flags — and outliving any single
  * {@code ActorSystem}; or, when none is installed, the JDK builtin scheduler,
  * whose factories create plain virtual threads on the JDK's default virtual

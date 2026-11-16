@@ -114,7 +114,7 @@ public class ServletBench {
 	@State(Scope.Benchmark)
 	public static class Server {
 
-		@Param({"mpsc-unpinned-no-affinity", "jdk"})
+		@Param({"mpsc", "jdk"})
 		public String scheduler;
 
 		@Param({"300000"})
