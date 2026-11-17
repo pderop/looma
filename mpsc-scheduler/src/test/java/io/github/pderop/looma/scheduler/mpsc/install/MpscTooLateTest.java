@@ -34,7 +34,7 @@ class MpscTooLateTest {
 		}).join();
 
 		IllegalStateException e = assertThrows(IllegalStateException.class,
-				() -> ActorSystem.builder().carriers(Carriers.mpsc(2).pinned(false).affinity(false)).build());
+				() -> ActorSystem.builder().carriers(Carriers.mpsc(2)).build());
 
 		assertTrue(e.getMessage().contains("before"), e.getMessage());
 		// The properties it set are removed again.

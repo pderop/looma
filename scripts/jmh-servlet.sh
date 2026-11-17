@@ -4,7 +4,7 @@
 # the JMH profilers. The backend must be running: start `scripts/jmh-servlet-start-backend.sh` first.
 #
 #   scripts/jmh-servlet.sh                       # both schedulers at 300000, no profiler
-#   scripts/jmh-servlet.sh --schedulers mpsc,mpsc-no-affinity,jdk
+#   scripts/jmh-servlet.sh --schedulers mpsc,mpsc-pinned,jdk
 #   scripts/jmh-servlet.sh -- -p fraudKiB=128 -p fraudFeatures=32
 #   scripts/jmh-servlet.sh -- -jvmArgsAppend -Dservlet.sessions=10000
 #

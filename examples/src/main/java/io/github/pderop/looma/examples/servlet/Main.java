@@ -65,9 +65,8 @@ import io.github.pderop.looma.examples.utils.LoadGenerator;
  *
  * {@code servlet.maxRate} stops the ramp after that rate. The other properties
  * are {@code servlet.carriers}, {@code servlet.scheduler} ({@code mpsc},
- * {@code mpsc-unpinned}, {@code mpsc-no-affinity},
- * {@code mpsc-unpinned-no-affinity} or {@code jdk}),
- * {@code servlet.backendHost}, {@code servlet.backendPort},
+ * {@code mpsc-affine}, {@code mpsc-pinned}, {@code mpsc-affine-pinned} or
+ * {@code jdk}), {@code servlet.backendHost}, {@code servlet.backendPort},
  * {@code bench.connections}, {@code servlet.sessions},
  * {@code servlet.products}, {@code servlet.cartMax}, {@code servlet.recentMax},
  * {@code servlet.fraudKiB}, {@code servlet.fraudFeatures},
@@ -390,12 +389,12 @@ public final class Main {
 	private static Carriers carriers(String scheduler, int count) {
 		return switch (scheduler) {
 			case "mpsc" -> Carriers.mpsc(count);
-			case "mpsc-unpinned" -> Carriers.mpsc(count).pinned(false);
-			case "mpsc-no-affinity" -> Carriers.mpsc(count).affinity(false);
-			case "mpsc-unpinned-no-affinity" -> Carriers.mpsc(count).pinned(false).affinity(false);
+			case "mpsc-affine" -> Carriers.mpsc(count).affine(true);
+			case "mpsc-pinned" -> Carriers.mpsc(count).pinned(true);
+			case "mpsc-affine-pinned" -> Carriers.mpsc(count).affine(true).pinned(true);
 			case "jdk" -> Carriers.builtin(count);
 			default -> throw new IllegalArgumentException(
-					"servlet.scheduler must be mpsc, mpsc-unpinned, mpsc-no-affinity, mpsc-unpinned-no-affinity or jdk,"
+					"servlet.scheduler must be mpsc, mpsc-affine, mpsc-pinned, mpsc-affine-pinned or jdk,"
 							+ " not '" + scheduler + "'");
 		};
 	}

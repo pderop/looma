@@ -24,9 +24,15 @@ import io.github.pderop.looma.Message;
 
 /**
  * The quick start of the README: one actor, a {@code tell}, an {@code ask} and
- * a delayed {@code tell}. It runs on a stock JDK 25, on the JDK's scheduler.
- * With the argument {@code mpsc}, it runs on two MPSC carriers instead: this
- * needs the Loom JDK of the README.
+ * a delayed {@code tell}. With no argument, it runs on the JDK's scheduler, on
+ * a stock JDK 25. The argument picks two MPSC carriers instead, on a Loom JDK
+ * of the README:
+ * <ul>
+ * <li>{@code mpsc}: no pin and no affinity. It runs on the JDK without
+ * {@code Thread.Affinity}, and on the one with it.
+ * <li>{@code mpsc-affine-pinned}: each actor stays on its carrier, and each
+ * carrier is pinned to one CPU. It needs the JDK with {@code Thread.Affinity}.
+ * </ul>
  */
 public class QuickStart {
 
@@ -54,8 +60,15 @@ public class QuickStart {
 
 	public static void main(String[] args) throws Exception {
 		ActorSystem.Builder builder = ActorSystem.builder();
-		if (args.length > 0 && args[0].equals("mpsc")) {
-			builder.carriers(Carriers.mpsc(2)); // carrier affinity: needs the Loom JDK
+		if (args.length > 0) {
+			switch (args[0]) {
+				// Needs a Loom JDK with the MPSC scheduler.
+				case "mpsc" -> builder.carriers(Carriers.mpsc(2));
+				// Also needs Thread.Affinity.
+				case "mpsc-affine-pinned" -> builder.carriers(Carriers.mpsc(2).affine(true).pinned(true));
+				default -> throw new IllegalArgumentException(
+						"the argument must be mpsc or mpsc-affine-pinned, not '" + args[0] + "'");
+			}
 		}
 		ActorSystem system = builder.build();
 		ActorRef greeter = system.spawn("greeter", Greeter::new);

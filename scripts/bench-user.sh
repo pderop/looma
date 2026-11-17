@@ -4,7 +4,7 @@
 # run in <out>/runs/.
 #
 #   scripts/bench-user.sh                           # the CPUs of an AMD Ryzen 9 9950X
-#   scripts/bench-user.sh --users-per-group 8000    # the default case only
+#   scripts/bench-user.sh --users-per-group 8000    # the small case only
 #
 # Prerequisites: the Loom JDK selected (`sdk env`) and the project built. On Linux, it first runs
 # scripts/lib/linux-setup.sh, which needs sudo.
@@ -15,7 +15,7 @@ source "$(dirname "$0")/lib/bench-common.sh"
 
 BENCH=user
 WARMUP=10
-HEAP_NOTE="2g, G1; the epsilon runs 12g, Epsilon"
+HEAP_NOTE="2g, G1"
 DEPTH=256
 DEPTH0=1
 USERS_PER_GROUP=8000,200000
@@ -25,14 +25,23 @@ usage() {
 	echo
 	common_usage
 	cat <<'USAGE'
-The user benchmark has cases (a size of the groups), and also measures r1 to r<reps> at depth 0,
+The user benchmark has cases (a size of the groups), and each measure also runs at depth 0,
 then makes a walk run (perf record, UserGroupActor.walk out of line) and an epsilon run (no GC). Its
 warm-up is 10 seconds.
 
   --depth <n>              Users read per request. Default: 256.
-  --no-depth0              No run at depth 0: r1 to r<reps> at --depth only.
+  --no-depth0              No run at depth 0: each measure at --depth only.
   --users-per-group <list> The cases: users per actor group, ~82 bytes each, comma-separated.
-                           8000 is named default, 200000 big. Default: 8000,200000.
+                           8000 is named small, 200000 big. Default: 8000,200000.
+
+One case only, with the options above:
+
+  --users-per-group 8000                     only small
+  --users-per-group 200000                   only big
+  --users-per-group 200000 --ramps-only      only the ramps of big
+  --users-per-group 8000 --step 0            only the measures of small, with the perf runs
+
+Publishing one case replaces both cases of the published user benchmark.
 USAGE
 }
 
@@ -72,7 +81,7 @@ done
 CASES=()
 for n in ${USERS_PER_GROUP//,/ }; do
 	case $n in
-		8000) CASES+=(default:$n) ;;
+		8000) CASES+=(small:$n) ;;
 		200000) CASES+=(big:$n) ;;
 		*) CASES+=(users-$n:$n) ;;
 	esac
@@ -94,39 +103,38 @@ start_backend
 for c in "${CASES[@]}"; do
 	CASE=${c%%:*}
 	CASE_USERS=${c#*:}
-	for ((r = 1; r <= REPS; r++)); do
-		for s in $SCHEDULERS; do
+	# Round r: the measure of every scheduler, then (round 1 only) the perf runs, then the ramps.
+	for ((r = 1; r <= ROUNDS; r++)); do
+		((REPS == 0)) || for s in $SCHEDULERS; do
 			run "r$r" "$s" "$DEPTH"
 			[ "$DEPTH0" = 0 ] || run "r$r" "$s" 0
 		done
-	done
-	if [ "$C2C" = 1 ]; then
-		c2c_runs "$DEPTH"
-		for s in $SCHEDULERS; do
-			run stat "$s" "$DEPTH" stat
-		done
-		for s in $SCHEDULERS; do
-			run walk "$s" "$DEPTH" walk
-		done
-	fi
-	if [ "$PERF" = 1 ]; then
-		for s in $SCHEDULERS; do
-			run epsilon "$s" "$DEPTH" epsilon
-		done
-	fi
-	if [ "$STEP" != 0 ]; then
-		for ((r = 1; r <= RAMP_RUNS; r++)); do
+		if ((r == 1)) && [ "$C2C" = 1 ]; then
+			c2c_runs "$DEPTH"
 			for s in $SCHEDULERS; do
-				run "ramp$r" "$s" "$DEPTH" ramp
+				run stat "$s" "$DEPTH" stat
 			done
-		done
-	fi
+			walk_runs "$DEPTH"
+		fi
+		if ((r == 1)) && [ "$PERF" = 1 ]; then
+			for s in $SCHEDULERS; do
+				run epsilon "$s" "$DEPTH" epsilon
+			done
+		fi
+		if [ "$STEP" != 0 ]; then
+			for s in $SCHEDULERS; do
+				run "r$r-ramp" "$s" "$DEPTH" ramp
+			done
+		fi
+	done
 done
 stop_backend
 
 {
 	echo
 	echo "## The runs"
+	echo
+	echo "What the benchmark is: [benchmark-user.md](../../benchmark-user.md)."
 	echo
 	echo "$RATE req/s. Each group has $CONNECTIONS backend connections. The cases, by users per group:"
 	echo
@@ -137,20 +145,9 @@ stop_backend
 		echo "- ${c%%:*}: ${c#*:} users per group, about $size per group."
 	done
 	echo
-	times="$REPS times"
-	reps="r1 to r$REPS"
-	[ "$REPS" != 1 ] || { times=once; reps=r1; }
 	depths="at depth $DEPTH and at depth 0"
 	[ "$DEPTH0" = 1 ] || depths="at depth $DEPTH only"
-	if [ "$PERF" = 1 ]; then
-		echo "In each case, each scheduler ran $times $depths ($reps), then once"
-		echo "more with perf c2c, once more with perf stat, once more with perf record for the walk, and"
-		echo "once more with the Epsilon GC, at depth $DEPTH. Each run: $WARMUP seconds of warm-up, then"
-		echo "$MEASURE seconds measured."
-	else
-		echo "In each case, each scheduler ran $times $depths ($reps). Each run: $WARMUP seconds of"
-		echo "warm-up, then $MEASURE seconds measured."
-	fi
+	rounds_lines "$depths" "a run with perf c2c, one with perf stat, one with perf record for the walk, and one with the Epsilon GC, at depth $DEPTH"
 	ramp_lines
 	echo
 	shared_lines

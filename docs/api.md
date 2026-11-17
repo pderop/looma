@@ -49,7 +49,7 @@ An actor runs on a virtual thread only while it has messages: its **mailbox thre
 message of an empty mailbox starts it; it runs the messages one at a time, then ends once the
 mailbox is empty. The next message starts a new one. With the MPSC scheduler on a JDK without
 `Thread.Affinity`, the thread waits instead, and the next message wakes it:
-[`schedulers.md`](schedulers.md#mpsc-the-jdks-mpsc-scheduler).
+[the keep-alive](schedulers.md#the-keep-alive).
 
 ```java
 public class Account implements Actor {
@@ -136,11 +136,10 @@ ActorSystem system = ActorSystem.builder()
 ActorSystem.builder().scheduler(someScheduler);    // bypasses everything — tests only
 ```
 
-`carriers(...)` is `Carriers.mpsc(n)` (an actor never leaves its home carrier; add
-`.pinned(false)` to leave the carriers unpinned, `.affinity(false)` to let an actor run on any
-carrier) or `Carriers.builtin(n)` (the JDK's default scheduler). Without it, the system takes whatever the JVM
-flags chose. `build()` must run **before the JVM's first virtual thread**, and throws rather than
-run on the wrong scheduler: [`schedulers.md`](schedulers.md#in-code).
+`carriers(...)` takes `Carriers.mpsc(n)`, with its options `affine(true)` and `pinned(true)`, or
+`Carriers.builtin(n)`: [the schedulers](schedulers.md). Without it, the system takes whatever the
+JVM flags chose. `build()` must run **before the JVM's first virtual thread**, and throws rather
+than run on the wrong scheduler: [choosing one in code](schedulers.md#in-code).
 
 - `spawn` takes a `Supplier<Actor>`, not an instance: a `RESTART` calls it again for a fresh one.
 - Names must be non-blank, contain no `/`, and be unique among siblings.
@@ -240,8 +239,8 @@ ref.tell(msg, 50 ms)                      ref's home carrier is carrier-3
 
 - The wheel's virtual thread starts at the first timer of its carrier. While the wheel holds a
   timer, even one far in the future, the thread wakes at every tick.
-- Under `mpsc` with affinity, once a timer has run on its carrier, an actor arms and cancels the timers of its
-  own carrier with no queue; any other caller goes through a queue of the wheel:
+- Under `mpsc` with `affine(true)`, once a timer has run on its carrier, an actor arms and cancels
+  the timers of its own carrier with no queue; any other caller goes through a queue of the wheel:
   [`schedulers.md`](schedulers.md#the-wheel-thread).
 - The queues of the wheel have no limit, like the mailboxes: an arm is never refused. A queue set
   with `Builder.mpscQueueFactory` must have no limit either.
@@ -370,8 +369,8 @@ public void onReceive(Message message, ActorRef sender, ActorContext context) {
 `vThreadFactory()` is the only way to offload:
 
 ```
-under mpsc       -> the thread starts on the carrier of the thread that starts it (with affinity:
-                    the actor's carrier); an idle carrier may steal it
+under mpsc       -> the thread starts on the carrier of the thread that starts it (with
+                    `affine(true)`: the actor's carrier); an idle carrier may steal it
 under builtin    -> a plain virtual thread
 every thread     -> counted as in-flight work: awaitTermination waits for it
 created, never started -> the count never drops: awaitTermination times out (a caller bug)
@@ -383,11 +382,11 @@ actor's fields: take what it needs by value, and send the outcome back as a mess
 ### The hello example
 
 [`examples/hello`](../examples/src/main/java/io/github/pderop/looma/examples/hello) runs this on
-two `mpsc` carriers, with affinity. One actor, `/hello`, gets three asks at once. For each one, it tells its child
-`/hello/audit` and forks a thread that blocks 50 ms, then replies.
+two `mpsc` carriers, with `affine(true)`. One actor, `/hello`, gets three asks at once. For each
+one, it tells its child `/hello/audit` and forks a thread that blocks 50 ms, then replies.
 
-It needs the Loom JDK and the build of the README,
-[With carrier affinity](../README.md#with-carrier-affinity). From the project root:
+It needs `pr227`, the JDK with `Thread.Affinity`, and the build of the README,
+[On the MPSC scheduler](../README.md#on-the-mpsc-scheduler). From the project root:
 
 ```sh
 java --enable-native-access=ALL-UNNAMED \
@@ -425,9 +424,9 @@ forked threads       -> start on carrier-0; carrier-1 is idle and steals them;
 
 ### Platform threads started from an actor
 
-Under `mpsc` on Linux, a pinned carrier runs on one CPU, and a thread started from it would keep that
-CPU. Looma covers the threads the JDK starts. For your own threads and executors, take the factory
-from the system:
+Under `mpsc` with `pinned(true)` on Linux, a carrier runs on one CPU, and a thread started from it
+would keep that CPU. Looma covers the threads the JDK starts. For your own threads and executors,
+take the factory from the system:
 
 ```java
 ThreadFactory platform = system.scheduler().platformThreadFactory();
@@ -444,8 +443,9 @@ A **native frame** on the stack — a JNI call, or a foreign-function downcall �
 virtual thread, so it holds its carrier:
 
 ```
-builtin -> that ForkJoinPool worker is lost until the call returns; the pool grows to compensate
-mpsc    -> the pool is fixed: every thread waiting for that carrier waits
+builtin -> that ForkJoinPool worker runs nothing else until the call returns; the pool does
+           not add a worker for it
+mpsc    -> that carrier runs nothing else until the call returns: every thread waiting for it waits
 ```
 
 Keep native calls out of mailbox threads and out of anything forked from them. `synchronized` no
@@ -465,7 +465,7 @@ public class Db implements Actor {
         if (worker == null) {
             worker = context.spawn("worker", Worker::new);   // path: /db/worker
         }
-        worker.tell(message, context.self());            // same carrier under mpsc with affinity
+        worker.tell(message, context.self());            // same carrier with affine(true)
     }
 }
 ```
@@ -532,8 +532,8 @@ Pass it at spawn time, or keep the counter in a field of the actor.
 
 ## 9. Placement
 
-Every actor gets a **home carrier** at spawn, fixed for its life. Under `mpsc` with affinity, its
-mailbox threads run only there. Defaults:
+Every actor gets a **home carrier** at spawn, fixed for its life. Under `mpsc` with
+`affine(true)`, its mailbox threads run only there. Defaults:
 
 - `ActorSystem.spawn` → `Placement.roundRobin()`, the next carrier from a system-wide cursor;
 - `ActorContext.spawn` → `Placement.inherit()`, the parent's carrier: messages between them stay
@@ -569,34 +569,9 @@ SpawnOptions options = SpawnOptions.placedOn(Placement.carrier(3))
 
 ### Placing by key
 
-To keep everything that serves one key (a customer, a session) on one carrier: the actor for key
-`k` on carrier `k % carrierCount()`, shard `i` of each service on carrier `i % carrierCount()`.
-
-```java
-int carriers = system.carrierCount();
-ActorRef[] pricers = new ActorRef[64];
-for (int i = 0; i < pricers.length; i++) {
-    int index = i;
-    pricers[i] = system.spawn("pricing-" + i, () -> new Pricing(index),
-            SpawnOptions.placedOn(Placement.carrier(i % carriers)));
-}
-system.spawn("session-" + customer, () -> new Session(customer, pricers),
-        SpawnOptions.placedOn(Placement.carrier(customer % carriers)));
-
-// in Session: the session and its pricer share a carrier
-pricers[customer % pricers.length].tell(quote, context.self());
-```
-
-The pricer of `customer` is on carrier `customer % carriers` only when `carriers` divides `64`.
-
-A pool does the lookup for you: `forKey` gives the member of a key, and that member stays on its
-own carrier ([Pools](#pools-n-actors-of-one-type-behind-one-reference)).
-
-```java
-ActorRef pricers = system.spawn("pricing", Pricing::new,
-        SpawnOptions.pooled(64).withSelector(customer -> (Integer) customer));
-pricers.forKey(customer).tell(quote, context.self());   // always pricing-(customer % 64)
-```
+To send everything about one key (a customer, a session) to the same actor, spawn a pool and use
+`forKey`: the member of a key never changes, and under `affine(true)` it stays on its carrier
+([Routing by key](#routing-by-key)).
 
 ### Pools: N actors of one type behind one reference
 
@@ -746,8 +721,10 @@ if (!system.awaitTermination(5, TimeUnit.SECONDS)) {
 - **`Message` is a marker, not sealed.** It only keeps an arbitrary `Object` out of `tell`. The
   engine knows no protocol, and each actor has its own: one actor's sealed family is the place for
   exhaustiveness. Replies outside that family keep the inbound `switch` to what the actor handles.
-- **State in `preStart`.** `preStart` runs on the actor's home carrier: with pinned carriers, the
-  state is first touched by the core that will use it, so it starts hot.
+- **State in `preStart`.** With `affine(true)`, `preStart` runs on the actor's home carrier.
+  With `pinned(true)` too, the state is first touched by the core that will use it, so it starts
+  hot. Without `affine(true)`, the first mailbox thread starts on the carrier of the thread that
+  spawned the actor.
 - **A `Supplier`, not an instance**, so that a restart gets a fresh actor.
 - **The reply type is a `Class<R>`, not inferred.** An inferred `<R>` would cast unchecked: a wrong
   reply would fail somewhere else, or be stored and fail much later. The `Class` lets `ask` check
@@ -755,8 +732,9 @@ if (!system.awaitTermination(5, TimeUnit.SECONDS)) {
   look healthy because its second reply was right.
 - **`ask` fails at once on an unanswerable request** instead of queuing it to a mailbox that will
   never reply.
-- **Placement defaults keep a subtree on one core.** Placing a child elsewhere turns every
-  parent↔child `tell` into a cross-carrier hop: do it only when the actor's own load wants it.
+- **With `affine(true)`, placement defaults keep a subtree on one core.** Placing a child
+  elsewhere turns every parent↔child `tell` into a cross-carrier hop: do it only when the actor's
+  own load wants it.
 - **A pool needs no spread for blocking work:** a blocked virtual thread unmounts, so the `n`
   mailboxes are what buy the responsiveness. Spreading matters when the members compute.
 - **`homeCarrierIdOf`, not the running carrier, in tests:** under `mpsc` a thread an actor

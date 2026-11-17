@@ -29,9 +29,9 @@ import io.github.pderop.looma.Carriers;
 import io.github.pderop.looma.scheduler.mpsc.JdkSupport;
 
 /**
- * A JDK without {@code Thread.Affinity}: only
- * {@code pinned(false).affinity(false)} installs, and its mailbox threads are
- * kept alive. One fresh JVM for this class.
+ * A JDK without {@code Thread.Affinity}: only {@code Carriers.mpsc(n)}
+ * installs, and its mailbox threads are kept alive. One fresh JVM for this
+ * class.
  */
 class MpscNoThreadAffinityTest {
 
@@ -46,15 +46,15 @@ class MpscNoThreadAffinityTest {
 	 */
 	@Test
 	void onlyAPoolWithoutAffinityOrPinningInstalls() throws InterruptedException {
-		for (Carriers.Mpsc refused : new Carriers.Mpsc[]{Carriers.mpsc(3), Carriers.mpsc(3).pinned(false),
-				Carriers.mpsc(3).affinity(false)}) {
+		for (Carriers.Mpsc refused : new Carriers.Mpsc[]{Carriers.mpsc(3).affine(true).pinned(true),
+				Carriers.mpsc(3).affine(true), Carriers.mpsc(3).pinned(true)}) {
 			IllegalStateException e = assertThrows(IllegalStateException.class,
 					() -> ActorSystem.builder().carriers(refused).build(), refused.toString());
 			assertTrue(e.getMessage().contains("no Thread.Affinity"), e.getMessage());
 			assertNull(System.getProperty("jdk.virtualThreadScheduler.useMpsc"), "a refused pool set a property");
 		}
 
-		ActorSystem system = ActorSystem.builder().carriers(Carriers.mpsc(3).pinned(false).affinity(false)).build();
+		ActorSystem system = ActorSystem.builder().carriers(Carriers.mpsc(3)).build();
 		try {
 			assertEquals(3, system.carrierCount());
 			assertTrue(system.scheduler().keepMailboxThreadsAlive());

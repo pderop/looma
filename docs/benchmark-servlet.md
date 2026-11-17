@@ -8,19 +8,20 @@ A mini servlet container, written with Looma actors. It serves a small online sh
   products viewed last, and their prices.
 - `POST /cart`: the visitor adds a product to its cart. `CartServlet` adds it, and answers with the
   lines of the cart, and the total.
-- First, a servlet asks `FraudDetectorActor`, the fraud detector of its container, for the risk of the
-  request. The detector scores it from a table it keeps, and asks the backend for a flag.
+- First, a servlet sends a check to `FraudDetectorActor`, the fraud detector of its container, for
+  the risk of the request. The detector scores it from a table it keeps, and asks the backend for a flag.
   The page shows the risk.
 - Then, before it answers, the servlet calls a backend, in another process.
 
-The question is how far the server goes, and what its latency is below that, under each scheduler.
+**The question:** how far does the server go, and what is its latency below that, under each
+scheduler?
 
 ![One request in the servlet benchmark](images/servlet-request.svg)
 
 - Code: [`examples/…/servlet`](../examples/src/main/java/io/github/pderop/looma/examples/servlet)
-- What the two benchmarks share (the load, the schedulers, the machine, how to run them):
+- What the two benchmarks share (the load, the runs, the machine, how to run them):
   [`benchmark.md`](benchmark.md)
-- The other benchmark: [`benchmark-user.md`](benchmark-user.md)
+- The results: [`results/summary.md`](results/summary.md)
 
 ## The load
 
@@ -35,18 +36,11 @@ requests are:
 
 ## What a request does
 
-`handleRequest` asks `containers.forKey(sid)`. The same session always reaches the same container.
-There is one container per carrier. Its two servlets and its fraud detector are its child actors.
-With `mpsc` and `mpsc-unpinned`, they stay on its carrier. Each servlet is a `ServletActor`: it runs
-the steps of a request. It holds a `ProfileServlet` or a `CartServlet`, which keeps the sessions and
-writes the page.
-
-The container gives the request to the servlet of its path. A wrong path gets a 404, a wrong method
-a 405. The servlet updates the state of that session, and asks the fraud detector for a risk. The
-detector scores the request, calls the backend on a virtual thread, learns from the answer, and
-gives the risk to the servlet. The servlet then calls the backend on a virtual thread, parses the
-`key=value` body, and answers the container. The container sends the answer to the client. That
-completes the client's future, on the container's carrier.
+One container per carrier, a pool of actors: `containers.forKey(sid)` sends a session always to
+the same one. Its two servlets and its fraud detector are its child actors, with its home carrier:
+under `affine(true)`, they stay there. Each servlet is a `ServletActor` that holds a
+`ProfileServlet` or a `CartServlet`: the sessions and the page. A wrong path gets a 404, a wrong
+method a 405.
 
 ```
 1. handleRequest     -> ask(request) to the container of the session
@@ -65,7 +59,7 @@ completes the client's future, on the container's carrier.
 7. servlet           -> cancels the timer, parses the body and takes its buffer back,
                         writes the page in its output buffer, with the risk
                         tell to the container, with the text of the page
-8. container         -> answers the client
+8. container         -> answers the client: completes its future, on the container's carrier
 ```
 
 The state of a session lives in its servlet, in arrays of ints made with the session. A request
@@ -83,7 +77,7 @@ an amount, the check that touched it last, and a weight. A check touches `-Dserv
 records, 256 by default. Each one is a feature of the request (the session, the product, the
 quantity, the time, and mixes of them), hashed to a record. So the records of a check are spread
 over the whole table, and there is no reference to follow. A check writes them twice: once to score
-the request, once to learn from the backend's answer. About one answer in 60 comes back flagged:
+the request, once to learn from the backend's answer. About one answer in 64 comes back flagged:
 the flag only depends on the size of the body. The detector refuses nothing: the risk only goes in
 the page, and the answer stays a 200.
 
@@ -99,25 +93,18 @@ The sizes change from one request to the next, from a generator seeded with 1:
 | body asked of the backend by the fraud detector, no padding | 256 bytes to 1 KiB |
 | page written for the client | 512 bytes to 32 KiB |
 
-The bodies and the pages are written in buffers that each actor reuses. A call borrows a body buffer of its actor, and gives it back once the body is parsed. A page
-is written in the output buffer of its servlet, and the client gets the text of the page.
+The bodies and the pages are written in buffers that each actor reuses.
 
 **The timer.** Each backend call arms a timer on the actor that calls, a delayed `tell` of 3 s
 (`-Dservlet.backendTimeoutMillis`). The answer cancels it. If the timer comes first, the client
 gets a 504, and the call is interrupted. A call still waiting for a connection ends there. A call
 reading the backend loses its connection, and a new one is opened.
 
-**The backend calls.** Every call runs on a virtual thread from `ActorContext.vThreadFactory()`. It
-borrows a connection, writes its GET, reads the answer itself, and gives the connection back. No
-`onReceive` blocks on a socket. Under `mpsc` such a thread starts on the actor's carrier, and an
-idle carrier may steal it.
-
-A request makes two backend calls: the detector's, then the servlet's. Each container has one pool
-of connections to the backend, shared by its two servlets and its fraud detector. It has
-`--connections` connections (8 by default). A call takes the connection given back last. A
-connection carries one call at a time. So the number of backend calls at once is limited:
-carriers × `--connections`. A call beyond that waits in the pool, and the one waiting the longest
-gets the next connection.
+**The backend calls.** Each one runs on a virtual thread from `ActorContext.vThreadFactory()`: no
+`onReceive` blocks on a socket. Each container has one pool of `--connections` connections (8 by
+default), shared by its servlets and its detector. A call takes the connection given back last; when
+none is free, it waits, and the one waiting the longest gets the next. So at most carriers ×
+`--connections` backend calls run at once.
 
 The server starts the load once every container has its backend connections. If one cannot
 connect, the server does not start.
@@ -135,26 +122,21 @@ One server JVM per run, under taskset on the carrier CPUs:
 1. start the backend once, under taskset on the backend CPUs
 2. warm the backend: a throwaway server JVM sends --rate for --backend-warmup
    seconds (30), results thrown away (runs/servlet-backend-warmup-<scheduler>.out)
-3. r1 of every scheduler, then r2, then r3; then a c2c run of every scheduler, then a stat run
-   of every scheduler. Each one:
+3. for each round (--rounds, 2): the measure of every scheduler (r1, r2); in round 1 only, a
+   c2c run of every scheduler, then a stat run of every scheduler; then the ramp of every
+   scheduler (r1-ramp, r2-ramp), as in benchmark.md. Each measure:
    a. the containers open their backend connections
    b. the client threads move to the client CPUs
    c. 10 seconds of warm-up, thrown away: the rate goes up from a tenth of --rate to --rate
       (150,000)
    d. 20 seconds measured, then up to 5 s for the last answers, then the report
-4. for each scheduler, the ramp of benchmark.md, twice: two more server JVMs, ramp1 and ramp2
-5. stop the backend
+4. stop the backend
 ```
 
-The summary is `summary.md`, in the output directory of the run. It gives, per scheduler, the CPU
-of a request and the latencies at `--rate`, the highest rate each ramp run kept up with, the perf
-counts, and two steps of each ramp: the last one kept up with, and the next one. Each console has
-every step. The summary also shows how busy the backend was, in CPUs, during each measure. The
-server JVM reads it from `/proc`.
-
-The console of each run, and each `STEP` line of `scripts/jmh-servlet.sh` (`migrations_pct`), also give the
-migrations of the fraud detectors. One message of a detector in 64 is checked: did it run on
-another carrier than the message before? The line gives the share that did.
+Besides [cpu µs/req](benchmark.md#the-runs), the console of each run, and each `STEP` line of
+`scripts/jmh-servlet.sh` (`migrations_pct`), give the **migrations** of the fraud detectors: one
+message of a detector in 64 is checked, and the line gives the share that ran on another carrier
+than the message before.
 
 ## Running it
 
@@ -164,13 +146,13 @@ another carrier than the message before? The line gives the share that did.
 scripts/bench-servlet.sh                               # this one
 scripts/bench-servlet.sh --step 10000                  # smaller steps in the ramp
 scripts/bench-servlet.sh --connections 64
-scripts/bench-servlet.sh --schedulers mpsc,mpsc-no-affinity,jdk
+scripts/bench-servlet.sh --schedulers mpsc-affine-pinned,mpsc,jdk
 ```
 
 Under JMH, with the backend of `scripts/jmh-servlet-start-backend.sh`:
 
 ```bash
-scripts/jmh-servlet.sh --schedulers mpsc,mpsc-no-affinity,jdk
+scripts/jmh-servlet.sh --schedulers mpsc-affine-pinned,mpsc,jdk
 scripts/jmh-servlet.sh -- -p fraudKiB=128 -p fraudFeatures=32   # a smaller table, fewer records
 ```
 
@@ -178,12 +160,9 @@ scripts/jmh-servlet.sh -- -p fraudKiB=128 -p fraudFeatures=32   # a smaller tabl
 
 The choices shared with the user benchmark are in [`benchmark.md`](benchmark.md#why-it-is-built-this-way).
 
-**Why this benchmark.** The user benchmark measures the cache. Its walk chases pointers through the
-data of an actor, and it is made to show that effect. A real server does not spend its time that
-way. This one looks like a small web application: sessions, a shared catalog, a call to another
-service, a page to build. So it answers another question: how far a server goes, and at what latency.
-
-It also uses more of Looma:
+**Why this benchmark.** The user benchmark chases pointers on purpose, to show the cache. A real
+server does not spend its time that way. This one looks like a small web application: sessions, a
+shared catalog, a call to another service, a page to build. It also uses more of Looma:
 
 | What a request uses | User benchmark | Servlet benchmark |
 | --- | --- | --- |
@@ -212,16 +191,12 @@ It also uses more of Looma:
 - **The fraud detector:** a real shop checks its requests for fraud, and keeps counters for it in
   memory. It adds two messages and one backend call to each request, as a server with several
   services would.
-- **Its table, without pointers:** the user benchmark measures the cache by chasing pointers. Here a
-  check reads and writes records spread over a flat table. Run on the same core twice, a check can
-  find its records in that core's cache. Run on another core, it has to fetch them from the core
-  that wrote them last. So this cost depends on where the scheduler runs the detector. With affinity, the
-  detector runs on its container's carrier. Without it, or with `jdk`, it can run on any carrier.
-  The migrations line shows how often it moved.
-- **A table of 1 MiB, 256 records a check:** the table of one container is about the size of one
-  core's L2, and all the tables together are several times it. A check touches enough records that
-  where it runs weighs on each request. With affinity, a container's table can stay in the cache of
-  its carrier's core. Between two checks, a carrier also reads bodies and builds pages, and those push
-  part of the table out. `-p fraudKiB` and `-p fraudFeatures` try other sizes.
+- **Its table, without pointers:** a check reads and writes records spread over a flat table. On
+  the same core as the last check, it finds them in that core's cache; on another core, it fetches
+  them from the core that wrote them. So this cost depends on where the scheduler runs the detector,
+  and the migrations line shows how often it moved.
+- **A table of 1 MiB, 256 records a check:** one table is about one core's L2, all of them several
+  times it. A check touches enough records to weigh on each request. Bodies and pages push part of
+  the table out between two checks. `-p fraudKiB` and `-p fraudFeatures` try other sizes.
 - **A backend call on each check:** every request has the same shape, so a result has no cache hit
   rate to explain.

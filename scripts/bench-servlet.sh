@@ -97,45 +97,37 @@ start_backend
 : >"$OUT/rows.md"
 # A throwaway JVM warms the backend first. Its results are thrown away.
 run backend-warmup "${SCHEDULERS%% *}" "" backend-warmup
-for ((r = 1; r <= REPS; r++)); do
-	for s in $SCHEDULERS; do
+# Round r: the measure of every scheduler, then (round 1 only) the perf runs, then the ramps.
+for ((r = 1; r <= ROUNDS; r++)); do
+	((REPS == 0)) || for s in $SCHEDULERS; do
 		run "r$r" "$s" ""
 	done
-done
-if [ "$C2C" = 1 ]; then
-	c2c_runs ""
-	for s in $SCHEDULERS; do
-		run stat "$s" "" stat
-	done
-fi
-if [ "$STEP" != 0 ]; then
-	for ((r = 1; r <= RAMP_RUNS; r++)); do
+	if ((r == 1)) && [ "$C2C" = 1 ]; then
+		c2c_runs ""
 		for s in $SCHEDULERS; do
-			run "ramp$r" "$s" "" ramp
+			run stat "$s" "" stat
 		done
-	done
-fi
+	fi
+	if [ "$STEP" != 0 ]; then
+		for s in $SCHEDULERS; do
+			run "r$r-ramp" "$s" "" ramp
+		done
+	fi
+done
 stop_backend
 
 {
 	echo
 	echo "## The runs"
 	echo
+	echo "What the benchmark is: [benchmark-servlet.md](../../benchmark-servlet.md)."
+	echo
 	echo "$RATE req/s. $SESSIONS sessions and $PRODUCTS products; a cart keeps up to $CART_MAX lines, a profile"
 	echo "up to $RECENT_MAX viewed products. Each request makes two backend calls: its fraud check, then its servlet's."
 	echo "Each container has $CONNECTIONS backend connections, shared by its two servlets and its fraud detector: at most $((${#CARRIER_CPUS[@]} * CONNECTIONS)) backend calls at once. The backend is one JVM for all the runs, with $BACKEND_THREADS reactors,"
 	echo "warmed first by a throwaway JVM at $RATE req/s for ${BACKEND_WARMUP} seconds (runs/servlet-backend-warmup-*.out)."
 	echo
-	times="$REPS times"
-	reps="r1 to r$REPS"
-	[ "$REPS" != 1 ] || { times=once; reps=r1; }
-	if [ "$PERF" = 1 ]; then
-		echo "Each scheduler ran $times ($reps), then once more with perf c2c and once more with perf stat."
-	else
-		echo "Each scheduler ran $times ($reps)."
-	fi
-	echo "Each run: $WARMUP seconds of warm-up, the rate going up from a tenth of $RATE req/s, then"
-	echo "$MEASURE seconds measured."
+	rounds_lines "" "a run with perf c2c and one with perf stat" "the rate going up from a tenth of $RATE req/s"
 	ramp_lines
 	echo
 	shared_lines

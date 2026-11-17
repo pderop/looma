@@ -1,0 +1,262 @@
+WARNING: failed to find node
+=================================================
+            Trace Event Information              
+=================================================
+  Total records                     :     176388
+  Locked Load/Store Operations      :        234
+  Load Operations                   :      51823
+  Loads - uncacheable               :          0
+  Loads - IO                        :          0
+  Loads - Miss                      :          0
+  Loads - no mapping                :      12176
+  Load Fill Buffer Hit              :          0
+  Load L1D hit                      :      34014
+  Load L2D hit                      :       1196
+  Load LLC hit                      :       1697
+  Load Local HITM                   :       1372
+  Load Remote HITM                  :        221
+  Load Remote HIT                   :          0
+  Load Local DRAM                   :       2467
+  Load Remote DRAM                  :          0
+  Load MESI State Exclusive         :       2467
+  Load MESI State Shared            :          0
+  Load LLC Misses                   :       2688
+  Load access blocked by data       :          0
+  Load access blocked by address    :          0
+  Load HIT Local Peer               :          0
+  Load HIT Remote Peer              :          0
+  LLC Misses to Local DRAM          :       91.8%
+  LLC Misses to Remote DRAM         :        0.0%
+  LLC Misses to Remote cache (HIT)  :        0.0%
+  LLC Misses to Remote cache (HITM) :        8.2%
+  Store Operations                  :      17004
+  Store - uncacheable               :          0
+  Store - no mapping                :       1174
+  Store L1D Hit                     :      15078
+  Store L1D Miss                    :          0
+  Store No available memory level   :        382
+  No Page Map Rejects               :      15498
+  Unable to parse data source       :     107561
+
+=================================================
+    Global Shared Cache Line Event Information   
+=================================================
+  Total Shared Cache Lines          :       1547
+  Load HITs on shared lines         :       1848
+  Fill Buffer Hits on shared lines  :          0
+  L1D hits on shared lines          :        212
+  L2D hits on shared lines          :         19
+  LLC hits on shared lines          :       1385
+  Load hits on peer cache or nodes  :          0
+  Locked Access on shared lines     :         90
+  Blocked Access on shared lines    :          0
+  Store HITs on shared lines        :         61
+  Store L1D hits on shared lines    :         56
+  Store No available memory level   :          3
+  Total Merged records              :       1654
+
+=================================================
+                 c2c details                     
+=================================================
+  Events                            : ibs_op/ldlat=0/
+  Cachelines sort on                : Total HITMs
+  Cacheline data grouping           : offset,iaddr
+
+=================================================
+           Shared Data Cache Line Table          
+=================================================
+#
+#        ----------- Cacheline ----------      Tot  ------- Load Hitm -------    Total    Total    Total  --------- Stores --------  ----- Core Load Hit -----  - LLC Load Hit --  - RMT Load Hit --  --- Load Dram ----
+# Index             Address  Node  PA cnt     Hitm    Total  LclHitm  RmtHitm  records    Loads   Stores    L1Hit   L1Miss      N/A       FB       L1       L2    LclHit  LclHitm    RmtHit  RmtHitm       Lcl       Rmt
+# .....  ..................  ....  ......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  ........  .......  ........  .......  ........  ........
+#
+      0          0x878c0c80   0-1       2    0.63%       10        4        6       19       19        0        0        0        0        0        9        0         0        4         0        6         0         0
+      1          0x881ba380   0-1      16    0.50%        8        4        4       27       27        0        0        0        0        0       17        0         2        4         0        4         0         0
+      2          0x8008c3c0     0       8    0.25%        4        4        0        9        8        1        1        0        0        0        4        0         0        4         0        0         0         0
+      3          0x8aefd800     0       8    0.25%        4        0        4        8        6        2        2        0        0        0        1        0         1        0         0        4         0         0
+      4          0x80231200     0       3    0.19%        3        2        1        4        3        1        1        0        0        0        0        0         0        2         0        1         0         0
+      5      0x73be241ecf00     0      13    0.19%        3        2        1       17       14        3        3        0        0        0       11        0         0        2         0        1         0         0
+      6  0xffff88c2c4380500     0       1    0.13%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+      7  0xffff88c2c4381000     0       1    0.13%        2        0        2        3        3        0        0        0        0        0        1        0         0        0         0        2         0         0
+      8  0xffff88c2c4381040     0       9    0.13%        2        0        2       11       11        0        0        0        0        0        9        0         0        0         0        2         0         0
+      9  0xffff88c2c9fc0b40     0       1    0.13%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     10  0xffff88c2cd94f340     0       1    0.13%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     11  0xffff88c2ce00f380     0       5    0.13%        2        2        0        8        8        0        0        0        0        0        4        2         0        2         0        0         0         0
+     12  0xffff88c2d0c02200     0       2    0.13%        2        2        0        3        3        0        0        0        0        0        1        0         0        2         0        0         0         0
+     13  0xffff88c2dba0f340     0       1    0.13%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     14  0xffff88c2dba13340     0       1    0.13%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     15  0xffff88c2dfbce540     0       2    0.13%        2        0        2        3        3        0        0        0        0        0        1        0         0        0         0        2         0         0
+     16  0xffff88c690514140     1       1    0.13%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     17  0xffff88c6ebb2c740     1       1    0.13%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     18          0x80080800     0       3    0.13%        2        2        0        3        3        0        0        0        0        0        1        0         0        2         0        0         0         0
+     19          0x80100100     0       9    0.13%        2        1        1       11        9        2        1        0        1        0        7        0         0        1         0        1         0         0
+     20          0x80a20e40     1       3    0.13%        2        1        1        3        3        0        0        0        0        0        1        0         0        1         0        1         0         0
+     21          0x877f3fc0   0-1       2    0.13%        2        0        2        6        6        0        0        0        0        0        0        2         2        0         0        2         0         0
+     22          0x878ab6c0     0       1    0.13%        2        0        2        6        6        0        0        0        0        0        1        2         1        0         0        2         0         0
+     23          0x878c0e00     0       1    0.13%        2        1        1        3        3        0        0        0        0        0        1        0         0        1         0        1         0         0
+     24          0x8841a340   0-1       7    0.13%        2        0        2       10       10        0        0        0        0        0        7        0         1        0         0        2         0         0
+     25          0x89ba0500     1       2    0.13%        2        0        2        3        2        1        1        0        0        0        0        0         0        0         0        2         0         0
+
+=================================================
+      Shared Cache Line Distribution Pareto      
+=================================================
+#
+#        ----- HITM -----  ------- Store Refs ------  --------- Data address ---------                      ---------- cycles ----------    Total       cpu                                                                                                             Shared                                                                                                        
+#   Num  RmtHitm  LclHitm   L1 Hit  L1 Miss      N/A              Offset  Node  PA cnt        Code address  rmt hitm  lcl hitm      load  records       cnt                                                                                           Symbol            Object                                                                                       Source:Line  Node
+# .....  .......  .......  .......  .......  .......  ..................  ....  ......  ..................  ........  ........  ........  .......  ........  ...............................................................................................  ................  ................................................................................................  ....
+#
+  ----------------------------------------------------------------------
+      0        6        4        0        0        0          0x878c0c80
+  ----------------------------------------------------------------------
+          50.00%  100.00%    0.00%    0.00%    0.00%                0x20     0       1      0x73be13fcd5c6       374        85         0        9         7  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                                            [JIT] tid 142358  void java.lang.MpscCarrierThread.eventLoopSteal()+838                                              0  1
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x20     1       1      0x73be13f9e473       376         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)  [JIT] tid 142358  void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)+3059   0  1
+          16.67%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x73be13fb0ff4       361         0         0        1         1  [.] void java.lang.IdleSet.clearIdle(java.lang.MpscCarrierThread)                                [JIT] tid 142358  void java.lang.IdleSet.clearIdle(java.lang.MpscCarrierThread)+116                                  1
+
+  ----------------------------------------------------------------------
+      1        4        4        0        0        0          0x881ba380
+  ----------------------------------------------------------------------
+          25.00%    0.00%    0.00%    0.00%    0.00%                 0xc   0-1       2      0x73be13fb26ed       411         0       227        3         2  [.] void io.github.pderop.looma.impl.ActorCell$$Lambda/0x00000000240cbc00.run()                  [JIT] tid 142358  void io.github.pderop.looma.impl.ActorCell$$Lambda/0x00000000240cbc00.run()+109                   0  1
+          25.00%   50.00%    0.00%    0.00%    0.00%                0x20   0-1       2      0x73be13f9da48       368       175         0        8         5  [.] void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)  [JIT] tid 142358  void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)+456   0  1
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x73be13f1294a       690         0         0        5         4  [.] void java.lang.VirtualThread.run(java.lang.Runnable)                                         [JIT] tid 142358  void java.lang.VirtualThread.run(java.lang.Runnable)+202                                          0  1
+           0.00%   25.00%    0.00%    0.00%    0.00%                0x30   0-1       2      0x73be13f12954         0       106         0        9         6  [.] void java.lang.VirtualThread.run(java.lang.Runnable)                                         [JIT] tid 142358  void java.lang.VirtualThread.run(java.lang.Runnable)+212                                          0  1
+           0.00%   25.00%    0.00%    0.00%    0.00%                0x30     0       1      0x73be13fc682d         0        96         0        1         1  [.] 0x000073be13fc682d                                                                           [JIT] tid 142358  [JIT] tid 142358[73be13fc682d]                                                                    0
+
+  ----------------------------------------------------------------------
+      2        0        4        1        0        0          0x8008c3c0
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x73be13f4c282         0        92         0        2         2  [.] void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()  [JIT] tid 142358  void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()+2946   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x73be13f4b7df         0       122         0        2         2  [.] void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()  [JIT] tid 142358  void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()+223    1
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x30     0       1      0x73be13f4b7bc         0         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()  [JIT] tid 142358  void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()+188    0
+
+  ----------------------------------------------------------------------
+      3        4        0        2        0        0          0x8aefd800
+  ----------------------------------------------------------------------
+          25.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x73be13f4b7fa       374         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()  [JIT] tid 142358  void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()+250    1
+          25.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x73be13f4c282       376         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()  [JIT] tid 142358  void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()+2946   1
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x73be13f4b7df       386         0         0        2         2  [.] void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()  [JIT] tid 142358  void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()+223    1
+           0.00%    0.00%   50.00%    0.00%    0.00%                0x30     0       1      0x73be13f4b7bc         0         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()  [JIT] tid 142358  void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()+188    1
+           0.00%    0.00%   50.00%    0.00%    0.00%                0x3c     0       1      0x73be13f4bb53         0         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()  [JIT] tid 142358  void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()+1107   0
+
+  ----------------------------------------------------------------------
+      4        1        2        1        0        0          0x80231200
+  ----------------------------------------------------------------------
+         100.00%   50.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x73be13f4bb5d       343        59         0        2         2  [.] void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()  [JIT] tid 142358  void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()+1117   0  1
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x14     0       1      0x73be13f4b796         0        93         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()  [JIT] tid 142358  void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()+150    0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x14     0       1      0x73be13f4bb53         0         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()  [JIT] tid 142358  void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()+1107   1
+
+  ----------------------------------------------------------------------
+      5        1        2        3        0        0      0x73be241ecf00
+  ----------------------------------------------------------------------
+           0.00%    0.00%   33.33%    0.00%    0.00%                 0x0     0       1      0x73be13f522cc         0         0         0        1         1  [.] void jdk.internal.vm.Continuation.run()                                                      [JIT] tid 142358  void jdk.internal.vm.Continuation.run()+460                                                        1
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x73be13f54616         0        88         0        2         1  [.] int sun.nio.ch.SocketChannelImpl.write(java.nio.ByteBuffer)                                  [JIT] tid 142358  int sun.nio.ch.SocketChannelImpl.write(java.nio.ByteBuffer)+3094                                   1
+           0.00%    0.00%   33.33%    0.00%    0.00%                0x10     0       1      0x73be13f58095         0         0         0        1         1  [.] void java.lang.VirtualThread.runContinuation()                                               [JIT] tid 142358  void java.lang.VirtualThread.runContinuation()+533                                                 1
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x73be13f522c9       372         0         0        1         1  [.] void jdk.internal.vm.Continuation.run()                                                      [JIT] tid 142358  void jdk.internal.vm.Continuation.run()+457                                                        1
+           0.00%    0.00%   33.33%    0.00%    0.00%                0x20     0       1      0x73be13f5216c         0         0         0        1         1  [.] void jdk.internal.vm.Continuation.run()                                                      [JIT] tid 142358  void jdk.internal.vm.Continuation.run()+108                                                        1
+
+  ----------------------------------------------------------------------
+      6        2        0        0        0        0  0xffff88c2c4380500
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff99d4760c       393         0         0        2         2  [k] mutex_lock  [kernel.kallsyms]  mutex_lock+28   0
+
+  ----------------------------------------------------------------------
+      7        2        0        0        0        0  0xffff88c2c4381000
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff99d4760c       348         0         0        2         2  [k] mutex_lock    [kernel.kallsyms]  mutex_lock+28     0
+
+  ----------------------------------------------------------------------
+      8        2        0        0        0        0  0xffff88c2c4381040
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffff99d4ed91       432         0         0        1         1  [k] _raw_spin_lock_irq                [kernel.kallsyms]  _raw_spin_lock_irq+33                  0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1  0xffffffff99d4efea       455         0         0        1         1  [k] native_queued_spin_lock_slowpath  [kernel.kallsyms]  native_queued_spin_lock_slowpath+122   0
+
+  ----------------------------------------------------------------------
+      9        1        1        0        0        0  0xffff88c2c9fc0b40
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                 0xc     0       1  0xffffffff999ef6c0       349        38         0        2         2  [k] lock_sock_nested  [kernel.kallsyms]  lock_sock_nested+32   0
+
+  ----------------------------------------------------------------------
+     10        1        1        0        0        0  0xffff88c2cd94f340
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x14     0       1  0xffffffff99bacb44        89       141         0        2         2  [k] cubictcp_cwnd_event  [kernel.kallsyms]  cubictcp_cwnd_event+36   0  1
+
+  ----------------------------------------------------------------------
+     11        0        2        0        0        0  0xffff88c2ce00f380
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffff98f76bcd         0        41        12        4         2  [k] do_epoll_ctl  [kernel.kallsyms]  do_epoll_ctl+285   0
+
+  ----------------------------------------------------------------------
+     12        0        2        0        0        0  0xffff88c2d0c02200
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1  0xffffffff98f76bcd         0        52         0        2         2  [k] do_epoll_ctl  [kernel.kallsyms]  do_epoll_ctl+285   0
+
+  ----------------------------------------------------------------------
+     13        2        0        0        0        0  0xffff88c2dba0f340
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x14     0       1  0xffffffff99bacb44       260         0         0        2         2  [k] cubictcp_cwnd_event  [kernel.kallsyms]  cubictcp_cwnd_event+36   0
+
+  ----------------------------------------------------------------------
+     14        2        0        0        0        0  0xffff88c2dba13340
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffff99d4eca3       458         0         0        2         2  [k] _raw_spin_lock  [kernel.kallsyms]  _raw_spin_lock+19   0
+
+  ----------------------------------------------------------------------
+     15        2        0        0        0        0  0xffff88c2dfbce540
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1  0xffffffff99d4eca3       407         0         0        2         2  [k] _raw_spin_lock  [kernel.kallsyms]  _raw_spin_lock+19   0
+
+  ----------------------------------------------------------------------
+     16        2        0        0        0        0  0xffff88c690514140
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x14     1       1  0xffffffff99bacb44       430         0         0        2         2  [k] cubictcp_cwnd_event  [kernel.kallsyms]  cubictcp_cwnd_event+36   0
+
+  ----------------------------------------------------------------------
+     17        2        0        0        0        0  0xffff88c6ebb2c740
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     1       1  0xffffffff99d4eca3       262         0         0        2         2  [k] _raw_spin_lock  [kernel.kallsyms]  _raw_spin_lock+19   0
+
+  ----------------------------------------------------------------------
+     18        0        2        0        0        0          0x80080800
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x73be13f94225         0        54         0        1         1  [.] boolean io.github.pderop.looma.impl.ActorCell.enqueue(io.github.pderop.looma.impl.Envelope)  [JIT] tid 142358  boolean io.github.pderop.looma.impl.ActorCell.enqueue(io.github.pderop.looma.impl.Envelope)+165    0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x38     0       1      0x73be13f9e5c0         0         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)  [JIT] tid 142358  void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)+3392   0
+
+  ----------------------------------------------------------------------
+     19        1        1        1        0        1          0x80100100
+  ----------------------------------------------------------------------
+           0.00%    0.00%  100.00%    0.00%  100.00%                 0x8     0       1      0x73be13f521e0         0         0         0        2         2  [.] void jdk.internal.vm.Continuation.run()                                                      [JIT] tid 142358  void jdk.internal.vm.Continuation.run()+224                                                        1
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x73be13fb57a0       367         0         0        1         1  [.] boolean java.lang.MpscCarrierThread.workBeforeBlocking()                                     [JIT] tid 142358  boolean java.lang.MpscCarrierThread.workBeforeBlocking()+928                                       0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1      0x73be13fd05c7         0        86         0        1         1  [.] void java.lang.MpscCarrierThread.search(java.lang.MpscCarrierThread)                         [JIT] tid 142358  void java.lang.MpscCarrierThread.search(java.lang.MpscCarrierThread)+71                            1
+
+  ----------------------------------------------------------------------
+     20        1        1        0        0        0          0x80a20e40
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x8     1       1      0x73be13f4b7fa         0        90         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()  [JIT] tid 142358  void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()+250    1
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0xc     1       1      0x73be13f4b7df       374         0         0        1         1  [.] void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()  [JIT] tid 142358  void io.github.pderop.looma.examples.user.UserGroupActor$Get.run()+223    0
+
+  ----------------------------------------------------------------------
+     21        2        0        0        0        0          0x877f3fc0
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x73be13fba21c       378         0        46        3         3  [.] int java.lang.MpscCarrierThread.drainRoundSteal()                     [JIT] tid 142358  int java.lang.MpscCarrierThread.drainRoundSteal()+156                       1
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x8     1       1      0x73be13fd0a87       368         0         0        1         1  [.] void java.lang.MpscCarrierThread.search(java.lang.MpscCarrierThread)  [JIT] tid 142358  void java.lang.MpscCarrierThread.search(java.lang.MpscCarrierThread)+1287   0
+
+  ----------------------------------------------------------------------
+     22        2        0        0        0        0          0x878ab6c0
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x38     0       1      0x73be13fb57af       362         0        75        3         3  [.] boolean java.lang.MpscCarrierThread.workBeforeBlocking()              [JIT] tid 142358  boolean java.lang.MpscCarrierThread.workBeforeBlocking()+943                0  1
+
+  ----------------------------------------------------------------------
+     23        1        1        0        0        0          0x878c0e00
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x34     0       1      0x73be13f9f722       378        91         0        3         3  [.] void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)  [JIT] tid 142358  void io.github.pderop.looma.impl.ActorCell.runMessage(io.github.pderop.looma.impl.Envelope)+7842   0  1
+
+  ----------------------------------------------------------------------
+     24        2        0        0        0        0          0x8841a340
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0xc   0-1       2      0x73be13fb2a8a       378         0        40        3         2  [.] void io.github.pderop.looma.impl.ActorCell$$Lambda/0x00000000240cbc00.run()  [JIT] tid 142358  void io.github.pderop.looma.impl.ActorCell$$Lambda/0x00000000240cbc00.run()+1034   1
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x73be13fb2aa2       380         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell$$Lambda/0x00000000240cbc00.run()  [JIT] tid 142358  void io.github.pderop.looma.impl.ActorCell$$Lambda/0x00000000240cbc00.run()+1058   1
+
+  ----------------------------------------------------------------------
+     25        2        0        1        0        0          0x89ba0500
+  ----------------------------------------------------------------------
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x24     1       1      0x73be13f54b6f         0         0         0        1         1  [.] int sun.nio.ch.SocketChannelImpl.write(java.nio.ByteBuffer)  [JIT] tid 142358  int sun.nio.ch.SocketChannelImpl.write(java.nio.ByteBuffer)+4463   1
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x28     1       1      0x73be13f53ef1       438         0         0        2         2  [.] int sun.nio.ch.SocketChannelImpl.write(java.nio.ByteBuffer)  [JIT] tid 142358  int sun.nio.ch.SocketChannelImpl.write(java.nio.ByteBuffer)+1265   0  1

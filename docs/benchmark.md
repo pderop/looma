@@ -1,24 +1,11 @@
 # The benchmarks
 
-Looma has two benchmarks. They run the same schedulers, on the same machine, from two scripts that
-share their code.
+What the [user benchmark](benchmark-user.md) and the [servlet benchmark](benchmark-servlet.md)
+share: the load, the runs, the schedulers, the machine, and how to run them. Each page describes
+its own program. The numbers: [the results](results/summary.md).
 
-| Benchmark | What it is | The question |
-| --- | --- | --- |
-| [The user benchmark](benchmark-user.md) | Each actor walks through its own objects | Does an actor's data stay in its core's cache, and does that save CPU? |
-| [The servlet benchmark](benchmark-servlet.md) | A mini servlet container, written with actors | How far does the server go, and what is its latency below that? |
-
-This page gives what they share. Each benchmark has its own page for the rest.
-
-- Scripts: [`scripts/bench-user.sh`](../scripts/bench-user.sh) and
-  [`scripts/bench-servlet.sh`](../scripts/bench-servlet.sh) run them,
-  [`scripts/publish.sh`](../scripts/publish.sh) copies the results to the docs.
-  [`scripts/jmh-user.sh`](../scripts/jmh-user.sh) and [`scripts/jmh-servlet.sh`](../scripts/jmh-servlet.sh)
-  run one under JMH, at a fixed rate or in a ramp, after
-  [`scripts/jmh-user-start-backend.sh`](../scripts/jmh-user-start-backend.sh) or
-  [`scripts/jmh-servlet-start-backend.sh`](../scripts/jmh-servlet-start-backend.sh) has started its backend.
-  [`scripts/bench-backend.sh`](../scripts/bench-backend.sh) loads a backend alone with h2load, to see
-  how many requests per second it answers.
+Both have the same shape. The server runs Looma actors in one JVM. The load is sent from that same
+JVM. Each request calls a backend, another JVM, over a real socket.
 
 ## The load
 
@@ -27,11 +14,9 @@ runs in the server JVM. It calls the server directly: nothing goes over the netw
 client and the server. Both benchmarks use it, each with its own requests.
 
 - One platform thread per client CPU, pinned to it.
-- A fixed schedule, open loop: together, `--rate` requests per second (150,000 by default), or the rate of the
-  step in a ramp. A late request does not delay the next ones.
+- A fixed schedule, open loop: together, `--rate` requests per second (150,000 by default), or
+  the rate of the step in a ramp. A late request does not delay the next ones.
 - Too many requests without an answer: the new ones are dropped, and counted.
-- Requests sent too late: the run is not a measurement. Too late means the send lag p99 is above
-  half the time between two sends of a thread.
 - A latency is from the planned send time to the answer.
 
 The client's CPU is not counted. The client threads run in the server JVM, so the server's CPU is
@@ -41,19 +26,24 @@ to its own thread.
 
 ## The runs
 
-**One run** = one JVM, one scheduler. It warms up, then measures for 20 seconds. Each server JVM has
-`-Xms2g -Xmx2g -XX:+AlwaysPreTouch`, G1, and a GC log (the epsilon runs: 12g and Epsilon; the servlet
-backend: 1g).
+**One run** = one JVM, one scheduler. 10 seconds of warm-up, then 20 seconds measured. Each server
+JVM has `-Xms2g -Xmx2g -XX:+AlwaysPreTouch`, G1, and a GC log. The servlet backend has 1g. The user
+benchmark's epsilon run, the same run with no GC, has 12g and Epsilon.
 
 The main number is **cpu µs/req**: the JVM's CPU time, less the client threads', divided by the
 requests answered.
 
-The console says "not a measurement" when the clients could not send at the rate, when some requests
-got no good answer in time, or when the clients sent too late. A run where the script could not pin
-the workers is not a measurement either.
+The console says **"not a measurement"** when the clients could not send at the rate, when some
+requests got no good answer in time, or when the clients sent too late (their send lag p99 is above
+half the time between two sends of a thread). A `jdk-pinned` run whose carriers the script could
+not pin is not a measurement either.
 
-**The ramp:** last, two more runs per scheduler (`--ramp-runs`), ramp1 and ramp2, each in a JVM of
-its own. After the warm-up of each:
+**The rounds:** each scheduler gets `--rounds` rounds (2). A round: a measure at `--rate` (r1, r2),
+then a ramp (r1-ramp, r2-ramp). Round 1 also has the perf runs, between the two, one of each kind
+per scheduler: each benchmark's page lists them. In a round, each of these goes through every
+scheduler before the next one starts.
+
+**The ramp:** the last run of a round, in a JVM of its own. After the warm-up:
 
 ```
 the rate starts at --rate. Each step:
@@ -64,24 +54,30 @@ the rate starts at --rate. Each step:
 ```
 
 Within a run, the server never restarts, and the rate never jumps. The highest rate kept up with by
-each run is the `max req/s` of the summary, as ramp1 / ramp2. `--max-rate` stops the ramp earlier, even if the server keeps up.
+each run is the `max req/s` of the summary, as r1/r2.
 
 ## The schedulers
 
-Same jar, same JVM flags. Only the scheduler changes. `jdk-pinned` is a `jdk` run whose carriers the
-script pins.
+Same jar, same JVM flags. Only the scheduler changes, and with it the way the JDK waits for
+sockets. No flag sets the JDK's poller mode, so on Linux it follows the scheduler:
 
-| Scheduler | What it is |
-| --- | --- |
-| `mpsc` | `Carriers.mpsc(n)`: the JDK's MPSC scheduler (openjdk/loom pull request 227). Each carrier pinned to its CPU. An actor never leaves its carrier. An idle carrier steals only the threads an actor started. |
-| `jdk` | `Carriers.builtin(n)`: the JDK's default scheduler, same carrier count, not pinned. |
-| `jdk-pinned` | `jdk`, each carrier pinned to one CPU by the script (Linux only). |
-| `mpsc-unpinned` | `Carriers.mpsc(n).pinned(false)`: `mpsc` with no carrier pinned. |
-| `mpsc-no-affinity` | `Carriers.mpsc(n).affinity(false)`: `mpsc` where an actor can run on any carrier: its thread starts on the carrier of its sender, and an idle carrier may take it. |
-| `mpsc-unpinned-no-affinity` | `Carriers.mpsc(n).pinned(false).affinity(false)`: the same, with no carrier pinned. |
+```
+MPSC scheduler   mode 4: each carrier has its own epoll
+jdk              mode 2: pollers that run as virtual threads
+```
 
-`--schedulers` picks them, e.g. `scripts/bench-user.sh --schedulers mpsc,jdk`. Default: all six.
-[`schedulers.md`](schedulers.md) explains each one.
+Here, a scheduler is one of six names. Five come from the code: the four configs of the MPSC
+scheduler (`mpsc`, `mpsc-affine`, `mpsc-pinned`, `mpsc-affine-pinned`) and `jdk`. [The table of
+`schedulers.md`](schedulers.md) explains each one. The benchmarks add a sixth, `jdk-pinned`: `jdk`,
+with each carrier pinned to one CPU by the script (Linux only).
+
+`--schedulers` picks them, e.g. `scripts/bench-user.sh --schedulers mpsc,jdk`. The default depends
+on the build of the JDK ([the two builds](../mpsc-scheduler/README.md#the-jdk)):
+
+- `pr227` has `Thread.Affinity`: all six.
+- `noaff` has none: `mpsc` and `jdk`. It also runs `jdk-pinned` if asked. The scripts refuse
+  the others before any run. There, with `mpsc`, the mailbox thread of an idle actor waits for the
+  next message ([the keep-alive](schedulers.md#the-keep-alive)).
 
 ## The machine
 
@@ -89,10 +85,10 @@ script pins.
 
 - **CPU:** AMD Ryzen 9 9950X (Zen 5), one socket.
 - **OS:** Linux 7.0 (Ubuntu).
-- **JDK:** the Loom JDK of openjdk/loom pull request 227, built from source
-  (`28-internal-pr227-5766f81`).
-- **Setup:** turbo off (every core at 4.3 GHz), by `scripts/lib/linux-setup.sh` ([Running it](#running-it)).
-  ITMT off, by a boot option (`amd_prefcore=disable`). The header of each summary shows both.
+- **JDK:** the two builds above, from source. The `java` line of each summary names the commit.
+- **Setup:** turbo off (every core at 4.3 GHz), by `scripts/lib/linux-setup.sh`
+  ([Running it](#running-it)). ITMT off, by a boot option (`amd_prefcore=disable`). The header of
+  each summary shows both.
 
 #### Its architecture
 
@@ -135,38 +131,52 @@ backend      CPUs 8,9,14,15,24,25,30,31  cores 8, 9, 14 and 15 (CCD1)
 
 ## Running it
 
-Needs Linux, the Loom JDK of openjdk/loom pull request 227
-([how to build it](../mpsc-scheduler/README.md#the-jdk)), and `perf` (the script refuses to run on
-Linux without it).
+Needs Linux, one of the two builds of the Loom JDK
+([how to build them](../mpsc-scheduler/README.md#the-jdk)), and `perf` (the script refuses to run on
+Linux without it, unless `--no-perf`).
 
 ```sh
-sdk env                                 # the Loom JDK, from .sdkmanrc; or export JAVA_HOME
+sdk env                                 # 28-loom-pr227 (the build pr227), from .sdkmanrc;
+                                        # or export JAVA_HOME
+                                        # noaff: sdk use java 28-loom-noaff
 mvn clean install                       # once
 scripts/bench-user.sh                   # the user benchmark; CPU lists of the AMD machine by default
 scripts/bench-servlet.sh                # the servlet benchmark
 scripts/publish.sh bench/user-<date>-<time> bench/servlet-<date>-<time>
-                                        # keep them: -> docs/results/, the only campaign kept
+                                        # publish the runs, of one JDK or more: -> docs/results/<jdk>/
 ```
+
+Each script writes `bench/user-<date>-<time>/` or `bench/servlet-<date>-<time>/` (`--out` changes
+it): its `summary.md` and the files behind each number. What `publish.sh` does with them:
+[`results/campaigns.md`](results/campaigns.md).
 
 Each script first runs [`scripts/lib/linux-setup.sh`](../scripts/lib/linux-setup.sh) with sudo:
 turbo off, `performance` governor, perf allowed. `scripts/lib/linux-setup.sh --check` shows the
 state, `--restore` (or a reboot) puts it back. Then it runs its benchmark: the
 [user benchmark](benchmark-user.md#the-runs) or the [servlet benchmark](benchmark-servlet.md#the-runs).
 
-Other runs. The two scripts share these options:
+More options, shared by the two scripts:
 
 ```sh
-scripts/bench-user.sh --cpus-carriers <list> --cpus-client <list> --cpus-backend <list>   # elsewhere
-scripts/bench-user.sh --schedulers mpsc,jdk --reps 1      # two schedulers, one repetition
-scripts/bench-user.sh --step 0                            # no ramp
-scripts/bench-user.sh --ramp-runs 1                       # one ramp run per scheduler
-scripts/bench-user.sh --no-perf                           # no c2c, stat, walk or epsilon run
+scripts/bench-user.sh --schedulers mpsc,jdk --rounds 1    # two schedulers, one round
+scripts/bench-user.sh --step 0                            # no ramp: a round is only its measure
+scripts/bench-user.sh --ramps-only                        # only the ramps: no measure, no perf run
+scripts/bench-user.sh --no-perf                           # no perf or epsilon run
 scripts/bench-user.sh --max-rate 400000                   # the ramp stops after 400,000 req/s
 scripts/bench-user.sh --summary-only --out bench/user-<date>-<time>
                                                           # runs nothing: writes the tables of a campaign again
 ```
 
 `--help` lists every option of a script.
+
+Other scripts:
+
+- [`scripts/jmh-user.sh`](../scripts/jmh-user.sh) and [`scripts/jmh-servlet.sh`](../scripts/jmh-servlet.sh)
+  run one benchmark under JMH, at a fixed rate or in a ramp. First,
+  [`scripts/jmh-user-start-backend.sh`](../scripts/jmh-user-start-backend.sh) or
+  [`scripts/jmh-servlet-start-backend.sh`](../scripts/jmh-servlet-start-backend.sh) starts its backend.
+- [`scripts/bench-backend.sh`](../scripts/bench-backend.sh) loads a backend alone with h2load, to see
+  how many requests per second it answers.
 
 ### Where things run
 
@@ -185,47 +195,29 @@ Who pins what:
 ```
 server JVM                -> taskset on the carrier CPUs (by the script)
 backend JVM               -> taskset on the backend CPUs (by the script)
-mpsc carriers             -> pin themselves, one CPU each: carrier i on the i-th CPU of the server's mask
-mpsc-unpinned             -> carriers not pinned: they move between the carrier CPUs; actors stay on their carrier
-mpsc-no-affinity          -> carriers pin themselves; an actor can run on any carrier
-mpsc-unpinned-no-affinity -> carriers not pinned; an actor can run on any carrier
 client threads            -> pin themselves, to the client CPUs
+mpsc, mpsc-affine         -> carriers not pinned: they move between the carrier CPUs
+mpsc-pinned,              -> carriers pin themselves, one CPU each: carrier i on the i-th CPU of the
+mpsc-affine-pinned           server's mask
 jdk                       -> carriers not pinned: they move between the carrier CPUs
 jdk-pinned                -> each carrier pinned to one carrier CPU, by the script, during the warm-up
 ```
 
 Elsewhere than Linux nothing is pinned: a smoke test of the script, not a measurement.
 
-### The output
-
-Output: `bench/user-<date>-<time>/` and `bench/servlet-<date>-<time>/` (`--out` changes it), each
-with its `summary.md` and the files behind each number.
-[`results/campaigns.md`](results/campaigns.md) explains them.
-
-`publish.sh` copies, of each: its `summary.md`, its c2c and walk reports, and the consoles, GC logs
-and `perf stat` files of its `runs/`, to `docs/results/user/` and `docs/results/servlet/`. Then it
-writes `docs/results/summary.md`: both benchmarks in one table. Only the latest campaign is kept:
-it removes the files of the last one first, so give it both runs at once. The perf data files are
-not copied. `publish.sh -n` shows what it would copy.
-
-## Results
-
-Latest: [`results/summary.md`](results/summary.md).
-What it contains, and where each number comes from: [`results/campaigns.md`](results/campaigns.md).
-
 ## Why it is built this way
 
 - **A real socket:** a virtual thread woken when its socket is ready is where the scheduler picks
   the carrier. `Thread.sleep` would not take this path. The backend is a separate process: its CPU
   is not counted.
-- **Repetitions:** each run is a new JVM, with its own JIT and GC choices. They follow each other,
-  so a drift of the machine hits every scheduler alike.
+- **Rounds:** each run is a new JVM, with its own JIT and GC choices. In a round, the schedulers
+  follow each other, so a drift of the machine hits every scheduler alike.
 - **A fixed rate:** the same work for every scheduler. Latency from the planned send time, so a late
   client cannot hide a delay.
 - **Pinned clients:** the load stays off the carriers, and counts its own answers.
 - **One carrier per core:** two carriers on one core would share its L2.
-- **`taskset` on the JVM:** gives `mpsc` its CPU list, and keeps the GC and the JIT on the carrier
-  CPUs, away from the clients and the backend.
+- **`taskset` on the JVM:** gives the carriers their CPU list, and keeps the GC and the JIT on the
+  carrier CPUs, away from the clients and the backend.
 - **`jdk-pinned`:** tells whether pinning alone makes the difference.
 - **A fair pool of connections:** a connection given back goes straight to the call that has waited
   the longest. So a call that arrives later cannot take it first.

@@ -7,21 +7,10 @@ stay in that core's cache, and does that save CPU?
 makes an actor read a few hundred of its objects. Compared: CPU per request, latency, and how often
 actors moved.
 
-**The answer**, on an AMD Ryzen 9 9950X, in CPU µs per request (lower is better):
-
-| Case | `mpsc` (each actor stays on its core) | `jdk` (the JDK's default scheduler) | `jdk-pinned` (`jdk`, each carrier pinned to a CPU) |
-| --- | --- | --- | --- |
-| `default`: data fits in a core's L2 | **14.60** | 40.34 | 39.81 |
-| `big`: data does not fit in the caches | **53.85** | 64.54 | 65.03 |
-
-From [`results/user/summary.md`](results/user/summary.md),
-"At a glance": depth 256, the mean of 3 runs. `mpsc` spends 63.8% less than `jdk` in `default`, and
-16.6% less in `big` (the "vs jdk" column of "In short").
-
 - Code: [`examples/…/examples/user`](../examples/src/main/java/io/github/pderop/looma/examples/user)
-- What the two benchmarks share (the load, the schedulers, the machine, how to run them):
+- What the two benchmarks share (the load, the runs, the machine, how to run them):
   [`benchmark.md`](benchmark.md)
-- The other benchmark: [`benchmark-servlet.md`](benchmark-servlet.md)
+- The results: [`results/summary.md`](results/summary.md)
 
 ## The program
 
@@ -35,7 +24,7 @@ call a backend, then walk a chain of friends through its users, writing in each 
 ```
 1. the scheduler of -Dbench.scheduler, one carrier per CPU of --cpus-carriers
 2. one UserGroupActor per carrier, placed on it
-     without affinity (mpsc-no-affinity, mpsc-unpinned-no-affinity, jdk, jdk-pinned), it can run on any carrier
+     without affinity (mpsc, mpsc-pinned, jdk, jdk-pinned), it can run on any carrier
 3. each group creates its users (--users-per-group), on the carrier it runs on
      group i owns users i, i + groups, i + 2 × groups, ...
      a user: a friend, a visit count, a score, the time of its last visit
@@ -49,13 +38,13 @@ call a backend, then walk a chain of friends through its users, writing in each 
 
 | Case | Users per group | One group |
 | --- | --- | --- |
-| `default` | 8000 | about 640 KiB |
+| `small` | 8000 | about 640 KiB |
 | `big` | 200000 | about 16 MiB |
 
 Where the data lives, 10 groups, 6 on CCD0 and 4 on CCD1 ([the layout](benchmark.md#the-layout)):
 
 ```
-default  one group about 640 KiB: fits in a 1 MiB L2
+small    one group about 640 KiB: fits in a 1 MiB L2
          10 groups about 6.3 MiB: several L2s; the groups of a CCD (3.8 MiB at most) fit in its 32 MiB L3
          -> a moved actor reads its data from the L3 (same CCD),
             or through the Infinity Fabric (other CCD)
@@ -83,10 +72,8 @@ Here, each request asks for a random user.
 6. actor              -> answers the client, which records the latency, from the planned send time
 ```
 
-When the mailbox is empty, the actor's virtual thread ends. The next message starts a new one, and
-the scheduler picks its carrier. With the keep-alive (the MPSC scheduler on a JDK without
-`Thread.Affinity`), the thread waits instead, and the scheduler picks its carrier when the next
-message wakes it:
+At each message after an empty mailbox, the scheduler picks the carrier of the actor's thread: a
+new mailbox thread, or the one that waited ([the keep-alive](schedulers.md#the-keep-alive)):
 
 ```
 same carrier   -> the users are still in that core's cache -> fast walk
@@ -100,8 +87,8 @@ one thread accepts, and one reactor thread per backend CPU (`--reactors`) answer
 
 ## The runs
 
-**One run:** 10 s of warm-up, counters reset, 20 s measured. Besides
-[cpu µs/req](benchmark.md#the-runs), it prints:
+Each run is one JVM, as in [the runs](benchmark.md#the-runs) of `benchmark.md`. Besides cpu µs/req,
+its console prints:
 
 - **migrations**: how often an actor ran a message on another carrier than the one before, on one
   message in 64.
@@ -112,8 +99,9 @@ What the script does:
 ```
 1. start the backend once, under taskset on the backend CPUs
 2. every run: taskset on the carrier CPUs
-3. for each case (default, then big):
-   a. for each repetition (--reps, 3), for each scheduler: a run at --depth, then one at depth 0
+3. for each case (small, then big), for each round (--rounds, 2):
+   a. measure, per scheduler:     a run at --depth, then one at depth 0 (r1, r2)
+   round 1 only:
    b. c2c run, per scheduler:     perf c2c over the measure, minus 3 s at each end;
                                   live StackChunks counted during the warm-up and after the
                                   measure (full GCs, left out of the GC column)
@@ -122,12 +110,14 @@ What the script does:
                                   line: the cycles of the walk alone
    e. epsilon run, per scheduler: -XX:+UseEpsilonGC -Xms12g -Xmx12g: no GC
                                   (what a run allocates: the Epsilon table of summary.md)
-   f. ramp1, ramp2 per scheduler: at depth 256, the ramp of benchmark.md: the max req/s of
-                                  At a glance
+   every round:
+   f. ramp, per scheduler:        at depth 256, the ramp of benchmark.md (r1-ramp, r2-ramp): the
+                                  max req/s of At a glance
 4. summary.md, both cases
 ```
 
-6 schedulers: 72 runs per case, 144 in all, about 85 minutes, plus the steps of the ramps.
+6 schedulers: 60 runs per case, 120 in all, plus the steps of the ramps. The script prints its
+estimate when it starts.
 
 ## Running it
 
@@ -135,7 +125,7 @@ What the script does:
 
 ```sh
 scripts/bench-user.sh                                # this one
-scripts/bench-user.sh --users-per-group 8000         # the default case only
+scripts/bench-user.sh --users-per-group 8000         # the small case only
 scripts/bench-user.sh --no-depth0                    # at --depth only
 ```
 
@@ -147,7 +137,7 @@ The choices shared with the servlet benchmark are in [`benchmark.md`](benchmark.
   as the cache that holds the users.
 - **The walk writes:** the data is modified in the cache of the core that runs it. A moved actor
   reads it again: from the L3, the old core, or memory.
-- **Two sizes:** the data of an actor fits in one core's L2 in `default`, and not in `big`.
+- **Two sizes:** the data of an actor fits in one core's L2 in `small`, and not in `big`.
 - **Depth 0:** everything but the walk: the messages, the GET, the scheduling.
 - **The walk run:** `UserGroupActor.walk` kept out of line has a name of its own in `perf`. Its cycles
   are the walk alone.

@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 460" width="900" height="460" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+<style>
+svg { --surface: #fcfcfb; --text: #0b0b0b; --text2: #52514e; --muted: #898781; --grid: #e1e0d9; --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a }
+@media (prefers-color-scheme: dark) { svg { --surface: #1a1a19; --text: #f0efec; --text2: #c3c2b7; --muted: #898781; --grid: #2c2c2a; --s1: #3987e5; --s2: #d95926; --s3: #199e70 } }
+.bg { fill: var(--surface) } .t { fill: var(--text) } .t2 { fill: var(--text2) } .m { fill: var(--muted) }
+.g { stroke: var(--grid); stroke-width: 1 } .g1 { stroke: var(--muted); stroke-width: 1 }
+.l { fill: none; stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round } .dashed { stroke-dasharray: 7 4 }
+.c1 { stroke: var(--s1) } .c2 { stroke: var(--s2) } .c3 { stroke: var(--s3) }
+.d1 { fill: var(--s1) } .d2 { fill: var(--s2) } .d3 { fill: var(--s3) } .ring { stroke: var(--surface); stroke-width: 2 }
+</style>
+<rect class="bg" width="900" height="460"/>
+<text class="t" x="12" y="30" font-size="16" font-weight="600">User benchmark: CPU per request by rate</text>
+<text class="t2" x="12" y="52" font-size="12">case small, depth 256; the server process minus the clients</text>
+<line class="g" x1="72" x2="600" y1="392.0" y2="392.0"/>
+<text class="m" x="64" y="396.0" font-size="11" text-anchor="end">0</text>
+<line class="g" x1="72" x2="600" y1="330.0" y2="330.0"/>
+<text class="m" x="64" y="334.0" font-size="11" text-anchor="end">10</text>
+<line class="g" x1="72" x2="600" y1="268.0" y2="268.0"/>
+<text class="m" x="64" y="272.0" font-size="11" text-anchor="end">20</text>
+<line class="g" x1="72" x2="600" y1="206.0" y2="206.0"/>
+<text class="m" x="64" y="210.0" font-size="11" text-anchor="end">30</text>
+<line class="g" x1="72" x2="600" y1="144.0" y2="144.0"/>
+<text class="m" x="64" y="148.0" font-size="11" text-anchor="end">40</text>
+<line class="g" x1="72" x2="600" y1="82.0" y2="82.0"/>
+<text class="m" x="64" y="86.0" font-size="11" text-anchor="end">50</text>
+<text class="m" x="72.0" y="410" font-size="11" text-anchor="middle">100k</text>
+<text class="m" x="124.8" y="410" font-size="11" text-anchor="middle">200k</text>
+<text class="m" x="177.6" y="410" font-size="11" text-anchor="middle">300k</text>
+<text class="m" x="230.4" y="410" font-size="11" text-anchor="middle">400k</text>
+<text class="m" x="283.2" y="410" font-size="11" text-anchor="middle">500k</text>
+<text class="m" x="336.0" y="410" font-size="11" text-anchor="middle">600k</text>
+<text class="m" x="388.8" y="410" font-size="11" text-anchor="middle">700k</text>
+<text class="m" x="441.6" y="410" font-size="11" text-anchor="middle">800k</text>
+<text class="m" x="494.4" y="410" font-size="11" text-anchor="middle">900k</text>
+<text class="m" x="547.2" y="410" font-size="11" text-anchor="middle">1000k</text>
+<text class="m" x="600.0" y="410" font-size="11" text-anchor="middle">1100k</text>
+<text class="t2" x="336" y="434" font-size="12" text-anchor="middle">requests per second, step of the ramp</text>
+<text class="t2" x="12" y="68" font-size="12">cpu µs per request</text>
+<polyline class="l c3 dashed" points="98.4,299.9 109.0,300.4 119.5,301.5 130.1,300.4 140.6,299.7 151.2,299.2 161.8,299.5 172.3,299.7 182.9,300.0 193.4,300.4 204.0,300.5 214.6,300.9 225.1,301.3 235.7,301.7 246.2,302.3 256.8,302.8 267.4,303.6 277.9,304.1 288.5,304.8 299.0,305.4 309.6,306.1 320.2,306.9 330.7,307.6 341.3,308.4 351.8,309.3 362.4,310.1 373.0,311.0 383.5,311.9 394.1,312.9 404.6,313.9 415.2,314.9 425.8,315.9 436.3,317.0 446.9,318.2 457.4,319.3 468.0,320.5 478.6,321.7 489.1,323.0 499.7,324.3 510.2,325.6 520.8,326.9 531.4,328.3 541.9,329.5 552.5,330.7 563.0,331.9 573.6,333.0"><title>mpsc-affine-pinned, build pr227</title></polyline>
+<polyline class="l c1 dashed" points="98.4,210.6 109.0,213.8 119.5,217.5 130.1,219.3 140.6,220.8 151.2,223.3 161.8,226.1 172.3,228.5 182.9,231.6 193.4,234.5 204.0,237.9 214.6,241.4 225.1,245.1 235.7,248.8 246.2,252.7 256.8,257.0 267.4,261.0 277.9,265.9 288.5,270.7 299.0,275.1 309.6,279.4 320.2,283.4"><title>mpsc, build pr227</title></polyline>
+<polyline class="l c2 dashed" points="98.4,140.5 109.0,153.5 119.5,163.9 130.1,175.3 140.6,187.6 151.2,196.3 161.8,202.0 172.3,210.0 182.9,217.2 193.4,224.1 204.0,227.8 214.6,234.3 225.1,242.3 235.7,248.8 246.2,253.3 256.8,258.2 267.4,263.5 277.9,268.9 288.5,273.3 299.0,276.1 309.6,281.4 320.2,284.1 330.7,287.6 341.3,290.8 351.8,294.5 362.4,297.0"><title>jdk, build pr227</title></polyline>
+<polyline class="l c1" points="98.4,208.6 109.0,209.5 119.5,210.7 130.1,214.2 140.6,216.1 151.2,218.1 161.8,221.1 172.3,223.9 182.9,227.7 193.4,231.2 204.0,235.0 214.6,239.1 225.1,243.3 235.7,247.9 246.2,252.5 256.8,257.2 267.4,262.0 277.9,266.6 288.5,271.2 299.0,275.7 309.6,279.6 320.2,283.5 330.7,287.3 341.3,290.5 351.8,293.9 362.4,296.8 373.0,299.7 383.5,302.3 394.1,307.3 404.6,307.3 415.2,310.1 425.8,312.6 436.3,313.6 446.9,315.5 457.4,317.9"><title>mpsc, build noaff</title></polyline>
+<polyline class="l c2" points="98.4,139.0 109.0,151.0 119.5,161.2 130.1,176.4 140.6,186.0 151.2,196.9 161.8,205.9 172.3,213.4 182.9,217.6 193.4,224.5 204.0,230.6 214.6,235.0 225.1,243.8 235.7,250.8 246.2,256.0 256.8,260.9 267.4,265.6 277.9,269.9 288.5,273.8 299.0,278.6 309.6,282.9 320.2,284.2 330.7,287.8 341.3,291.1 351.8,295.1 362.4,297.7"><title>jdk, build noaff</title></polyline>
+<circle class="d3 ring" cx="573.6" cy="333.0" r="4"/>
+<circle class="d1 ring" cx="320.2" cy="283.4" r="4"/>
+<circle class="d2 ring" cx="362.4" cy="297.0" r="4"/>
+<circle class="d1 ring" cx="457.4" cy="317.9" r="4"/>
+<circle class="d2 ring" cx="362.4" cy="297.7" r="4"/>
+<text class="t2" x="628" y="86" font-size="12" font-weight="600">by scheduler and build</text>
+<line class="l c3 dashed" x1="628" x2="656" y1="108" y2="108"/>
+<text class="t" x="664" y="112" font-size="12">mpsc-affine-pinned</text>
+<text class="m" x="664" y="127" font-size="11">build pr227</text>
+<line class="l c1 dashed" x1="628" x2="656" y1="148" y2="148"/>
+<text class="t" x="664" y="152" font-size="12">mpsc</text>
+<text class="m" x="664" y="167" font-size="11">build pr227</text>
+<line class="l c2 dashed" x1="628" x2="656" y1="188" y2="188"/>
+<text class="t" x="664" y="192" font-size="12">jdk</text>
+<text class="m" x="664" y="207" font-size="11">build pr227</text>
+<line class="l c1" x1="628" x2="656" y1="228" y2="228"/>
+<text class="t" x="664" y="232" font-size="12">mpsc</text>
+<text class="m" x="664" y="247" font-size="11">build noaff</text>
+<line class="l c2" x1="628" x2="656" y1="268" y2="268"/>
+<text class="t" x="664" y="272" font-size="12">jdk</text>
+<text class="m" x="664" y="287" font-size="11">build noaff</text>
+<text class="m" x="628" y="312" font-size="11">A point: the mean of r1 and r2.</text>
+<text class="m" x="628" y="328" font-size="11">A line ends at the last step</text>
+<text class="m" x="628" y="344" font-size="11">both ramps kept up with.</text>
+</svg>

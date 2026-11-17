@@ -63,7 +63,7 @@ final class MpscPool {
 	 * <p>
 	 * This is a workaround, until the JDK solves it. It relies on two details of
 	 * the JDK: the timer thread is chosen by the id of the carrier, and it never
-	 * ends. If one of them changes, {@code MpscInstallTest} fails.
+	 * ends. If one of them changes, {@code MpscAffinePinnedInstallTest} fails.
 	 *
 	 * @throws IllegalStateException
 	 *             if two homes share a carrier once pinned, or if {@code pinned} on

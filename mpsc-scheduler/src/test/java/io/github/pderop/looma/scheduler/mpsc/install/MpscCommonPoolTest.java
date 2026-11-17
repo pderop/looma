@@ -56,7 +56,7 @@ class MpscCommonPoolTest {
 	@Test
 	void theCommonPoolKeepsEveryCpu() throws Exception {
 		assumeTrue(Files.isDirectory(TASKS), "not Linux");
-		ActorSystem system = ActorSystem.builder().carriers(Carriers.mpsc(3)).build();
+		ActorSystem system = ActorSystem.builder().carriers(Carriers.mpsc(3).affine(true).pinned(true)).build();
 		String all = cpusAllowed(SELF);
 		int workers = ForkJoinPool.getCommonPoolParallelism();
 

@@ -1,0 +1,266 @@
+WARNING: failed to find node
+=================================================
+            Trace Event Information              
+=================================================
+  Total records                     :     118945
+  Locked Load/Store Operations      :        104
+  Load Operations                   :      35373
+  Loads - uncacheable               :          0
+  Loads - IO                        :          0
+  Loads - Miss                      :          0
+  Loads - no mapping                :      11434
+  Load Fill Buffer Hit              :          0
+  Load L1D hit                      :      20574
+  Load L2D hit                      :        640
+  Load LLC hit                      :       1400
+  Load Local HITM                   :        766
+  Load Remote HITM                  :        911
+  Load Remote HIT                   :          0
+  Load Local DRAM                   :         64
+  Load Remote DRAM                  :          0
+  Load MESI State Exclusive         :         64
+  Load MESI State Shared            :          0
+  Load LLC Misses                   :        975
+  Load access blocked by data       :          0
+  Load access blocked by address    :          0
+  Load HIT Local Peer               :          0
+  Load HIT Remote Peer              :          0
+  LLC Misses to Local DRAM          :        6.6%
+  LLC Misses to Remote DRAM         :        0.0%
+  LLC Misses to Remote cache (HIT)  :        0.0%
+  LLC Misses to Remote cache (HITM) :       93.4%
+  Store Operations                  :       9832
+  Store - uncacheable               :          0
+  Store - no mapping                :        956
+  Store L1D Hit                     :       8468
+  Store L1D Miss                    :          0
+  Store No available memory level   :        264
+  No Page Map Rejects               :       6755
+  Unable to parse data source       :      73740
+
+=================================================
+    Global Shared Cache Line Event Information   
+=================================================
+  Total Shared Cache Lines          :       1642
+  Load HITs on shared lines         :       1860
+  Fill Buffer Hits on shared lines  :          0
+  L1D hits on shared lines          :        142
+  L2D hits on shared lines          :          5
+  LLC hits on shared lines          :        793
+  Load hits on peer cache or nodes  :          0
+  Locked Access on shared lines     :         35
+  Blocked Access on shared lines    :          0
+  Store HITs on shared lines        :         39
+  Store L1D hits on shared lines    :         26
+  Store No available memory level   :         11
+  Total Merged records              :       1716
+
+=================================================
+                 c2c details                     
+=================================================
+  Events                            : ibs_op/ldlat=0/
+  Cachelines sort on                : Total HITMs
+  Cacheline data grouping           : offset,iaddr
+
+=================================================
+           Shared Data Cache Line Table          
+=================================================
+#
+#        ----------- Cacheline ----------      Tot  ------- Load Hitm -------    Total    Total    Total  --------- Stores --------  ----- Core Load Hit -----  - LLC Load Hit --  - RMT Load Hit --  --- Load Dram ----
+# Index             Address  Node  PA cnt     Hitm    Total  LclHitm  RmtHitm  records    Loads   Stores    L1Hit   L1Miss      N/A       FB       L1       L2    LclHit  LclHitm    RmtHit  RmtHitm       Lcl       Rmt
+# .....  ..................  ....  ......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  ........  .......  ........  .......  ........  ........
+#
+      0          0xdba19f40     0       8    0.30%        5        4        1       13       13        0        0        0        0        0        7        1         0        4         0        1         0         0
+      1          0xdbdcd880     1       1    0.30%        5        3        2        6        5        1        0        0        1        0        0        0         0        3         0        2         0         0
+      2          0xdbeb87c0     1       1    0.18%        3        2        1        9        9        0        0        0        0        0        4        0         2        2         0        1         0         0
+      3  0xffff88c6303b4b00     0       1    0.12%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+      4  0xffff88c6f8cfef40     1       1    0.12%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+      5          0x8045c040     1       1    0.12%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+      6          0x8048f440   0-1       2    0.12%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+      7          0xdb764680     0       1    0.12%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+      8          0xdb769300     1       1    0.12%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+      9          0xdb7b2600     0       1    0.12%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     10          0xdb7b9680   0-1       2    0.12%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     11          0xdb7ba900     0       2    0.12%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     12          0xdb7f6100     1       1    0.12%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     13          0xdb84c640     0       1    0.12%        2        1        1        5        5        0        0        0        0        0        1        0         2        1         0        1         0         0
+     14          0xdb893f40     1       1    0.12%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     15          0xdb8ca8c0     1       1    0.12%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     16          0xdb902900     1       1    0.12%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     17          0xdb9b0980     0       2    0.12%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     18          0xdb9b3080     0       2    0.12%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     19          0xdb9b3300     0       2    0.12%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     20          0xdba46500     1       2    0.12%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     21          0xdbae6d80     0       2    0.12%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     22          0xdbb98e80     1       1    0.12%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     23          0xdbbbfe80     0       1    0.12%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     24          0xdbc04800     0       1    0.12%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     25          0xdbdcd700     1       1    0.12%        2        2        0        5        5        0        0        0        0        0        3        0         0        2         0        0         0         0
+     26          0xdbe20c80     1       2    0.12%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     27          0xdbec9640     0       2    0.12%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+
+=================================================
+      Shared Cache Line Distribution Pareto      
+=================================================
+#
+#        ----- HITM -----  ------- Store Refs ------  --------- Data address ---------                      ---------- cycles ----------    Total       cpu                                                                                                                               Shared                                                                                                                         
+#   Num  RmtHitm  LclHitm   L1 Hit  L1 Miss      N/A              Offset  Node  PA cnt        Code address  rmt hitm  lcl hitm      load  records       cnt                                                                                                             Symbol            Object                                                                                                        Source:Line  Node
+# .....  .......  .......  .......  .......  .......  ..................  ....  ......  ..................  ........  ........  ........  .......  ........  .................................................................................................................  ................  .................................................................................................................  ....
+#
+  ----------------------------------------------------------------------
+      0        1        4        0        0        0          0xdba19f40
+  ----------------------------------------------------------------------
+           0.00%   25.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7ab3fff89c65         0        91         0        1         1  [.] java.lang.Object io.github.pderop.looma.examples.user.Main$$Lambda/0x000000002f0cbc00.apply(java.lang.Object)  [JIT] tid 104141  java.lang.Object io.github.pderop.looma.examples.user.Main$$Lambda/0x000000002f0cbc00.apply(java.lang.Object)+613   0
+           0.00%   25.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7ab3fff93350         0        92         0        5         5  [.] void io.github.pderop.looma.impl.ActorRuntime.workFinished()                                                   [JIT] tid 104141  void io.github.pderop.looma.impl.ActorRuntime.workFinished()+80                                                     0  1
+           0.00%   25.00%    0.00%    0.00%    0.00%                0x20     0       1      0x7ab3fff93346         0       837         0        3         3  [.] void io.github.pderop.looma.impl.ActorRuntime.workFinished()                                                   [JIT] tid 104141  void io.github.pderop.looma.impl.ActorRuntime.workFinished()+70                                                     0  1
+         100.00%   25.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x7ab3fff6488d       376        87         0        2         2  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)                                 [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+9485                                 0  1
+
+  ----------------------------------------------------------------------
+      1        2        3        0        0        1          0xdbdcd880
+  ----------------------------------------------------------------------
+         100.00%   66.67%    0.00%    0.00%    0.00%                0x3c     1       1      0x7ab3fff77474       362       128         0        4         3  [.] void java.lang.MpscVirtualThreadScheduler.onStart(java.lang.Thread$VirtualThreadTask)  [JIT] tid 104141  void java.lang.MpscVirtualThreadScheduler.onStart(java.lang.Thread$VirtualThreadTask)+500   0
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x3c     1       1      0x7ab3fff70d26         0        39         0        1         1  [.] void java.lang.MpscCarrierThread.offerStealable(java.lang.Thread$VirtualThreadTask)    [JIT] tid 104141  void java.lang.MpscCarrierThread.offerStealable(java.lang.Thread$VirtualThreadTask)+806     0
+           0.00%    0.00%    0.00%    0.00%  100.00%                0x3c     1       1      0x7ab3fffbb22c         0         0         0        1         1  [.] void java.lang.MpscCarrierThread.search(java.lang.MpscCarrierThread)                   [JIT] tid 104141  void java.lang.MpscCarrierThread.search(java.lang.MpscCarrierThread)+684                    0
+
+  ----------------------------------------------------------------------
+      2        1        2        0        0        0          0xdbeb87c0
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x30     1       1      0x7ab3fff599ba       590         0         0        1         1  [.] int sun.nio.ch.CarrierLocalPoller.poll(int)                                            [JIT] tid 104141  int sun.nio.ch.CarrierLocalPoller.poll(int)+2362                                            0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x30     1       1      0x7ab3fff773bf         0       341         0        1         1  [.] void java.lang.MpscVirtualThreadScheduler.onStart(java.lang.Thread$VirtualThreadTask)  [JIT] tid 104141  void java.lang.MpscVirtualThreadScheduler.onStart(java.lang.Thread$VirtualThreadTask)+319   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x30     1       1      0x7ab3fffb6b88         0        99        55        4         1  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                                      [JIT] tid 104141  void java.lang.MpscCarrierThread.eventLoopSteal()+1416                                      0
+
+  ----------------------------------------------------------------------
+      3        0        2        0        0        0  0xffff88c6303b4b00
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1  0xffffffff98ba3dc3         0       168         0        2         1  [k] __smp_call_single_queue  [kernel.kallsyms]  __smp_call_single_queue+51   0
+
+  ----------------------------------------------------------------------
+      4        2        0        0        0        0  0xffff88c6f8cfef40
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     1       1  0xffffffff99d4eca3       381         0         0        2         2  [k] _raw_spin_lock  [kernel.kallsyms]  _raw_spin_lock+19   0
+
+  ----------------------------------------------------------------------
+      5        1        1        0        0        0          0x8045c040
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                 0x8     1       1      0x7ab3fff64e95       351        52         0        2         2  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11029   0
+
+  ----------------------------------------------------------------------
+      6        0        2        0        0        0          0x8048f440
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x7ab3fff64ee5         0        51         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11109   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x20     1       1      0x7ab3fff64e95         0        88         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11029   1
+
+  ----------------------------------------------------------------------
+      7        1        1        0        0        0          0xdb764680
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x7ab3fff64fb6       420        53         0        2         2  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11318   0
+
+  ----------------------------------------------------------------------
+      8        1        1        0        0        0          0xdb769300
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x24     1       1      0x7ab3fff64fb6       354        82         0        2         2  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11318   0
+
+  ----------------------------------------------------------------------
+      9        1        1        0        0        0          0xdb7b2600
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x20     0       1      0x7ab3fff64e95       331        94         0        2         2  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11029   0
+
+  ----------------------------------------------------------------------
+     10        0        2        0        0        0          0xdb7b9680
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7ab3fff64fa4         0        47         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11300   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x14     1       1      0x7ab3fff64fb6         0        82         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11318   0
+
+  ----------------------------------------------------------------------
+     11        0        2        0        0        0          0xdb7ba900
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7ab3fff64ed8         0         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11096   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x34     0       1      0x7ab3fff64fb6         0        82         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11318   0
+
+  ----------------------------------------------------------------------
+     12        2        0        0        0        0          0xdb7f6100
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x28     1       1      0x7ab3fff64fa4       358         0         0        2         2  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11300   0  1
+
+  ----------------------------------------------------------------------
+     13        1        1        0        0        0          0xdb84c640
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1      0x7ab3fffb6b8f         0       401         0        2         1  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                     [JIT] tid 104141  void java.lang.MpscCarrierThread.eventLoopSteal()+1423                     0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x7ab3fffbb342       352         0         0        1         1  [.] void java.lang.MpscCarrierThread.search(java.lang.MpscCarrierThread)  [JIT] tid 104141  void java.lang.MpscCarrierThread.search(java.lang.MpscCarrierThread)+962   1
+
+  ----------------------------------------------------------------------
+     14        1        1        0        0        0          0xdb893f40
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x18     1       1      0x7ab3fff64fa4       364        42         0        2         2  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11300   0
+
+  ----------------------------------------------------------------------
+     15        1        1        0        0        0          0xdb8ca8c0
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                 0x0     1       1      0x7ab3fff64ed8       359        16         0        2         2  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11096   0  1
+
+  ----------------------------------------------------------------------
+     16        1        1        0        0        0          0xdb902900
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x28     1       1      0x7ab3fff64e95       369        49         0        2         2  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11029   0  1
+
+  ----------------------------------------------------------------------
+     17        1        1        0        0        0          0xdb9b0980
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x7ab3fff64fa4       460         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11300   1
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x24     0       1      0x7ab3fff64fb6         0       149         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11318   0
+
+  ----------------------------------------------------------------------
+     18        1        1        0        0        0          0xdb9b3080
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x7ab3fff64ed8         0         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11096   1
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x7ab3fff64e95       337         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11029   1
+
+  ----------------------------------------------------------------------
+     19        0        2        0        0        0          0xdb9b3300
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x7ab3fff64fb6         0        37         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11318   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x20     0       1      0x7ab3fff64e95         0        43         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11029   0
+
+  ----------------------------------------------------------------------
+     20        0        2        0        0        0          0xdba46500
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     1       1      0x7ab3fff64fa4         0       124         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11300   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x14     1       1      0x7ab3fff64fb6         0        42         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11318   0
+
+  ----------------------------------------------------------------------
+     21        1        1        0        0        0          0xdbae6d80
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x20     0       1      0x7ab3fff64fa4         0        82         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11300   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x7ab3fff64e95       391         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11029   0
+
+  ----------------------------------------------------------------------
+     22        1        1        0        0        0          0xdbb98e80
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                 0xc     1       1      0x7ab3fff64f09       340        37         0        2         2  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11145   0
+
+  ----------------------------------------------------------------------
+     23        0        2        0        0        0          0xdbbbfe80
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x38     0       1      0x7ab3fff64e95         0       118         0        2         2  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11029   0  1
+
+  ----------------------------------------------------------------------
+     24        1        1        0        0        0          0xdbc04800
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x7ab3fff64fa4       426        52         0        2         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11300   0
+
+  ----------------------------------------------------------------------
+     25        0        2        0        0        0          0xdbdcd700
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x28     1       1      0x7ab3fffb67d6         0        87         0        3         3  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                     [JIT] tid 104141  void java.lang.MpscCarrierThread.eventLoopSteal()+470                      0  1
+
+  ----------------------------------------------------------------------
+     26        2        0        0        0        0          0xdbe20c80
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x4     1       1      0x7ab3fff64f09       448         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11145   1
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x38     1       1      0x7ab3fff64fa4        48         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11300   1
+
+  ----------------------------------------------------------------------
+     27        1        1        0        0        0          0xdbec9640
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x20     0       1      0x7ab3fff64fa4         0        58         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11300   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x7ab3fff64e95       318         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 104141  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+11029   1

@@ -22,13 +22,13 @@ import io.github.pderop.looma.spi.ActorScheduler;
  * The {@link ActorScheduler} view over the JDK's MPSC scheduler.
  *
  * <p>
- * With affinity (the default of {@code Carriers.mpsc}), an actor's mailbox
- * threads are created with the affinity of its carrier: they run there, and are
- * never stolen. Without ({@code affinity(false)}), they have none: an actor can
- * run on any carrier. Its thread starts on the carrier of its sender, and an
- * idle carrier may steal it. The threads an actor offloads never have affinity:
- * they start on the carrier that starts them, and an idle carrier may steal
- * them.
+ * With affinity ({@code affine(true)}), an actor's mailbox threads are created
+ * with the affinity of its carrier: they run there, and are never stolen.
+ * Without it (the default of {@code Carriers.mpsc(n)}), they have none: an
+ * actor can run on any carrier, and an idle carrier may steal its thread. With
+ * JVM flags alone, actors are affine. The threads an actor offloads never have
+ * affinity: they start on the carrier that starts them, and an idle carrier may
+ * steal them.
  *
  * <p>
  * On a JDK without {@code Thread.Affinity}, there is never affinity, and the
@@ -54,7 +54,7 @@ final class MpscActorScheduler implements ActorScheduler {
 	 */
 	MpscActorScheduler(MpscPool pool, boolean affinity) {
 		if (affinity && !JdkAffinity.SUPPORTED) {
-			throw new IllegalStateException("this JDK has no Thread.Affinity: use affinity(false)");
+			throw new IllegalStateException("this JDK has no Thread.Affinity: use Carriers.mpsc(n)");
 		}
 		this.pool = pool;
 		this.affinity = affinity;

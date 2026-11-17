@@ -1,11 +1,9 @@
 # Installing the MPSC scheduler
 
-`ActorSystem.builder().carriers(Carriers.mpsc(n)).build()` installs the JDK's MPSC scheduler. It
-runs on the calling thread, `main` below, before the JVM's first virtual thread. This page says what
-it does, step by step.
-
-With `pinned(true)`, the default, each carrier ends up on one CPU. The install also keeps the JDK's
-own threads off those CPUs. The first section lists these threads.
+`ActorSystem.builder().carriers(Carriers.mpsc(n)).build()` installs the JDK's MPSC scheduler, on
+the calling thread (`main` below), before the JVM's first virtual thread. With `pinned(true)`, each
+carrier ends up on one CPU, and the install keeps the JDK's own threads from being confined to
+one carrier's CPU: they keep every CPU of `main`.
 
 ## The threads the JDK starts on demand
 
@@ -27,9 +25,6 @@ The JDK starts some of its threads late, from the first thread that needs them:
 The JDK has a few `VirtualThread-unparker` threads. A carrier always uses the same one, chosen by
 the carrier's id. Several carriers may share one.
 
-An actor's reads need no thread. On Linux, a carrier waits for the reads of its virtual threads in
-its own epoll.
-
 Started from a pinned carrier, such a thread keeps that carrier's one CPU:
 
 ```
@@ -48,7 +43,7 @@ actor on carrier-0: the first sleep(10 ms) of carrier-0
 
 ```
 main, with every CPU of the process
-  1. checks: not installed yet, the JDK has Thread.Affinity (unless pinned(false).affinity(false)),
+  1. checks: not installed yet, the JDK has Thread.Affinity (unless the pool is the default one, Carriers.mpsc(n)),
      no other scheduler, no -D flag that conflicts
   2. set the properties: useMpsc, parallelism = n, mpscSteal
   3. load sun.nio.ch.Poller          -> Read-Poller and Write-Poller start from main
@@ -66,8 +61,9 @@ main, with every CPU of the process
        a. on each home: park 1 ms    -> its VirtualThread-unparker starts,
                                         while no carrier is pinned yet
        b. on each home: pin it       -> from a virtual thread of home i,
-                                        sched_setaffinity pins its carrier to CPU i
-       c. on each home: check it     -> home i runs on CPU i, or fail
+                                        sched_setaffinity pins its carrier to
+                                        the i-th CPU of the process
+       c. on each home: check it     -> home i runs on that CPU, or fail
   10. pinned, and the common pool does not use AllCpus: warn
 ```
 
@@ -77,7 +73,7 @@ scheduler first. Elsewhere, step 4 starts them. Either way, `main` starts them.
 A failure before step 5 undoes the properties. After it, nothing can be undone: this install, and
 every later one in the JVM, throws.
 
-With `pinned(false)`, steps 9a to 9c do not run, and step 10 does not warn. The carriers keep every
+Without `pinned(true)`, steps 9a to 9c do not run, and step 10 does not warn. The carriers keep every
 CPU, and so do the threads they start. The other steps still run, but they change nothing then:
 `AllCpus` gives a thread the CPUs it already has.
 
@@ -122,8 +118,8 @@ too. It works in every poller mode, because it runs outside the JDK's own setup 
 **Why park 1 ms on each carrier.** The carrier itself starts its `VirtualThread-unparker`, at its
 first timed park. Parking once on each carrier, before any pin, starts them all from carriers that
 still have every CPU. This relies on two JDK details: the unparker is chosen by the carrier's id,
-and it never ends. If one of them changes, `MpscInstallTest` fails. It is a workaround, until the
-JDK offers another way.
+and it never ends. If one of them changes, `MpscAffinePinnedInstallTest` fails. It is a
+workaround, until the JDK offers another way.
 
 **Why `orTimeout(1 ns)`.** The common pool does not make its `delayScheduler` with its factory, so
 `AllCpus` cannot fix it later. Starting it from `main` gives it every CPU.

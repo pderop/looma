@@ -20,14 +20,13 @@ package io.github.pderop.looma;
  *
  * <ul>
  * <li>{@link #mpsc(int)}: the JDK's MPSC scheduler (openjdk/loom pull request
- * 227). By default, each actor stays on one carrier, and each carrier is pinned
- * to one CPU.
+ * 227). By default, it has no pin and no affinity.
  * <li>{@link #builtin(int)}: the JDK's default scheduler, today a ForkJoinPool.
  * </ul>
  *
  * <p>
- * An {@code mpsc} pool has two settings, both on by default:
- * {@link Mpsc#affinity(boolean) affinity}, an actor stays on its carrier, and
+ * An {@code mpsc} pool has two settings, both off by default:
+ * {@link Mpsc#affine(boolean) affine}, an actor stays on its carrier, and
  * {@link Mpsc#pinned(boolean) pinned}, a carrier stays on its CPU. In every
  * case, an idle carrier may steal the threads that actors offload.
  *
@@ -46,24 +45,24 @@ package io.github.pderop.looma;
 public sealed interface Carriers {
 
 	/**
-	 * A pool of {@code count} carriers of the JDK's MPSC scheduler. Each actor has
-	 * the {@code Thread.Affinity} of its carrier, so it never moves, and each
-	 * carrier is pinned to one CPU (on Linux). An idle carrier may steal the other
-	 * threads, from any carrier. Needs the JDK of openjdk/loom pull request 227.
-	 * {@link Mpsc#affinity(boolean)} and {@link Mpsc#pinned(boolean)} turn each
-	 * setting off.
+	 * A pool of {@code count} carriers of the JDK's MPSC scheduler. By default, no
+	 * carrier is pinned and no actor has an affinity: an actor can run on any
+	 * carrier, and an idle carrier may steal any thread. Needs the JDK of
+	 * openjdk/loom pull request 227. {@link Mpsc#affine(boolean)} keeps each actor
+	 * on its carrier, and {@link Mpsc#pinned(boolean)} pins each carrier to one CPU
+	 * (on Linux).
 	 *
 	 * <p>
-	 * A later JDK of that pull request has no {@code Thread.Affinity}. There, only
-	 * {@code mpsc(count).pinned(false).affinity(false)} is accepted, and the thread
-	 * of an idle actor waits for its next message instead of ending: each idle
-	 * actor keeps one parked thread, with its stack.
+	 * A later version of that scheduler has no {@code Thread.Affinity}. There,
+	 * {@code affine(true)} and {@code pinned(true)} are refused: only the default
+	 * is accepted. The thread of an idle actor waits for its next message instead
+	 * of ending: each idle actor keeps one parked thread, with its stack.
 	 *
 	 * @throws IllegalArgumentException
 	 *             if {@code count} is less than 1
 	 */
 	static Mpsc mpsc(int count) {
-		return new Mpsc(count, true, true);
+		return new Mpsc(count, false, false);
 	}
 
 	/**
@@ -85,10 +84,10 @@ public sealed interface Carriers {
 	 *            carriers in the pool
 	 * @param pinned
 	 *            whether each carrier is pinned to one CPU (on Linux)
-	 * @param affinity
+	 * @param affine
 	 *            whether each actor stays on its carrier
 	 */
-	record Mpsc(int count, boolean pinned, boolean affinity) implements Carriers {
+	record Mpsc(int count, boolean pinned, boolean affine) implements Carriers {
 
 		public Mpsc {
 			if (count < 1) {
@@ -97,20 +96,21 @@ public sealed interface Carriers {
 		}
 
 		/**
-		 * The same pool, with each carrier pinned to one CPU or not. Unpinned, the OS
-		 * chooses where each carrier runs, and may move it.
+		 * The same pool, with each carrier pinned to one CPU or not. Not pinned, the OS
+		 * chooses where each carrier runs, and may move it. Refused on a JDK without
+		 * {@code Thread.Affinity}.
 		 */
 		public Mpsc pinned(boolean pinned) {
-			return new Mpsc(count, pinned, affinity);
+			return new Mpsc(count, pinned, affine);
 		}
 
 		/**
-		 * The same pool, with each actor kept on its carrier or not. Without affinity,
-		 * an actor can run on any carrier: its thread starts on the carrier of its
-		 * sender, and an idle carrier may take it.
+		 * The same pool, with each actor kept on its carrier or not. Not affine, an
+		 * actor can run on any carrier: an idle carrier may take its thread. Refused on
+		 * a JDK without {@code Thread.Affinity}.
 		 */
-		public Mpsc affinity(boolean affinity) {
-			return new Mpsc(count, pinned, affinity);
+		public Mpsc affine(boolean affine) {
+			return new Mpsc(count, pinned, affine);
 		}
 	}
 

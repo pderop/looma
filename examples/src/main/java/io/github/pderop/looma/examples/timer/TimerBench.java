@@ -261,7 +261,7 @@ public final class TimerBench {
 		// First, before any virtual thread starts: the JVM picks its scheduler when
 		// the first one starts.
 		ActorSystem system = ActorSystem.builder()
-				.carriers(Carriers.mpsc(carriers))
+				.carriers(Carriers.mpsc(carriers).affine(true).pinned(true))
 				.timerTick(Duration.ofMillis(tickMillis))
 				.build();
 
