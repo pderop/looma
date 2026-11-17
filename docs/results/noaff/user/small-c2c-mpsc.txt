@@ -2,58 +2,58 @@ WARNING: failed to find node
 =================================================
             Trace Event Information              
 =================================================
-  Total records                     :     128324
-  Locked Load/Store Operations      :         95
-  Load Operations                   :      37421
+  Total records                     :     123428
+  Locked Load/Store Operations      :        116
+  Load Operations                   :      38376
   Loads - uncacheable               :          0
   Loads - IO                        :          0
   Loads - Miss                      :          0
-  Loads - no mapping                :      11880
+  Loads - no mapping                :      11640
   Load Fill Buffer Hit              :          0
-  Load L1D hit                      :      22205
-  Load L2D hit                      :        715
-  Load LLC hit                      :       1174
-  Load Local HITM                   :        685
-  Load Remote HITM                  :       1065
+  Load L1D hit                      :      23202
+  Load L2D hit                      :        838
+  Load LLC hit                      :       1128
+  Load Local HITM                   :        618
+  Load Remote HITM                  :       1153
   Load Remote HIT                   :          0
-  Load Local DRAM                   :         52
+  Load Local DRAM                   :         59
   Load Remote DRAM                  :          0
-  Load MESI State Exclusive         :         52
+  Load MESI State Exclusive         :         59
   Load MESI State Shared            :          0
-  Load LLC Misses                   :       1117
+  Load LLC Misses                   :       1212
   Load access blocked by data       :          0
   Load access blocked by address    :          0
   Load HIT Local Peer               :          0
   Load HIT Remote Peer              :          0
-  LLC Misses to Local DRAM          :        4.7%
+  LLC Misses to Local DRAM          :        4.9%
   LLC Misses to Remote DRAM         :        0.0%
   LLC Misses to Remote cache (HIT)  :        0.0%
-  LLC Misses to Remote cache (HITM) :       95.3%
-  Store Operations                  :      12434
-  Store - uncacheable               :          1
-  Store - no mapping                :        995
-  Store L1D Hit                     :      10289
+  LLC Misses to Remote cache (HITM) :       95.1%
+  Store Operations                  :      10029
+  Store - uncacheable               :          2
+  Store - no mapping                :        909
+  Store L1D Hit                     :       8250
   Store L1D Miss                    :          0
-  Store No available memory level   :        943
-  No Page Map Rejects               :       7440
-  Unable to parse data source       :      78469
+  Store No available memory level   :        598
+  No Page Map Rejects               :       6594
+  Unable to parse data source       :      75023
 
 =================================================
     Global Shared Cache Line Event Information   
 =================================================
-  Total Shared Cache Lines          :       1707
-  Load HITs on shared lines         :       2027
+  Total Shared Cache Lines          :       1724
+  Load HITs on shared lines         :       1968
   Fill Buffer Hits on shared lines  :          0
-  L1D hits on shared lines          :        226
-  L2D hits on shared lines          :         16
-  LLC hits on shared lines          :        699
+  L1D hits on shared lines          :        160
+  L2D hits on shared lines          :         10
+  LLC hits on shared lines          :        635
   Load hits on peer cache or nodes  :          0
-  Locked Access on shared lines     :         39
+  Locked Access on shared lines     :         41
   Blocked Access on shared lines    :          0
-  Store HITs on shared lines        :         63
-  Store L1D hits on shared lines    :         27
-  Store No available memory level   :         28
-  Total Merged records              :       1813
+  Store HITs on shared lines        :         53
+  Store L1D hits on shared lines    :         30
+  Store No available memory level   :         17
+  Total Merged records              :       1824
 
 =================================================
                  c2c details                     
@@ -70,259 +70,307 @@ WARNING: failed to find node
 # Index             Address  Node  PA cnt     Hitm    Total  LclHitm  RmtHitm  records    Loads   Stores    L1Hit   L1Miss      N/A       FB       L1       L2    LclHit  LclHitm    RmtHit  RmtHitm       Lcl       Rmt
 # .....  ..................  ....  ......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  ........  .......  ........  .......  ........  ........
 #
-      0          0xda6a8e80     0       3    0.34%        6        2        4        7        7        0        0        0        0        0        1        0         0        2         0        4         0         0
-      1          0xdac89fc0     0       1    0.29%        5        3        2       10        7        3        2        0        1        0        2        0         0        3         0        2         0         0
-      2          0xdacdf940     1       3    0.17%        3        0        3        3        3        0        0        0        0        0        0        0         0        0         0        3         0         0
-      3  0xffff88c645adc640     1       3    0.11%        2        2        0        4        3        1        1        0        0        0        1        0         0        2         0        0         0         0
-      4  0xffff88c645adda40     1       3    0.11%        2        2        0        4        4        1        0        0        0        0        2        0         0        2         0        0         0         0
-      5          0x80408e80     1       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-      6          0x8043d480     0       2    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-      7          0x80462240     0       1    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-      8          0x8052e040     1       1    0.11%        2        0        2        4        4        0        0        0        0        0        1        1         0        0         0        2         0         0
-      9          0xda5bca80   0-1       2    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     10          0xda5f3880     1       2    0.11%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
-     11          0xda61e8c0     0       1    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     12          0xda69f040     0       2    0.11%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
-     13          0xda714ec0     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     14          0xda7636c0     0       2    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     15          0xda768ac0     0       1    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     16          0xda76bc40     0       2    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     17          0xda76d200     0       4    0.11%        2        2        0        3        3        1        0        0        0        0        1        0         0        2         0        0         0         0
-     18          0xda770d80     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     19          0xda7f6c40     0       2    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     20          0xda7fa580     0       1    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     21          0xda824440     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     22          0xda843380     0       2    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     23          0xda8ff640   0-1       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     24          0xda912040     0       1    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     25          0xdaa3d080   0-1       2    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     26          0xdaa8f3c0     0       2    0.11%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
-     27          0xdaac7000     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
-     28          0xffa00780     1       3    0.11%        2        1        1        3        3        0        0        0        0        0        1        0         0        1         0        1         0         0
-     29          0xffb02900   0-1       5    0.11%        2        1        1        5        3        2        1        0        1        0        1        0         0        1         0        1         0         0
-     30          0xffc020c0   0-1       7    0.11%        2        1        1        6        6        1        0        0        0        0        4        0         0        1         0        1         0         0
-     31          0xffc81fc0   0-1       5    0.11%        2        1        1        7        6        1        1        0        0        0        4        0         0        1         0        1         0         0
-     32          0xffe81300     0       2    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
-     33          0xfff009c0     1       3    0.11%        2        0        2        3        3        0        0        0        0        0        1        0         0        0         0        2         0         0
-     34          0xfff01240     0       3    0.11%        2        0        2        3        3        0        0        0        0        0        1        0         0        0         0        2         0         0
+      0          0x805bec80     0       3    0.17%        3        1        2        3        3        0        0        0        0        0        0        0         0        1         0        2         0         0
+      1          0x80692f40     0       2    0.17%        3        2        1        3        3        0        0        0        0        0        0        0         0        2         0        1         0         0
+      2          0xd9901e40     0       1    0.17%        3        1        2        7        7        0        0        0        0        0        4        0         0        1         0        2         0         0
+      3  0xffff8c8d3e433500     0       5    0.11%        2        1        1        5        5        0        0        0        0        0        3        0         0        1         0        1         0         0
+      4      0x74cfd0b36e40     0       1    0.11%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+      5          0x80528380     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+      6          0x80552400     0       1    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+      7          0x80574a40     0       1    0.11%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+      8          0x8057de00     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+      9          0x8058d580     0       2    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     10          0x805b24c0     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     11          0x805bce00     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     12          0x805be8c0     0       2    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     13          0x806334c0     0       1    0.11%        2        2        0        5        5        0        0        0        0        0        3        0         0        2         0        0         0         0
+     14          0x8064cf80     0       5    0.11%        2        2        0       10       10        0        0        0        0        0        8        0         0        2         0        0         0         0
+     15          0x806becc0     0       1    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     16          0xb2c00640     0       3    0.11%        2        2        0        4        4        0        0        0        0        0        2        0         0        2         0        0         0         0
+     17          0xd9509f00     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     18          0xd950cec0     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     19          0xd958be40     0       1    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     20          0xd958ebc0     0       1    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     21          0xd9599e40     0       2    0.11%        2        0        2        3        3        0        0        0        0        0        1        0         0        0         0        2         0         0
+     22          0xd95d46c0     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     23          0xd96098c0     0       1    0.11%        2        1        1        6        6        0        0        0        0        0        4        0         0        1         0        1         0         0
+     24          0xd96ec480     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     25          0xd9710940     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     26          0xd9716200     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     27          0xd977b880     0       1    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     28          0xd97d1cc0     0       1    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     29          0xd97d4980     0       2    0.11%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     30          0xd98b7400     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     31          0xd99227c0     0       1    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     32          0xd9975cc0     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     33          0xd99a1ac0     0       2    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     34          0xd99b1dc0     0       2    0.11%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     35          0xd99b2c80     0       2    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     36          0xd9a12e00     0       1    0.11%        2        2        0        4        4        0        0        0        0        0        1        0         1        2         0        0         0         0
+     37          0xd9b2d740     0       1    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     38          0xd9b56680     0       2    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+     39          0xd9b87600     0       9    0.11%        2        1        1       12       12        0        0        0        0        0        4        1         5        1         0        1         0         0
+     40          0xd9be1a00     0       5    0.11%        2        1        1        5        5        0        0        0        0        0        3        0         0        1         0        1         0         0
+     41          0xffa00640     0       3    0.11%        2        1        1        4        4        0        0        0        0        0        2        0         0        1         0        1         0         0
+     42          0xffe001c0     0       1    0.11%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     43          0xfff000c0     0       1    0.11%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
 
 =================================================
       Shared Cache Line Distribution Pareto      
 =================================================
 #
-#        ----- HITM -----  ------- Store Refs ------  --------- Data address ---------                      ---------- cycles ----------    Total       cpu                                                                                                              Shared                                                                                                        
-#   Num  RmtHitm  LclHitm   L1 Hit  L1 Miss      N/A              Offset  Node  PA cnt        Code address  rmt hitm  lcl hitm      load  records       cnt                                                                                            Symbol            Object                                                                                       Source:Line  Node
-# .....  .......  .......  .......  .......  .......  ..................  ....  ......  ..................  ........  ........  ........  .......  ........  ................................................................................................  ................  ................................................................................................  ....
+#        ----- HITM -----  ------- Store Refs ------  --------- Data address ---------                      ---------- cycles ----------    Total       cpu                                                                                                             Shared                                                                                                         
+#   Num  RmtHitm  LclHitm   L1 Hit  L1 Miss      N/A              Offset  Node  PA cnt        Code address  rmt hitm  lcl hitm      load  records       cnt                                                                                            Symbol           Object                                                                                        Source:Line  Node
+# .....  .......  .......  .......  .......  .......  ..................  ....  ......  ..................  ........  ........  ........  .......  ........  ................................................................................................  ...............  .................................................................................................  ....
 #
   ----------------------------------------------------------------------
-      0        4        2        0        0        0          0xda6a8e80
+      0        2        1        0        0        0          0x805bec80
   ----------------------------------------------------------------------
-          25.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x7a706bfca9a7       399         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelopes()                                     [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelopes()+1703                                     1
-          75.00%   50.00%    0.00%    0.00%    0.00%                0x28     0       1      0x7a706bf78b6c       942       534         0        5         3  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+492   0  1
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x28     0       1      0x7a706bf973e5         0       235         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)                [JIT] tid 175154  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+2661                1
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x74cfb7f916b3       296         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2355   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x74cfb7f916c0        14         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2368   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x74cfb7f9175c         0        42         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2524   0
 
   ----------------------------------------------------------------------
-      1        2        3        2        0        1          0xdac89fc0
+      1        1        2        0        0        0          0x80692f40
   ----------------------------------------------------------------------
-          50.00%   33.33%    0.00%    0.00%    0.00%                 0xc     0       1      0x7a706bf7b64a       332        46         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+11466   0
-           0.00%   66.67%    0.00%    0.00%    0.00%                 0xc     0       1      0x7a706bf84cf8         0        96       186        3         3  [.] void java.lang.MpscCarrierThread.submit(java.lang.Thread$VirtualThreadTask)                   [JIT] tid 175154  void java.lang.MpscCarrierThread.submit(java.lang.Thread$VirtualThreadTask)+376                      0
-          50.00%    0.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x7a706bf8519d       417         0         0        1         1  [.] void java.lang.MpscCarrierThread.submit(java.lang.Thread$VirtualThreadTask)                   [JIT] tid 175154  void java.lang.MpscCarrierThread.submit(java.lang.Thread$VirtualThreadTask)+1565                     0
-           0.00%    0.00%    0.00%    0.00%  100.00%                 0xc     0       1      0x7a706bfcc347         0         0         0        1         1  [.] void java.lang.MpscCarrierThread.leaveParked()                                                [JIT] tid 175154  void java.lang.MpscCarrierThread.leaveParked()+455                                                   1
-           0.00%    0.00%  100.00%    0.00%    0.00%                 0xc     0       1      0x7a706bfcc5a8         0         0         0        2         2  [.] void java.lang.MpscCarrierThread.leaveParked()                                                [JIT] tid 175154  void java.lang.MpscCarrierThread.leaveParked()+1064                                                  0  1
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x74cfb7f9174a       417         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2506   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x74cfb7f9175c         0        68         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2524   0
 
   ----------------------------------------------------------------------
-      2        3        0        0        0        0          0xdacdf940
+      2        2        1        0        0        0          0xd9901e40
   ----------------------------------------------------------------------
-          33.33%    0.00%    0.00%    0.00%    0.00%                0x1c     1       1      0x7a706bf79769       342         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3561   1
-          66.67%    0.00%    0.00%    0.00%    0.00%                0x20     1       1      0x7a706bf7977b       375         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3579   0  1
+          50.00%  100.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x74cfb7fbcc3f       360       110         0        3         3  [.] void java.lang.MpscCarrierThread.eventLoopSteal()              [JIT] tid 56202  void java.lang.MpscCarrierThread.eventLoopSteal()+6591             0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x74cfb7fbb627       305         0         0        1         1  [.] void java.lang.MpscCarrierThread.eventLoopSteal()              [JIT] tid 56202  void java.lang.MpscCarrierThread.eventLoopSteal()+935              0
 
   ----------------------------------------------------------------------
-      3        0        2        1        0        0  0xffff88c645adc640
+      3        1        1        0        0        0  0xffff8c8d3e433500
   ----------------------------------------------------------------------
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     1       1  0xffffffff98f73631         0        87         0        1         1  [k] ep_start_scan                [kernel.kallsyms]  ep_start_scan+33                 1
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     1       1  0xffffffff98f73642         0        82         0        1         1  [k] ep_start_scan                [kernel.kallsyms]  ep_start_scan+50                 1
-           0.00%    0.00%  100.00%    0.00%    0.00%                0x20     1       1  0xffffffff99d4e57c         0         0         0        1         1  [k] _raw_spin_unlock_irqrestore  [kernel.kallsyms]  _raw_spin_unlock_irqrestore+12   1
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0xc     0       1  0xffffffff9b8b59aa         0        85         0        1         1  [k] wake_affine          [kernel.kallsyms]  wake_affine+538          0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1  0xffffffff9b8b7c45       345         0         0        1         1  [k] select_idle_sibling  [kernel.kallsyms]  select_idle_sibling+85   0
 
   ----------------------------------------------------------------------
-      4        0        2        0        0        0  0xffff88c645adda40
+      4        0        2        0        0        0      0x74cfd0b36e40
   ----------------------------------------------------------------------
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x18     1       1  0xffffffff98f7684b         0        93         0        1         1  [k] ep_poll_callback  [kernel.kallsyms]  ep_poll_callback+571   1
-           0.00%    0.00%    0.00%    0.00%    0.00%                0x18     1       1  0xffffffff98f7686e         0         0         0        0         1  [k] ep_poll_callback  [kernel.kallsyms]  ep_poll_callback+606   0
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x24     1       1  0xffffffff98f7362d         0        74         0        1         1  [k] ep_start_scan     [kernel.kallsyms]  ep_start_scan+29       0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x18     0       1      0x74cfb7f910eb         0       303         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+875   0
 
   ----------------------------------------------------------------------
-      5        1        1        0        0        0          0x80408e80
+      5        1        1        0        0        0          0x80528380
   ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                 0x0     1       1      0x7a706bf7975e         0        37         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3550   0
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x3c     1       1      0x7a706bf79769       429         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3561   1
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x74cfb7f916b3       109         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2355   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x74cfb7f9175c         0       100         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2524   0
 
   ----------------------------------------------------------------------
-      6        2        0        0        0        0          0x8043d480
+      6        1        1        0        0        0          0x80552400
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x7a706bf79717       242         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3479   0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x7a706bf7977b       339         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3579   1
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x24     0       1      0x74cfb7f9175c       418        48         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2524   0
 
   ----------------------------------------------------------------------
-      7        1        1        0        0        0          0x80462240
+      7        0        2        0        0        0          0x80574a40
   ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1      0x7a706bf7977b       341        93         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3579   0  1
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x74cfb7f916b3         0       102         0        2         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2355   0
 
   ----------------------------------------------------------------------
-      8        2        0        0        0        0          0x8052e040
+      8        1        1        0        0        0          0x8057de00
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     1       1      0x7a706bf84cd8       120         0         6        3         3  [.] void java.lang.MpscCarrierThread.submit(java.lang.Thread$VirtualThreadTask)      [JIT] tid 175154  void java.lang.MpscCarrierThread.submit(java.lang.Thread$VirtualThreadTask)+344      0  1
-          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     1       1      0x7a706bfbfbce       282         0         0        1         1  [.] boolean java.lang.MpscCarrierThread.tryStartSearch(java.lang.MpscCarrierThread)  [JIT] tid 175154  boolean java.lang.MpscCarrierThread.tryStartSearch(java.lang.MpscCarrierThread)+78   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x14     0       1      0x74cfb7f916c0         0        35         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2368   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x74cfb7f9174a       397         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2506   0
 
   ----------------------------------------------------------------------
-      9        2        0        0        0        0          0xda5bca80
+      9        2        0        0        0        0          0x8058d580
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x7a706bf79769       421         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3561   0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     1       1      0x7a706bf7977b       351         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3579   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x74cfb7f916b3         8         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2355   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x74cfb7f916c0       311         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2368   0
 
   ----------------------------------------------------------------------
-     10        0        2        0        0        0          0xda5f3880
+     10        1        1        0        0        0          0x805b24c0
   ----------------------------------------------------------------------
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x24     1       1      0x7a706bf79717         0        36         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3479   0
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x28     1       1      0x7a706bf7974e         0        89         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3534   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x74cfb7f9174a       409         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2506   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x24     0       1      0x74cfb7f9175c         0        37         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2524   0
 
   ----------------------------------------------------------------------
-     11        2        0        0        0        0          0xda61e8c0
+     11        1        1        0        0        0          0x805bce00
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x14     0       1      0x7a706bf796f6       230         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3446   0  1
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x74cfb7f9174a       433         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2506   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x18     0       1      0x74cfb7f91674         0        47         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2292   0
 
   ----------------------------------------------------------------------
-     12        0        2        0        0        0          0xda69f040
+     12        2        0        0        0        0          0x805be8c0
   ----------------------------------------------------------------------
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x24     0       1      0x7a706bf5e0ba         0        86         0        1         1  [.] void java.lang.VirtualThread.submitRunContinuation(boolean)                               [JIT] tid 175154  void java.lang.VirtualThread.submitRunContinuation(boolean)+186                               0
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x28     0       1      0x7a706bf63c63         0        92         0        1         1  [.] void java.lang.MpscVirtualThreadScheduler.onContinue(java.lang.Thread$VirtualThreadTask)  [JIT] tid 175154  void java.lang.MpscVirtualThreadScheduler.onContinue(java.lang.Thread$VirtualThreadTask)+99   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x74cfb7f9174a       349         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2506   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x74cfb7f91674       343         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2292   0
 
   ----------------------------------------------------------------------
-     13        1        1        0        0        0          0xda714ec0
+     13        0        2        0        0        0          0x806334c0
   ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x7a706bf7977b         0        43         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3579   0
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x38     0       1      0x7a706bf7977b       399         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3579   1
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x38     0       1      0x74cfb7fa1b6c         0        89         0        2         1  [.] boolean java.lang.MpscCarrierThread.workBeforeBlocking()  [JIT] tid 56202  boolean java.lang.MpscCarrierThread.workBeforeBlocking()+1004   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x38     0       1      0x74cfb7fbb3c2         0        88         0        1         1  [.] void java.lang.MpscCarrierThread.eventLoopSteal()         [JIT] tid 56202  void java.lang.MpscCarrierThread.eventLoopSteal()+322           0
 
   ----------------------------------------------------------------------
-     14        2        0        0        0        0          0xda7636c0
+     14        0        2        0        0        0          0x8064cf80
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x14     0       1      0x7a706bf796f6       427         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3446   0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x24     0       1      0x7a706bf79769       322         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3561   1
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x28     0       1      0x74cfb7f90f19         0        50         0        5         5  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+409   0
 
   ----------------------------------------------------------------------
-     15        2        0        0        0        0          0xda768ac0
+     15        2        0        0        0        0          0x806becc0
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x7a706bf7977b       382         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3579   0  1
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x74cfb7f9175c       326         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2524   0
 
   ----------------------------------------------------------------------
-     16        2        0        0        0        0          0xda76bc40
+     16        0        2        0        0        0          0xb2c00640
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x14     0       1      0x7a706bf79769       331         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3561   1
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x7a706bf7977b       423         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3579   1
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x20     0       1      0x74cfb7f3b985         0        41         0        1         1  [.] void io.github.pderop.looma.examples.utils.LoadGenerator.run(boolean, java.util.Random)  [JIT] tid 56202  void io.github.pderop.looma.examples.utils.LoadGenerator.run(boolean, java.util.Random)+3333   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x20     0       1      0x74cfb7fc39a1         0        60         0        1         1  [.] void io.github.pderop.looma.examples.utils.LoadGenerator.run(boolean, java.util.Random)  [JIT] tid 56202  void io.github.pderop.looma.examples.utils.LoadGenerator.run(boolean, java.util.Random)+3361   0
 
   ----------------------------------------------------------------------
-     17        0        2        0        0        0          0xda76d200
+     17        1        1        0        0        0          0xd9509f00
   ----------------------------------------------------------------------
-           0.00%   50.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x7a706bf7977e         0         8         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3582   1
-           0.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x7a706bf796f2         0         0         0        0         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3442   0
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x28     0       1      0x7a706bf7975e         0       138         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3550   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x14     0       1      0x74cfb7f9175c         0        82         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2524   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x74cfb7f91674       368         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2292   0
 
   ----------------------------------------------------------------------
-     18        1        1        0        0        0          0xda770d80
+     18        1        1        0        0        0          0xd950cec0
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x7a706bf79702        24         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3458   1
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x20     0       1      0x7a706bf7977b         0        88         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3579   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x24     0       1      0x74cfb7f9175c         0        42         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2524   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x74cfb7f91674       324         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2292   0
 
   ----------------------------------------------------------------------
-     19        2        0        0        0        0          0xda7f6c40
+     19        2        0        0        0        0          0xd958be40
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x34     0       1      0x7a706bf79769       354         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3561   0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x38     0       1      0x7a706bf7977b       356         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3579   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x74cfb7f916b3        10         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2355   0
 
   ----------------------------------------------------------------------
-     20        1        1        0        0        0          0xda7fa580
+     20        1        1        0        0        0          0xd958ebc0
   ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x7a706bf796f6        35        23         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3446   0  1
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x24     0       1      0x74cfb7f9175c       377        47         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2524   0
 
   ----------------------------------------------------------------------
-     21        1        1        0        0        0          0xda824440
+     21        2        0        0        0        0          0xd9599e40
   ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x7a706bf796f6         0        11         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3446   0
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x7a706bf7977b       322         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3579   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x74cfb7f916b3        19         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2355   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x74cfb7f9174a       325         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2506   0
 
   ----------------------------------------------------------------------
-     22        2        0        0        0        0          0xda843380
+     22        1        1        0        0        0          0xd95d46c0
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x7a706bf7977e       325         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3582   1
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x7a706bf79769       362         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3561   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x74cfb7f916e4       323         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2404   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1      0x74cfb7f916e0         0         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2400   0
 
   ----------------------------------------------------------------------
-     23        1        1        0        0        0          0xda8ff640
+     23        1        1        0        0        0          0xd96098c0
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x2c     1       1      0x7a706bf79769       432         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3561   0
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x30     0       1      0x7a706bf7977b         0        43         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3579   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x74cfb7fa1b6c         0        91         0        4         4  [.] boolean java.lang.MpscCarrierThread.workBeforeBlocking()     [JIT] tid 56202  boolean java.lang.MpscCarrierThread.workBeforeBlocking()+1004     0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x74cfb7fbc958       354         0         0        1         1  [.] void java.lang.MpscCarrierThread.eventLoopSteal()            [JIT] tid 56202  void java.lang.MpscCarrierThread.eventLoopSteal()+5848            0
 
   ----------------------------------------------------------------------
-     24        2        0        0        0        0          0xda912040
+     24        1        1        0        0        0          0xd96ec480
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x7a706bf79769       421         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3561   1
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x74cfb7f916b3         8         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2355   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x74cfb7f9175c         0       141         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2524   0
 
   ----------------------------------------------------------------------
-     25        2        0        0        0        0          0xdaa3d080
+     25        1        1        0        0        0          0xd9710940
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                 0x4     1       1      0x7a706bf79769       354         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3561   1
-          50.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x7a706bf7977b       346         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3579   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x74cfb7f9175c       335         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2524   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x74cfb7f91674         0        42         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2292   0
 
   ----------------------------------------------------------------------
-     26        0        2        0        0        0          0xdaa8f3c0
+     26        1        1        0        0        0          0xd9716200
   ----------------------------------------------------------------------
-           0.00%   50.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x7a706bf796f6         0        42         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3446   1
-           0.00%   50.00%    0.00%    0.00%    0.00%                0x3c     0       1      0x7a706bf79717         0        50         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3479   1
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x74cfb7f9174a       331         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2506   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x18     0       1      0x74cfb7f91674         0        47         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2292   0
 
   ----------------------------------------------------------------------
-     27        1        1        0        0        0          0xdaac7000
+     27        2        0        0        0        0          0xd977b880
   ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x18     0       1      0x7a706bf7975e         0        58         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3550   0
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x7a706bf7977b       337         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 175154  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+3579   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x74cfb7f916b3       166         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2355   0
 
   ----------------------------------------------------------------------
-     28        1        1        0        0        0          0xffa00780
+     28        2        0        0        0        0          0xd97d1cc0
   ----------------------------------------------------------------------
-         100.00%  100.00%    0.00%    0.00%    0.00%                0x20     1       1      0x7a7081688040       353        70         0        2         2  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)  libjvm.so  long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)+128   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x74cfb7f91674       339         0         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2292   0
 
   ----------------------------------------------------------------------
-     29        1        1        1        0        1          0xffb02900
+     29        0        2        0        0        0          0xd97d4980
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     1       1      0x7a7081688045       389         0         0        1         1  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)                                                                                    libjvm.so         long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)+133                                                                                   0
-           0.00%    0.00%  100.00%    0.00%  100.00%                 0x4   0-1       2      0x7a7081688053         0         0         0        2         2  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)                                                                                    libjvm.so         long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)+147                                                                                   0  1
-           0.00%  100.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x7a7081339a64         0        79         0        1         1  [.] AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<286822ul, G1BarrierSet>, (AccessInternal::BarrierType)3, 286822ul>::oop_access_barrier(oopDesc*, long)  libjvm.so         AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<286822ul, G1BarrierSet>, (AccessInternal::BarrierType)3, 286822ul>::oop_access_barrier(oopDesc*, long)+4   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x18     0       1      0x74cfb7f9174a         0        42         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2506   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x74cfb7f9175c         0        89         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2524   0
 
   ----------------------------------------------------------------------
-     30        1        1        0        0        0          0xffc020c0
+     30        1        1        0        0        0          0xd98b7400
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x24     1       1      0x7a7081687ffa       332         0         0        1         1  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)  libjvm.so  long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)+58    1
-           0.00%    0.00%    0.00%    0.00%    0.00%                0x24     1       1      0x7a7081688047         0         0         0        0         1  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)  libjvm.so  long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)+135   1
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x30   0-1       2      0x7a7081681c9d         0        42         0        2         1  [.] long* thaw<Config<(oop_kind)0, G1BarrierSet> >(JavaThread*, int)                      libjvm.so  long* thaw<Config<(oop_kind)0, G1BarrierSet> >(JavaThread*, int)+221                       0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x14     0       1      0x74cfb7f916c0       288         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2368   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x28     0       1      0x74cfb7f91674         0        48         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2292   0
 
   ----------------------------------------------------------------------
-     31        1        1        1        0        0          0xffc81fc0
+     31        1        1        0        0        0          0xd99227c0
   ----------------------------------------------------------------------
-           0.00%  100.00%    0.00%    0.00%    0.00%                0x14     0       1      0x7a7081687ff8         0        87         0        1         1  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)  libjvm.so  long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)+56   1
-           0.00%    0.00%  100.00%    0.00%    0.00%                0x14     0       1      0x7a7081678e6f         0         0         0        1         1  [.] FreezeBase::freeze_fast_copy(stackChunkOopDesc*, int)                                 libjvm.so  FreezeBase::freeze_fast_copy(stackChunkOopDesc*, int)+271                                 1
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     1       1      0x7a7081681c9d       376         0         0        1         1  [.] long* thaw<Config<(oop_kind)0, G1BarrierSet> >(JavaThread*, int)                      libjvm.so  long* thaw<Config<(oop_kind)0, G1BarrierSet> >(JavaThread*, int)+221                      0
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1      0x74cfb7f91725       344       132         0        2         2  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2469   0
 
   ----------------------------------------------------------------------
-     32        2        0        0        0        0          0xffe81300
+     32        1        1        0        0        0          0xd9975cc0
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x7a7081688040       138         0         0        1         1  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)  libjvm.so  long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)+128   0
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x7a7081678940       379         0         0        1         1  [.] Continuation::prepare_thaw(JavaThread*, bool)                                         libjvm.so  Continuation::prepare_thaw(JavaThread*, bool)+144                                          1
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x74cfb7f916b3         0        56         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2355   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x74cfb7f9174a       406         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2506   0
 
   ----------------------------------------------------------------------
-     33        2        0        0        0        0          0xfff009c0
+     33        2        0        0        0        0          0xd99a1ac0
   ----------------------------------------------------------------------
-         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     1       1      0x7a7081688045       364         0         0        2         2  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)  libjvm.so  long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)+133   0  1
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x74cfb7f916b3       289         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2355   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x74cfb7f91674       318         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2292   0
 
   ----------------------------------------------------------------------
-     34        2        0        0        0        0          0xfff01240
+     34        0        2        0        0        0          0xd99b1dc0
   ----------------------------------------------------------------------
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x7a7081688040       308         0         0        1         1  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)                                                                                    libjvm.so  long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)+128                                                                                   1
-          50.00%    0.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x7a7081339a64       352         0         0        1         1  [.] AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<286822ul, G1BarrierSet>, (AccessInternal::BarrierType)3, 286822ul>::oop_access_barrier(oopDesc*, long)  libjvm.so  AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<286822ul, G1BarrierSet>, (AccessInternal::BarrierType)3, 286822ul>::oop_access_barrier(oopDesc*, long)+4   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x74cfb7f9174a         0        47         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2506   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1      0x74cfb7f91674         0       157         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2292   0
+
+  ----------------------------------------------------------------------
+     35        2        0        0        0        0          0xd99b2c80
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                 0x4     0       1      0x74cfb7f91678         8         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2296   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x2c     0       1      0x74cfb7f9175c       332         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2524   0
+
+  ----------------------------------------------------------------------
+     36        0        2        0        0        0          0xd9a12e00
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x74cfb7fa1b65         0        99        40        3         3  [.] boolean java.lang.MpscCarrierThread.workBeforeBlocking()  [JIT] tid 56202  boolean java.lang.MpscCarrierThread.workBeforeBlocking()+997   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x74cfb7fbc951         0        93         0        1         1  [.] void java.lang.MpscCarrierThread.eventLoopSteal()         [JIT] tid 56202  void java.lang.MpscCarrierThread.eventLoopSteal()+5841         0
+
+  ----------------------------------------------------------------------
+     37        2        0        0        0        0          0xd9b2d740
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x74cfb7fbbfb4       396         0         0        1         1  [.] void java.lang.MpscCarrierThread.eventLoopSteal()  [JIT] tid 56202  void java.lang.MpscCarrierThread.eventLoopSteal()+3380   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x74cfb7fbcc7d       429         0         0        1         1  [.] void java.lang.MpscCarrierThread.eventLoopSteal()  [JIT] tid 56202  void java.lang.MpscCarrierThread.eventLoopSteal()+6653   0
+
+  ----------------------------------------------------------------------
+     38        1        1        0        0        0          0xd9b56680
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x20     0       1      0x74cfb7f9174a       333         0         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2506   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x28     0       1      0x74cfb7f91674         0        41         0        1         1  [.] void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)  [JIT] tid 56202  void io.github.pderop.looma.impl.ActorCell.runEnvelope(io.github.pderop.looma.impl.Envelope)+2292   0
+
+  ----------------------------------------------------------------------
+     39        1        1        0        0        0          0xd9b87600
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x74cfb7f888e1         0       153        61        6         4  [.] void java.lang.VirtualThread.start()                         [JIT] tid 56202  void java.lang.VirtualThread.start()+225                           0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x74cfb7f888d4       420         0        58        4         3  [.] void java.lang.VirtualThread.start()                         [JIT] tid 56202  void java.lang.VirtualThread.start()+212                           0
+
+  ----------------------------------------------------------------------
+     40        1        1        0        0        0          0xd9be1a00
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x74cfb7fc838f         0       152         0        1         1  [.] void java.lang.VirtualThread.submitRunContinuation(boolean)  [JIT] tid 56202  void java.lang.VirtualThread.submitRunContinuation(boolean)+1295   0
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x74cfb7fc882c       386         0         0        1         1  [.] void java.lang.VirtualThread.submitRunContinuation(boolean)  [JIT] tid 56202  void java.lang.VirtualThread.submitRunContinuation(boolean)+2476   0
+
+  ----------------------------------------------------------------------
+     41        1        1        0        0        0          0xffa00640
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x18     0       1      0x74cfcfa788f9       375        88         0        2         2  [.] Continuation::prepare_thaw(JavaThread*, bool)                                         libjvm.so  Continuation::prepare_thaw(JavaThread*, bool)+73                                           0
+
+  ----------------------------------------------------------------------
+     42        2        0        0        0        0          0xffe001c0
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x74cfcfa8802e      3356         0         0        2         2  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)  libjvm.so  long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)+110   0
+
+  ----------------------------------------------------------------------
+     43        1        1        0        0        0          0xfff000c0
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1      0x74cfd0db0ac3       421       139         0        2         2  [.] 0x00000000001b0ac3  libc.so.6         libc.so.6[1b0ac3]   0

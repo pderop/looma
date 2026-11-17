@@ -34,10 +34,14 @@ requests are:
   the form `product=<product>&qty=<1 to 3>`.
 - An answer other than 200 is a failure.
 
+With `--hot-carrier`, the load is skewed: the containers of carrier 0 get more of the sessions'
+requests ([a skewed load](benchmark.md#a-skewed-load)). `--containers` sets how many containers
+there are, a multiple of the carriers; one per carrier by default.
+
 ## What a request does
 
-One container per carrier, a pool of actors: `containers.forKey(sid)` sends a session always to
-the same one. Its two servlets and its fraud detector are its child actors, with its home carrier:
+One container per carrier by default, a pool of actors: `containers.forKey(sid)` sends a session
+always to the same one. Its two servlets and its fraud detector are its child actors, with its home carrier:
 under `affine(true)`, they stay there. Each servlet is a `ServletActor` that holds a
 `ProfileServlet` or a `CartServlet`: the sessions and the page. A wrong path gets a 404, a wrong
 method a 405.
@@ -147,6 +151,8 @@ scripts/bench-servlet.sh                               # this one
 scripts/bench-servlet.sh --step 10000                  # smaller steps in the ramp
 scripts/bench-servlet.sh --connections 64
 scripts/bench-servlet.sh --schedulers mpsc-affine-pinned,mpsc,jdk
+scripts/bench-servlet.sh --hot-carrier 50              # a skewed load: the actors that start on carrier 0 get half the requests
+scripts/bench-servlet.sh --containers 20 --hot-carrier 50 # 2 containers per carrier
 ```
 
 Under JMH, with the backend of `scripts/jmh-servlet-start-backend.sh`:

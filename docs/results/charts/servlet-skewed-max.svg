@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 378" width="900" height="378" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+<style>
+svg { --surface: #fcfcfb; --text: #0b0b0b; --text2: #52514e; --muted: #898781; --grid: #e1e0d9; --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300 }
+@media (prefers-color-scheme: dark) { svg { --surface: #1a1a19; --text: #f0efec; --text2: #c3c2b7; --muted: #898781; --grid: #2c2c2a; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #0ca30c } }
+.bg { fill: var(--surface) } .t { fill: var(--text) } .t2 { fill: var(--text2) } .m { fill: var(--muted) }
+.g { stroke: var(--grid); stroke-width: 1 }
+.d1 { fill: var(--s1) } .d2 { fill: var(--s2) } .d3 { fill: var(--s3) } .d4 { fill: var(--s4) } .d5 { fill: var(--s5) } .d6 { fill: var(--s6) } .pale { fill-opacity: 0.3 }
+</style>
+<rect class="bg" width="900" height="378"/>
+<text class="t" x="12" y="30" font-size="16" font-weight="600">Servlet benchmark, skewed load: max rate</text>
+<text class="t2" x="12" y="52" font-size="12">20 containers; the 2 that start on carrier 0 get half the requests</text>
+<rect class="m" x="12" y="66" width="18" height="10" rx="2"/>
+<text class="t2" x="36" y="75" font-size="12">max req/s with p99 &lt; 1 ms</text>
+<rect class="m pale" x="230" y="66" width="18" height="10" rx="2"/>
+<text class="t2" x="254" y="75" font-size="12">max req/s, the last step kept up with</text>
+<text class="m" x="12" y="94" font-size="11">One bar per ramp, r1 then r2.</text>
+<line class="g" x1="210.0" x2="210.0" y1="106" y2="314"/>
+<text class="m" x="210.0" y="330" font-size="11" text-anchor="middle">0</text>
+<line class="g" x1="270.0" x2="270.0" y1="106" y2="314"/>
+<text class="m" x="270.0" y="330" font-size="11" text-anchor="middle">50k</text>
+<line class="g" x1="330.0" x2="330.0" y1="106" y2="314"/>
+<text class="m" x="330.0" y="330" font-size="11" text-anchor="middle">100k</text>
+<line class="g" x1="390.0" x2="390.0" y1="106" y2="314"/>
+<text class="m" x="390.0" y="330" font-size="11" text-anchor="middle">150k</text>
+<line class="g" x1="450.0" x2="450.0" y1="106" y2="314"/>
+<text class="m" x="450.0" y="330" font-size="11" text-anchor="middle">200k</text>
+<line class="g" x1="510.0" x2="510.0" y1="106" y2="314"/>
+<text class="m" x="510.0" y="330" font-size="11" text-anchor="middle">250k</text>
+<line class="g" x1="570.0" x2="570.0" y1="106" y2="314"/>
+<text class="m" x="570.0" y="330" font-size="11" text-anchor="middle">300k</text>
+<line class="g" x1="630.0" x2="630.0" y1="106" y2="314"/>
+<text class="m" x="630.0" y="330" font-size="11" text-anchor="middle">350k</text>
+<line class="g" x1="690.0" x2="690.0" y1="106" y2="314"/>
+<text class="m" x="690.0" y="330" font-size="11" text-anchor="middle">400k</text>
+<text class="t2" x="450" y="352" font-size="12" text-anchor="middle">requests per second</text>
+<text class="t" x="12" y="124" font-size="12">mpsc-affine-pinned</text>
+<text class="m" x="12" y="139" font-size="11">build pr227</text>
+<text class="m" x="204" y="123" font-size="10" text-anchor="end">r1</text>
+<rect class="d3 pale" x="210" y="112" width="228.0" height="14" rx="2"/>
+<rect class="d3" x="210" y="112" width="180.0" height="14" rx="2"/>
+<text class="t2" x="444.0" y="123" font-size="11">190k · p99 &lt; 1 ms: 150k</text>
+<text class="m" x="204" y="141" font-size="10" text-anchor="end">r2</text>
+<rect class="d3 pale" x="210" y="130" width="276.0" height="14" rx="2"/>
+<rect class="d3" x="210" y="130" width="252.0" height="14" rx="2"/>
+<text class="t2" x="492.0" y="141" font-size="11">230k · p99 &lt; 1 ms: 210k</text>
+<text class="t" x="12" y="178" font-size="12">mpsc</text>
+<text class="m" x="12" y="193" font-size="11">build pr227</text>
+<text class="m" x="204" y="177" font-size="10" text-anchor="end">r1</text>
+<rect class="d1 pale" x="210" y="166" width="348.0" height="14" rx="2"/>
+<rect class="d1" x="210" y="166" width="348.0" height="14" rx="2"/>
+<text class="t2" x="564.0" y="177" font-size="11">290k · p99 &lt; 1 ms: 290k</text>
+<text class="m" x="204" y="195" font-size="10" text-anchor="end">r2</text>
+<rect class="d1 pale" x="210" y="184" width="348.0" height="14" rx="2"/>
+<rect class="d1" x="210" y="184" width="348.0" height="14" rx="2"/>
+<text class="t2" x="564.0" y="195" font-size="11">290k · p99 &lt; 1 ms: 290k</text>
+<text class="t" x="12" y="232" font-size="12">jdk</text>
+<text class="m" x="12" y="247" font-size="11">build pr227</text>
+<text class="m" x="204" y="231" font-size="10" text-anchor="end">r1</text>
+<rect class="d2 pale" x="210" y="220" width="324.0" height="14" rx="2"/>
+<text class="t2" x="540.0" y="231" font-size="11">270k · p99 &lt; 1 ms: none</text>
+<text class="m" x="204" y="249" font-size="10" text-anchor="end">r2</text>
+<rect class="d2 pale" x="210" y="238" width="300.0" height="14" rx="2"/>
+<rect class="d2" x="210" y="238" width="180.0" height="14" rx="2"/>
+<text class="t2" x="516.0" y="249" font-size="11">250k · p99 &lt; 1 ms: 150k</text>
+<text class="t" x="12" y="286" font-size="12">mpsc</text>
+<text class="m" x="12" y="301" font-size="11">build noaff</text>
+<text class="m" x="204" y="285" font-size="10" text-anchor="end">r1</text>
+<rect class="d1 pale" x="210" y="274" width="420.0" height="14" rx="2"/>
+<rect class="d1" x="210" y="274" width="348.0" height="14" rx="2"/>
+<text class="t2" x="636.0" y="285" font-size="11">350k · p99 &lt; 1 ms: 290k</text>
+<text class="m" x="204" y="303" font-size="10" text-anchor="end">r2</text>
+<rect class="d1 pale" x="210" y="292" width="444.0" height="14" rx="2"/>
+<rect class="d1" x="210" y="292" width="372.0" height="14" rx="2"/>
+<text class="t2" x="660.0" y="303" font-size="11">370k · p99 &lt; 1 ms: 310k</text>
+</svg>

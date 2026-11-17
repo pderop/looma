@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 332" width="900" height="332" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+<style>
+svg { --surface: #fcfcfb; --text: #0b0b0b; --text2: #52514e; --muted: #898781; --grid: #e1e0d9; --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300 }
+@media (prefers-color-scheme: dark) { svg { --surface: #1a1a19; --text: #f0efec; --text2: #c3c2b7; --muted: #898781; --grid: #2c2c2a; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #0ca30c } }
+.bg { fill: var(--surface) } .t { fill: var(--text) } .t2 { fill: var(--text2) } .m { fill: var(--muted) }
+.g1 { stroke: var(--muted); stroke-width: 1 }
+.d1 { fill: var(--s1) } .d2 { fill: var(--s2) } .d3 { fill: var(--s3) } .d4 { fill: var(--s4) } .d5 { fill: var(--s5) } .d6 { fill: var(--s6) }
+</style>
+<rect class="bg" width="900" height="332"/>
+<text class="t" x="12" y="30" font-size="16" font-weight="600">User benchmark: walk cycles and loads from another L3</text>
+<text class="t2" x="12" y="52" font-size="12">the walk: depth 256; other L3: the share of the sampled loads</text>
+<text class="m" x="12" y="74" font-size="11">One bar per scheduler, each panel on its own axis from 0. Walk: the walk run. Other L3: the c2c run.</text>
+<text class="t" x="210" y="98" font-size="12" font-weight="600">walk cycles/req</text>
+<text class="t2" x="210" y="114" font-size="11">user small</text>
+<line class="g1" x1="210" x2="210" y1="122" y2="294"/>
+<text class="t" x="443" y="98" font-size="12" font-weight="600">walk cycles/req</text>
+<text class="t2" x="443" y="114" font-size="11">user big</text>
+<line class="g1" x1="443" x2="443" y1="122" y2="294"/>
+<text class="t" x="676" y="98" font-size="12" font-weight="600">other L3</text>
+<text class="t2" x="676" y="114" font-size="11">user small</text>
+<line class="g1" x1="676" x2="676" y1="122" y2="294"/>
+<text class="t" x="12" y="134" font-size="12">mpsc-affine-pinned</text>
+<text class="m" x="12" y="148" font-size="11">build pr227</text>
+<rect class="d3" x="210" y="128" width="35.4" height="14" rx="2"><title>mpsc-affine-pinned, walk cycles/req, user small: 15,002</title></rect>
+<text class="t2" x="249.4" y="139" font-size="10">15,002</text>
+<rect class="d3" x="443" y="128" width="121.2" height="14" rx="2"><title>mpsc-affine-pinned, walk cycles/req, user big: 188,546</title></rect>
+<text class="t2" x="568.2" y="139" font-size="10">188,546</text>
+<rect class="d3" x="676" y="128" width="19.0" height="14" rx="2"><title>mpsc-affine-pinned, other L3, user small: 0.36%</title></rect>
+<text class="t2" x="699.0" y="139" font-size="10">0.36%</text>
+<text class="t" x="12" y="170" font-size="12">mpsc-affine</text>
+<text class="m" x="12" y="184" font-size="11">build pr227</text>
+<rect class="d4" x="210" y="164" width="35.2" height="14" rx="2"><title>mpsc-affine, walk cycles/req, user small: 14,931</title></rect>
+<text class="t2" x="249.2" y="175" font-size="10">14,931</text>
+<rect class="d4" x="443" y="164" width="122.4" height="14" rx="2"><title>mpsc-affine, walk cycles/req, user big: 190,516</title></rect>
+<text class="t2" x="569.4" y="175" font-size="10">190,516</text>
+<rect class="d4" x="676" y="164" width="17.9" height="14" rx="2"><title>mpsc-affine, other L3, user small: 0.34%</title></rect>
+<text class="t2" x="697.9" y="175" font-size="10">0.34%</text>
+<text class="t" x="12" y="206" font-size="12">mpsc</text>
+<text class="m" x="12" y="220" font-size="11">build pr227</text>
+<rect class="d1" x="210" y="200" width="163.0" height="14" rx="2"><title>mpsc, walk cycles/req, user small: 69,076</title></rect>
+<text class="t2" x="377.0" y="211" font-size="10">69,076</text>
+<rect class="d1" x="443" y="200" width="163.0" height="14" rx="2"><title>mpsc, walk cycles/req, user big: 253,610</title></rect>
+<text class="t2" x="610.0" y="211" font-size="10">253,610</text>
+<rect class="d1" x="676" y="200" width="163.0" height="14" rx="2"><title>mpsc, other L3, user small: 3.09%</title></rect>
+<text class="t2" x="843.0" y="211" font-size="10">3.09%</text>
+<text class="t" x="12" y="242" font-size="12">jdk</text>
+<text class="m" x="12" y="256" font-size="11">build pr227</text>
+<rect class="d2" x="210" y="236" width="159.2" height="14" rx="2"><title>jdk, walk cycles/req, user small: 67,479</title></rect>
+<text class="t2" x="373.2" y="247" font-size="10">67,479</text>
+<rect class="d2" x="443" y="236" width="154.7" height="14" rx="2"><title>jdk, walk cycles/req, user big: 240,761</title></rect>
+<text class="t2" x="601.7" y="247" font-size="10">240,761</text>
+<rect class="d2" x="676" y="236" width="138.2" height="14" rx="2"><title>jdk, other L3, user small: 2.62%</title></rect>
+<text class="t2" x="818.2" y="247" font-size="10">2.62%</text>
+<text class="t" x="12" y="278" font-size="12">mpsc</text>
+<text class="m" x="12" y="292" font-size="11">build noaff</text>
+<rect class="d1" x="210" y="272" width="160.0" height="14" rx="2"><title>mpsc, walk cycles/req, user small: 67,816</title></rect>
+<text class="t2" x="374.0" y="283" font-size="10">67,816</text>
+<rect class="d1" x="443" y="272" width="158.4" height="14" rx="2"><title>mpsc, walk cycles/req, user big: 246,469</title></rect>
+<text class="t2" x="605.4" y="283" font-size="10">246,469</text>
+<rect class="d1" x="676" y="272" width="158.3" height="14" rx="2"><title>mpsc, other L3, user small: 3.00%</title></rect>
+<text class="t2" x="838.3" y="283" font-size="10">3.00%</text>
+</svg>

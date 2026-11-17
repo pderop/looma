@@ -2,15 +2,16 @@ WARNING: Using experimental MPSC virtual thread scheduler
 scheduler    io.github.pderop.looma.scheduler.mpsc.MpscActorScheduler, Mpsc[count=10, pinned=true, affine=true]
 poller mode  not set
 groups       10, 200000 users each (~16015 KiB), depth 256
+skew         none: each of the 10 groups (one per carrier) gets the same share of the requests
 load         150,000 req/s, 4 connection(s) on CPUs [0, 1, 16, 17]
 backend      127.0.0.1:8081, 8 connections per group
 window       10s warm-up, 20s measured
 
 measure      started, 20s
-throughput   150,002 req/s
-cpu          58.61 us/req (8.79 cores busy) -- server: process minus clients
+throughput   150,000 req/s
+cpu          57.43 us/req (8.61 cores busy) -- server: process minus clients
 client cpu   26.66 us/req (4.00 cores busy)
-migrations   0.0% of 93,783 sampled messages ran on another carrier than the one before
+migrations   0.0% of 93,776 sampled messages ran on another carrier than the one before
 backend cpu  0.79 CPUs busy
-latency      p50 138.9  p90 371.2  p99 911.9  p99.9 3457.0  max 21135.4 us (from the scheduled send)
+latency      p50 130.0  p90 333.8  p99 765.4  p99.9 3211.3  max 51740.7 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)

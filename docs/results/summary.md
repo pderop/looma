@@ -2,17 +2,21 @@
 
 | Build | `Thread.Affinity` | Results | What it is |
 | --- | --- | --- | --- |
-| `pr227` | yes | [at a glance](pr227/summary.md) · [user](pr227/user/summary.md) · [servlet](pr227/servlet/summary.md) | [openjdk/loom pull request 227](https://github.com/openjdk/loom/pull/227) |
-| `noaff` | no | [at a glance](noaff/summary.md) · [user](noaff/user/summary.md) · [servlet](noaff/servlet/summary.md) | the branch `mpsc-without-affinity` of `franz1981/loom` |
+| `pr227` | yes | [at a glance](pr227/summary.md) · [user](pr227/user/summary.md) · [servlet](pr227/servlet/summary.md) · [servlet skewed](pr227/servlet-skewed/summary.md) | [openjdk/loom pull request 227](https://github.com/openjdk/loom/pull/227) |
+| `noaff` | no | [at a glance](noaff/summary.md) · [user](noaff/user/summary.md) · [servlet](noaff/servlet/summary.md) · [servlet skewed](noaff/servlet-skewed/summary.md) | the branch `mpsc-without-affinity` of `franz1981/loom` |
 
-The commit measured: the `java` line in the header of each summary.
+The commit and the kernel of each benchmark: the table The runs, in the "at a glance" page of
+each build.
 
 ## Setup
 
-- Machine: an AMD Ryzen 9 9950X, 10 carriers, one per core
+- Machine: an AMD Ryzen 9 9950X, one carrier per core
   ([the machine](../benchmark.md#amd-ryzen-9-9950x)).
-- Each scheduler runs 2 rounds. A round: a measure at 150k req/s (r1, r2), then a ramp: from
-  150k req/s, 20k more at each step, until a step is not kept up with.
+- Each benchmark runs alone, with its own settings. Each scheduler runs one round or more (r1,
+  r2, ...). A round: a measure at a fixed rate, then a ramp: from a start rate, up by a fixed
+  step, until a step is not kept up with.
+- The settings of a benchmark: the header of its summary (carriers, build, kernel, command) and
+  its section The runs (rounds, rate, ramp).
 - A latency is from the planned send time of a request to its answer. cpu µs/req: the server's
   CPU per request, the clients' threads left out.
 - The scenarios: user `small`, the data of an actor fits in one core's L2; user `big`, it does
@@ -26,27 +30,24 @@ The schedulers:
 | --- | --- | --- | --- |
 | `mpsc-affine-pinned` | `pr227` | yes | yes |
 | `mpsc-affine` | `pr227` | yes | no |
-| `mpsc-pinned` | `pr227` | no | yes |
 | `mpsc` | both | no | no |
-| `jdk-pinned` | `pr227` | no | yes |
-| `jdk` | both | no | no |
+| `jdk` | `pr227` | no | no |
 
-- builds: the builds it runs on.
-- `mpsc*`: the JDK's MPSC scheduler. `jdk*`: the JDK's default scheduler, a `ForkJoinPool`.
+- builds: the builds it ran on, here.
+- `mpsc*`: the JDK's MPSC scheduler. `jdk`: the JDK's default scheduler, a `ForkJoinPool`.
 - An actor stays on its carrier only with `Thread.Affinity`: `pr227` only.
 - On `noaff`, under `mpsc`, the thread of an idle actor waits for the next message instead of
   ending ([the keep-alive](../schedulers.md#the-keep-alive)).
 
 How to read:
 
-- Two values, as 830k/850k: rounds 1 and 2. A range, as 92–94: the lowest and the highest of
-  the two rounds, one value when they are equal. cpu µs/req and migrations: the mean of the two
-  rounds.
-- (r2): the r1 run did not keep up, so the value is r2 only.
-- The bars and the lines: each ramp, r1 and r2. The dots: the mean of the runs at 150k req/s. The
-  walk, other L3 and StackChunks charts: one run each, in round 1.
+- The commands: the measure runs at `--rate`; the ramp starts there and adds `--step` at each step.
+- The bars and the lines: each ramp, r1 and r2. The dots: the mean of the measures, r1 and r2; a
+  measure that did not keep up with its rate is left out. The walk, other L3 and StackChunks charts: one run each, in round 1.
+- Max rate: one bar per ramp, r1 then r2. Pale: the peak rate, the last step kept up with. Solid:
+  the highest rate with p99 < 1 ms. none: already above 1 ms at the first step.
 - The charts by ramp step show `mpsc-affine-pinned`, `mpsc` and `jdk`: dashed for
-  `pr227`, solid for `noaff`. A point is the mean of r1 and r2; a line ends at the
+  `pr227`, solid for `noaff` (`mpsc` only). A point is the mean of r1 and r2; a line ends at the
   last step both ramps kept up with (the max rates: the bar charts). The other charts show every
   scheduler.
 
@@ -54,147 +55,138 @@ How to read:
 
 <!-- end charts -->
 
-## In short
+## User benchmark
 
-Three comparisons, one table each. A cell gives the first scheduler of the title, then the second.
+```
+sdk use java 28-loom-pr227
+scripts/bench-user.sh --users-per-group 8000,200000 --depth 256 --rate 150000 --step 20000 --out bench/user-pr227
+sdk use java 28-loom-noaff
+scripts/bench-user.sh --users-per-group 8000,200000 --depth 256 --rate 150000 --step 20000 --out bench/user-noaff
+```
 
-- highest rate with p99 < 1 ms: the last step of the ramp kept up with before the first step whose
-  p99 is above 1 ms. none: already above at 150k req/s.
-- migrations: the share of the checked messages that ran on another carrier than the message
-  before ([Migrations](#migrations)).
+8000 users per group is `small`, 200000 is `big`. Each measure also runs at depth 0.
 
-### `pr227`: `mpsc-affine-pinned` vs `jdk`
-
-The gain shows in every aspect, in all three scenarios. The CPU gain is smallest in user `big`.
-With affinity, walking the actor's data costs fewer cycles, and fewer loads come from another L3.
-With no work per actor (depth 0), affinity changes little: the gap is between the MPSC schedulers
-and `jdk`.
-
-<!-- begin vs pr227 mpsc-affine-pinned pr227 jdk -->
-
-| aspect | user `small` | servlet | user `big` |
-| --- | --- | --- | --- |
-| peak rate | 1,050k/1,070k vs 650k/670k | 430k/430k vs 350k/350k | 190k/190k vs 150k/170k |
-| highest rate with p99 < 1 ms | 1,030k/1,050k vs 470k/450k | 410k/430k vs none/none | 170k/170k vs none/none |
-| p99 µs at 150k req/s | 30 vs 88–92 | 77–78 vs 1,997–2,148 | 534–541 vs 9,994–15,057 |
-| cpu µs/req at 150k req/s | 15.16 vs 40.45 | 32.19 vs 55.20 | 54.36 vs 64.14 |
-| migrations | 0.0% vs 62.8% | 0.0% vs 69.6% | 0.0% vs 4.9% |
-
-<!-- end vs -->
-
-### `noaff`: `mpsc` vs `jdk`
-
-Without `Thread.Affinity`:
-
-- user `small`: `mpsc` is ahead on every aspect.
-- servlet: ahead on every aspect except the migrations. Its run at 150k req/s of round 1 did
-  not keep up: a short stall dropped 199 requests
-  ([`servlet-r1-mpsc.out`](noaff/servlet/runs/servlet-r1-mpsc.out)). Its values at 150k req/s
-  are those of round 2.
-- user `big`: a higher peak rate in round 2, the same in round 1; a lower p99; the same CPU.
-
-<!-- begin vs noaff mpsc noaff jdk -->
-
-| aspect | user `small` | servlet | user `big` |
-| --- | --- | --- | --- |
-| peak rate | 830k/850k vs 650k/690k | 370k/370k vs 330k/330k | 150k/190k vs 150k/150k |
-| highest rate with p99 < 1 ms | 690k/690k vs 510k/510k | 310k/330k vs none/none | none/none vs none/none |
-| p99 µs at 150k req/s | 85–87 vs 87–91 | 85 (r2) vs 1,736–2,181 | 2,018–3,426 vs 20,890–33,587 |
-| cpu µs/req at 150k req/s | 29.86 vs 40.58 | 45.40 (r2) vs 55.02 | 64.97 vs 64.41 |
-| migrations | 43.9% vs 63.5% | 74.0% (r2) vs 69.5% | 4.2% vs 3.8% |
-
-<!-- end vs -->
-
-### `mpsc`: `noaff` vs `pr227`
-
-- peak rate: higher in both ramps of user `small` and of servlet. In user `big`, lower in round
-  1, higher in round 2.
-- CPU at 150k req/s: 10% more in servlet, 7% more in user `small`, the same in user `big`.
-- fewer GCs (user `small`, servlet), and more live stacks (user `small`).
-
-<!-- begin vs noaff mpsc pr227 mpsc -->
-
-| aspect | user `small` | servlet | user `big` |
-| --- | --- | --- | --- |
-| peak rate | 830k/850k vs 610k/570k | 370k/370k vs 290k/310k | 150k/190k vs 170k/170k |
-| highest rate with p99 < 1 ms | 690k/690k vs 530k/550k | 310k/330k vs 290k/290k | none/none vs none/none |
-| p99 µs at 150k req/s | 85–87 vs 84 | 85 (r2) vs 96–122 | 2,018–3,426 vs 1,553–8,684 |
-| cpu µs/req at 150k req/s | 29.86 vs 27.92 | 45.40 (r2) vs 41.11 | 64.97 vs 65.06 |
-| migrations | 43.9% vs 56.7% | 74.0% (r2) vs 78.7% | 4.2% vs 6.1% |
-
-<!-- end vs -->
-
-## Peak rate and highest rate with p99 under 1 ms
+### Max rate
 
 ![User benchmark, case small: max rate](charts/user-small-max.svg)
 
-![Servlet benchmark: max rate](charts/servlet-max.svg)
-
 ![User benchmark, case big: max rate](charts/user-big-max.svg)
 
-- One bar per ramp, r1 then r2. Pale: the peak rate, the last step kept up with. Solid: the highest
-  rate with p99 < 1 ms. none: already above 1 ms at 150k req/s.
+### p99
 
-## p99 at 150k req/s
+![User benchmark: p99 at 150k](charts/user-p99-measure.svg)
 
-![p99 at 150k req/s](charts/p99-150k.svg)
-
-At the other rates, the p99 at each step of each ramp. User `big` has no chart by step.
+At the other rates, the p99 at each step of each ramp. Case `big` has no chart by step.
 
 ![User benchmark: p99 by rate](charts/user-p99.svg)
 
-![Servlet benchmark: p99 by rate](charts/servlet-p99.svg)
+### CPU per request
 
-## CPU per request at 150k req/s
-
-![CPU per request at 150k req/s](charts/cpu-150k.svg)
+![User benchmark: CPU per request at 150k](charts/user-cpu-measure.svg)
 
 At the other rates, the CPU per request at each step of each ramp.
 
 ![User benchmark: CPU per request by rate](charts/user-cpu.svg)
 
-![Servlet benchmark: CPU per request by rate](charts/servlet-cpu.svg)
-
-![Walk cycles and loads from another L3](charts/walk-l3.svg)
+![User benchmark: walk cycles and loads from another L3](charts/user-walk-l3.svg)
 
 - walk cycles/req: the cycles spent in the walk alone, per request.
 - other L3: the share of the sampled loads that came from behind another L3.
 
-![CPU per request with no work per actor](charts/cpu-depth0.svg)
+![User benchmark: CPU per request with no work per actor](charts/user-cpu-depth0.svg)
 
 Depth 0: the actor does not walk its objects.
 
-## Migrations
+### Migrations
 
-![Migrations at 150k req/s](charts/migrations-150k.svg)
+![User benchmark: migrations at 150k](charts/user-migrations.svg)
 
 How they are counted: each actor checks one message in 64. At the end of that message, it notes
 its carrier: the end of the thread's `toString()`, after its `@`. At the start of its next message,
 it looks again: a different carrier is a migration. The value: migrations / checked messages, all
-actors, during the measure at 150k req/s, about 93,800 checked messages per run. Servlet: the fraud
-detectors only.
+actors, during the measure.
 
-## GCs and live stacks
+### GCs and live stacks
 
-![GCs at 150k req/s](charts/gcs-150k.svg)
+![User benchmark: GCs at 150k](charts/user-gcs.svg)
 
-![Live stacks of virtual threads](charts/stackchunks.svg)
+![User benchmark: live stacks of virtual threads](charts/user-stackchunks.svg)
 
-- GCs: user `small` and servlet.
-- Live StackChunks: user `small`. The stacks of virtual threads alive at the end of the measure of
+- GCs: case `small`.
+- Live StackChunks: case `small`. The stacks of virtual threads alive at the end of the measure of
   the c2c run. The count during the warm-up is in [`charts/stackchunks.csv`](charts/stackchunks.csv).
+
+## Servlet benchmark
+
+```
+sdk use java 28-loom-pr227
+scripts/bench-servlet.sh --containers 10 --rate 150000 --step 20000 --out bench/servlet-pr227
+sdk use java 28-loom-noaff
+scripts/bench-servlet.sh --containers 10 --rate 150000 --step 20000 --out bench/servlet-noaff
+```
+
+### Max rate
+
+![Servlet benchmark: max rate](charts/servlet-max.svg)
+
+### p99
+
+![Servlet benchmark: p99 at 150k](charts/servlet-p99-measure.svg)
+
+At the other rates, the p99 at each step of each ramp.
+
+![Servlet benchmark: p99 by rate](charts/servlet-p99.svg)
+
+### CPU per request
+
+![Servlet benchmark: CPU per request at 150k](charts/servlet-cpu-measure.svg)
+
+At the other rates, the CPU per request at each step of each ramp.
+
+![Servlet benchmark: CPU per request by rate](charts/servlet-cpu.svg)
+
+![Servlet benchmark: loads from another L3](charts/servlet-l3.svg)
+
+- other L3: the share of the sampled loads that came from behind another L3.
+
+### Migrations
+
+![Servlet benchmark: migrations at 150k](charts/servlet-migrations.svg)
+
+Counted as in the user benchmark, on the fraud detectors only.
+
+### GCs
+
+![Servlet benchmark: GCs at 150k](charts/servlet-gcs.svg)
+
+## Skewed load
+
+A few actors get much more work than the others. The servlet runs 20 containers on its 10
+carriers (`--containers 20`). The 2 containers that start on carrier 0 get half the requests,
+25% each, the 18 others 2.8% each ([a skewed load](../benchmark.md#a-skewed-load)). Only the
+affine schedulers keep them on carrier 0. Results:
+[pr227](pr227/servlet-skewed/summary.md), [noaff](noaff/servlet-skewed/summary.md).
+
+```
+sdk use java 28-loom-pr227
+scripts/bench-servlet.sh --schedulers mpsc,mpsc-affine-pinned,jdk --hot-carrier 50 --containers 20 --rate 150000 --step 20000 --out bench/servlet-skewed20-pr227
+sdk use java 28-loom-noaff
+scripts/bench-servlet.sh --schedulers mpsc --hot-carrier 50 --containers 20 --rate 150000 --step 20000 --out bench/servlet-skewed20-noaff
+```
+
+![Servlet benchmark, skewed load: max rate](charts/servlet-skewed-max.svg)
 
 ## Sources
 
-- Tables: filled by [`scripts/publish.sh`](../../scripts/publish.sh) from the At a glance and the
-  In short of the summaries of each build, linked at the top. Their notes say how each number is
-  read from the files of the runs.
+- Notes of the charts, between `<!-- begin charts -->` and `<!-- end charts -->`: written by
+  [`scripts/publish.sh`](../../scripts/publish.sh), empty when every ramp kept up with a step.
 - Charts: [`charts/user.csv`](charts/user.csv), [`charts/servlet.csv`](charts/servlet.csv) (one row
   per ramp step), [`charts/user-max.csv`](charts/user-max.csv),
-  [`charts/servlet-max.csv`](charts/servlet-max.csv) (one row per ramp), from the consoles of the
-  ramps. [`charts/measure-150k.csv`](charts/measure-150k.csv) (one row per run), from the consoles of the
-  runs at 150k req/s and of their GC logs. [`charts/walk-l3.csv`](charts/walk-l3.csv), from the
-  Walk and perf c2c tables of the summaries. [`charts/stackchunks.csv`](charts/stackchunks.csv),
+  [`charts/servlet-max.csv`](charts/servlet-max.csv),
+  [`charts/servlet-skewed-max.csv`](charts/servlet-skewed-max.csv) (one row per ramp), from the
+  consoles of the ramps. [`charts/measure.csv`](charts/measure.csv) (one row per measure), from
+  the consoles of the measures and of their GC logs. [`charts/walk-l3.csv`](charts/walk-l3.csv),
+  from the Walk and perf c2c tables of the summaries. [`charts/stackchunks.csv`](charts/stackchunks.csv),
   from the consoles of the c2c runs.
 - Run it: [build the JDK](../../mpsc-scheduler/README.md#the-jdk),
   [run the benchmarks](../benchmark.md#running-it), [what a campaign contains](campaigns.md).

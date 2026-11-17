@@ -1,6 +1,7 @@
 scheduler    io.github.pderop.looma.impl.JdkActorScheduler, Builtin[parallelism=10]
 poller mode  not set
 groups       10, 8000 users each (~640 KiB), depth 256
+skew         none: each of the 10 groups (one per carrier) gets the same share of the requests
 load         150,000 req/s, 4 connection(s) on CPUs [0, 1, 16, 17]
 backend      127.0.0.1:8081, 8 connections per group
 window       10s warm-up, 20s measured
@@ -8,247 +9,256 @@ window       10s warm-up, 20s measured
 ramp         from 150,000 req/s, 20,000 more at each step; at each step 10s measured and 3s to go up to it
 
 step         150,000 req/s, 10s measured
-throughput   150,005 req/s
-cpu          40.59 us/req (6.09 cores busy) -- server: process minus clients
+throughput   149,998 req/s
+cpu          40.58 us/req (6.09 cores busy) -- server: process minus clients
 client cpu   26.65 us/req (4.00 cores busy)
-migrations   61.7% of 46,894 sampled messages ran on another carrier than the one before
+migrations   63.3% of 46,890 sampled messages ran on another carrier than the one before
 backend cpu  0.83 CPUs busy
-latency      p50 40.8  p90 61.6  p99 95.3  p99.9 2252.8  max 4128.8 us (from the scheduled send)
+latency      p50 39.8  p90 58.0  p99 87.4  p99.9 2250.8  max 4493.3 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         170,000 req/s, 10s measured
-throughput   170,014 req/s
-cpu          38.24 us/req (6.50 cores busy) -- server: process minus clients
+throughput   170,003 req/s
+cpu          39.26 us/req (6.67 cores busy) -- server: process minus clients
 client cpu   23.51 us/req (4.00 cores busy)
-migrations   58.9% of 53,133 sampled messages ran on another carrier than the one before
+migrations   60.5% of 53,127 sampled messages ran on another carrier than the one before
 backend cpu  0.93 CPUs busy
-latency      p50 41.5  p90 65.6  p99 100.6  p99.9 1534.0  max 4118.5 us (from the scheduled send)
+latency      p50 41.0  p90 63.3  p99 103.3  p99.9 2826.2  max 5034.0 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         190,000 req/s, 10s measured
 throughput   189,996 req/s
-cpu          36.73 us/req (6.98 cores busy) -- server: process minus clients
+cpu          37.06 us/req (7.04 cores busy) -- server: process minus clients
 client cpu   21.04 us/req (4.00 cores busy)
-migrations   56.0% of 59,378 sampled messages ran on another carrier than the one before
-backend cpu  1.04 CPUs busy
-latency      p50 42.6  p90 67.5  p99 108.1  p99.9 2564.1  max 4151.3 us (from the scheduled send)
-send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+migrations   57.5% of 59,377 sampled messages ran on another carrier than the one before
+backend cpu  1.03 CPUs busy
+latency      p50 41.7  p90 66.4  p99 105.3  p99.9 2265.1  max 3911.7 us (from the scheduled send)
+send lag     p50 0.1  p99 0.3 us (how late the clients sent)
 
 step         210,000 req/s, 10s measured
-throughput   209,995 req/s
-cpu          34.91 us/req (7.33 cores busy) -- server: process minus clients
+throughput   209,996 req/s
+cpu          35.14 us/req (7.38 cores busy) -- server: process minus clients
 client cpu   19.04 us/req (4.00 cores busy)
-migrations   53.0% of 65,627 sampled messages ran on another carrier than the one before
-backend cpu  1.15 CPUs busy
-latency      p50 43.9  p90 71.3  p99 144.8  p99.9 3096.6  max 5505.0 us (from the scheduled send)
+migrations   53.9% of 65,627 sampled messages ran on another carrier than the one before
+backend cpu  1.13 CPUs busy
+latency      p50 43.3  p90 71.6  p99 123.4  p99.9 3106.8  max 4870.1 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         230,000 req/s, 10s measured
-throughput   230,003 req/s
-cpu          32.81 us/req (7.55 cores busy) -- server: process minus clients
+throughput   230,008 req/s
+cpu          33.66 us/req (7.74 cores busy) -- server: process minus clients
 client cpu   17.39 us/req (4.00 cores busy)
-migrations   50.1% of 71,882 sampled messages ran on another carrier than the one before
-backend cpu  1.25 CPUs busy
-latency      p50 47.1  p90 82.0  p99 136.7  p99.9 2975.7  max 5623.8 us (from the scheduled send)
+migrations   50.6% of 71,882 sampled messages ran on another carrier than the one before
+backend cpu  1.23 CPUs busy
+latency      p50 46.0  p90 78.3  p99 140.4  p99.9 3076.1  max 4485.1 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         250,000 req/s, 10s measured
-throughput   249,998 req/s
-cpu          31.33 us/req (7.83 cores busy) -- server: process minus clients
+throughput   250,003 req/s
+cpu          32.13 us/req (8.03 cores busy) -- server: process minus clients
 client cpu   16.00 us/req (4.00 cores busy)
-migrations   46.8% of 78,129 sampled messages ran on another carrier than the one before
-backend cpu  1.35 CPUs busy
-latency      p50 50.8  p90 90.2  p99 144.4  p99.9 1818.6  max 4874.2 us (from the scheduled send)
+migrations   47.0% of 78,132 sampled messages ran on another carrier than the one before
+backend cpu  1.33 CPUs busy
+latency      p50 49.1  p90 86.1  p99 146.0  p99.9 2961.4  max 4816.9 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         270,000 req/s, 10s measured
-throughput   269,995 req/s
-cpu          29.98 us/req (8.10 cores busy) -- server: process minus clients
+throughput   269,996 req/s
+cpu          30.70 us/req (8.29 cores busy) -- server: process minus clients
 client cpu   14.81 us/req (4.00 cores busy)
-migrations   42.6% of 84,379 sampled messages ran on another carrier than the one before
-backend cpu  1.45 CPUs busy
-latency      p50 55.5  p90 100.8  p99 173.2  p99.9 3041.3  max 5701.6 us (from the scheduled send)
+migrations   43.4% of 84,382 sampled messages ran on another carrier than the one before
+backend cpu  1.43 CPUs busy
+latency      p50 52.1  p90 94.0  p99 164.9  p99.9 2861.1  max 4968.4 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         290,000 req/s, 10s measured
-throughput   290,004 req/s
-cpu          28.70 us/req (8.32 cores busy) -- server: process minus clients
+throughput   289,999 req/s
+cpu          29.31 us/req (8.50 cores busy) -- server: process minus clients
 client cpu   13.79 us/req (4.00 cores busy)
-migrations   39.2% of 90,630 sampled messages ran on another carrier than the one before
-backend cpu  1.54 CPUs busy
-latency      p50 62.2  p90 112.8  p99 181.0  p99.9 2345.0  max 5615.6 us (from the scheduled send)
+migrations   40.3% of 90,636 sampled messages ran on another carrier than the one before
+backend cpu  1.52 CPUs busy
+latency      p50 56.9  p90 105.0  p99 183.6  p99.9 2975.7  max 5468.2 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         310,000 req/s, 10s measured
-throughput   310,016 req/s
-cpu          27.61 us/req (8.56 cores busy) -- server: process minus clients
+throughput   310,005 req/s
+cpu          28.03 us/req (8.69 cores busy) -- server: process minus clients
 client cpu   12.90 us/req (4.00 cores busy)
-migrations   34.8% of 96,886 sampled messages ran on another carrier than the one before
-backend cpu  1.64 CPUs busy
-latency      p50 69.2  p90 126.1  p99 206.3  p99.9 2965.5  max 6770.7 us (from the scheduled send)
+migrations   36.8% of 96,886 sampled messages ran on another carrier than the one before
+backend cpu  1.61 CPUs busy
+latency      p50 63.0  p90 117.9  p99 191.7  p99.9 1920.0  max 5623.8 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         330,000 req/s, 10s measured
-throughput   330,001 req/s
-cpu          26.51 us/req (8.75 cores busy) -- server: process minus clients
+throughput   330,004 req/s
+cpu          26.76 us/req (8.83 cores busy) -- server: process minus clients
 client cpu   12.12 us/req (4.00 cores busy)
-migrations   31.0% of 103,137 sampled messages ran on another carrier than the one before
-backend cpu  1.73 CPUs busy
-latency      p50 78.7  p90 143.0  p99 224.1  p99.9 2007.0  max 5042.2 us (from the scheduled send)
+migrations   32.0% of 103,137 sampled messages ran on another carrier than the one before
+backend cpu  1.70 CPUs busy
+latency      p50 73.3  p90 137.3  p99 216.7  p99.9 856.6  max 4231.2 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         350,000 req/s, 10s measured
-throughput   349,980 req/s
-cpu          26.41 us/req (9.24 cores busy) -- server: process minus clients
+throughput   349,995 req/s
+cpu          25.59 us/req (8.96 cores busy) -- server: process minus clients
 client cpu   11.43 us/req (4.00 cores busy)
-migrations   30.0% of 109,382 sampled messages ran on another carrier than the one before
-backend cpu  1.84 CPUs busy
-latency      p50 65.0  p90 120.4  p99 203.1  p99.9 830.5  max 4808.7 us (from the scheduled send)
+migrations   28.0% of 109,381 sampled messages ran on another carrier than the one before
+backend cpu  1.78 CPUs busy
+latency      p50 86.7  p90 159.6  p99 241.4  p99.9 337.7  max 3106.8 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         370,000 req/s, 10s measured
-throughput   369,996 req/s
-cpu          25.43 us/req (9.41 cores busy) -- server: process minus clients
+throughput   369,997 req/s
+cpu          24.72 us/req (9.15 cores busy) -- server: process minus clients
 client cpu   10.81 us/req (4.00 cores busy)
-migrations   26.1% of 115,632 sampled messages ran on another carrier than the one before
-backend cpu  1.93 CPUs busy
-latency      p50 70.2  p90 121.3  p99 201.6  p99.9 585.7  max 5959.7 us (from the scheduled send)
+migrations   24.8% of 115,633 sampled messages ran on another carrier than the one before
+backend cpu  1.87 CPUs busy
+latency      p50 93.6  p90 175.7  p99 265.5  p99.9 371.7  max 4968.4 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         390,000 req/s, 10s measured
-throughput   389,993 req/s
-cpu          23.98 us/req (9.35 cores busy) -- server: process minus clients
+throughput   390,019 req/s
+cpu          23.60 us/req (9.20 cores busy) -- server: process minus clients
 client cpu   10.25 us/req (4.00 cores busy)
-migrations   20.4% of 121,894 sampled messages ran on another carrier than the one before
-backend cpu  2.00 CPUs busy
-latency      p50 104.2  p90 191.2  p99 322.6  p99.9 3041.3  max 7630.8 us (from the scheduled send)
+migrations   20.8% of 121,892 sampled messages ran on another carrier than the one before
+backend cpu  1.94 CPUs busy
+latency      p50 120.0  p90 210.3  p99 305.4  p99.9 446.0  max 4354.0 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         410,000 req/s, 10s measured
-throughput   410,026 req/s
-cpu          22.80 us/req (9.35 cores busy) -- server: process minus clients
+throughput   409,996 req/s
+cpu          22.71 us/req (9.31 cores busy) -- server: process minus clients
 client cpu   9.75 us/req (4.00 cores busy)
-migrations   17.5% of 128,151 sampled messages ran on another carrier than the one before
-backend cpu  2.06 CPUs busy
-latency      p50 146.4  p90 245.2  p99 347.9  p99.9 490.2  max 4444.2 us (from the scheduled send)
+migrations   17.8% of 128,137 sampled messages ran on another carrier than the one before
+backend cpu  2.02 CPUs busy
+latency      p50 143.5  p90 242.9  p99 346.9  p99.9 517.6  max 5242.9 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         430,000 req/s, 10s measured
-throughput   430,031 req/s
-cpu          22.01 us/req (9.47 cores busy) -- server: process minus clients
+throughput   429,989 req/s
+cpu          21.89 us/req (9.41 cores busy) -- server: process minus clients
 client cpu   9.30 us/req (4.00 cores busy)
-migrations   14.5% of 134,400 sampled messages ran on another carrier than the one before
-backend cpu  2.13 CPUs busy
-latency      p50 175.0  p90 287.2  p99 416.0  p99.9 1305.6  max 8716.3 us (from the scheduled send)
+migrations   15.4% of 134,395 sampled messages ran on another carrier than the one before
+backend cpu  2.10 CPUs busy
+latency      p50 170.0  p90 279.3  p99 391.9  p99.9 550.4  max 4118.5 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         450,000 req/s, 10s measured
-throughput   450,009 req/s
-cpu          21.27 us/req (9.57 cores busy) -- server: process minus clients
-client cpu   8.88 us/req (4.00 cores busy)
-migrations   12.3% of 140,639 sampled messages ran on another carrier than the one before
-backend cpu  2.19 CPUs busy
-latency      p50 208.5  p90 332.3  p99 465.9  p99.9 850.9  max 4571.1 us (from the scheduled send)
+throughput   449,999 req/s
+cpu          21.13 us/req (9.51 cores busy) -- server: process minus clients
+client cpu   8.89 us/req (4.00 cores busy)
+migrations   12.6% of 140,640 sampled messages ran on another carrier than the one before
+backend cpu  2.17 CPUs busy
+latency      p50 199.8  p90 326.1  p99 484.1  p99.9 2637.8  max 6754.3 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         470,000 req/s, 10s measured
-throughput   470,035 req/s
-cpu          20.51 us/req (9.64 cores busy) -- server: process minus clients
+throughput   470,003 req/s
+cpu          20.40 us/req (9.59 cores busy) -- server: process minus clients
 client cpu   8.51 us/req (4.00 cores busy)
-migrations   9.9% of 146,904 sampled messages ran on another carrier than the one before
-backend cpu  2.24 CPUs busy
-latency      p50 254.3  p90 398.8  p99 559.6  p99.9 1692.7  max 6004.7 us (from the scheduled send)
+migrations   10.8% of 146,898 sampled messages ran on another carrier than the one before
+backend cpu  2.23 CPUs busy
+latency      p50 238.3  p90 375.3  p99 523.0  p99.9 1089.5  max 6180.9 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         490,000 req/s, 10s measured
-throughput   490,032 req/s
-cpu          19.65 us/req (9.63 cores busy) -- server: process minus clients
+throughput   490,044 req/s
+cpu          19.71 us/req (9.66 cores busy) -- server: process minus clients
 client cpu   8.16 us/req (4.00 cores busy)
-migrations   7.8% of 153,158 sampled messages ran on another carrier than the one before
-backend cpu  2.29 CPUs busy
-latency      p50 306.9  p90 489.5  p99 1754.1  p99.9 3223.6  max 9084.9 us (from the scheduled send)
+migrations   9.0% of 153,155 sampled messages ran on another carrier than the one before
+backend cpu  2.27 CPUs busy
+latency      p50 288.3  p90 445.4  p99 618.5  p99.9 1085.4  max 8675.3 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         510,000 req/s, 10s measured
-throughput   510,071 req/s
-cpu          18.84 us/req (9.61 cores busy) -- server: process minus clients
+throughput   510,006 req/s
+cpu          19.08 us/req (9.73 cores busy) -- server: process minus clients
 client cpu   7.84 us/req (4.00 cores busy)
-migrations   6.1% of 159,418 sampled messages ran on another carrier than the one before
-backend cpu  2.30 CPUs busy
-latency      p50 376.1  p90 643.1  p99 2666.5  p99.9 3774.5  max 8187.9 us (from the scheduled send)
+migrations   7.4% of 159,402 sampled messages ran on another carrier than the one before
+backend cpu  2.31 CPUs busy
+latency      p50 334.6  p90 513.5  p99 718.8  p99.9 1233.9  max 5193.7 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         530,000 req/s, 10s measured
-throughput   529,879 req/s
-cpu          18.63 us/req (9.87 cores busy) -- server: process minus clients
-client cpu   7.55 us/req (4.00 cores busy)
-migrations   5.2% of 165,669 sampled messages ran on another carrier than the one before
-backend cpu  2.32 CPUs busy
-latency      p50 428.3  p90 683.5  p99 1077.2  p99.9 2906.1  max 6365.2 us (from the scheduled send)
+throughput   530,007 req/s
+cpu          18.51 us/req (9.81 cores busy) -- server: process minus clients
+client cpu   7.54 us/req (4.00 cores busy)
+migrations   6.1% of 165,658 sampled messages ran on another carrier than the one before
+backend cpu  2.34 CPUs busy
+latency      p50 399.4  p90 628.2  p99 945.2  p99.9 1932.3  max 5656.6 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         550,000 req/s, 10s measured
-throughput   549,969 req/s
-cpu          17.97 us/req (9.88 cores busy) -- server: process minus clients
+throughput   549,996 req/s
+cpu          17.91 us/req (9.85 cores busy) -- server: process minus clients
 client cpu   7.27 us/req (4.00 cores busy)
-migrations   4.7% of 171,914 sampled messages ran on another carrier than the one before
-backend cpu  2.32 CPUs busy
-latency      p50 541.2  p90 886.8  p99 1383.4  p99.9 2275.3  max 6070.3 us (from the scheduled send)
+migrations   5.4% of 171,891 sampled messages ran on another carrier than the one before
+backend cpu  2.39 CPUs busy
+latency      p50 476.4  p90 780.8  p99 1249.3  p99.9 2514.9  max 6549.5 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         570,000 req/s, 10s measured
-throughput   570,006 req/s
-cpu          17.34 us/req (9.89 cores busy) -- server: process minus clients
+throughput   569,971 req/s
+cpu          17.48 us/req (9.96 cores busy) -- server: process minus clients
 client cpu   7.01 us/req (4.00 cores busy)
-migrations   3.9% of 178,162 sampled messages ran on another carrier than the one before
-backend cpu  2.37 CPUs busy
-latency      p50 646.7  p90 1170.4  p99 2447.4  p99.9 5324.8  max 11386.9 us (from the scheduled send)
+migrations   3.3% of 178,142 sampled messages ran on another carrier than the one before
+backend cpu  2.50 CPUs busy
+latency      p50 475.1  p90 756.2  p99 1297.4  p99.9 3508.2  max 7139.3 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         590,000 req/s, 10s measured
-throughput   589,972 req/s
-cpu          16.90 us/req (9.97 cores busy) -- server: process minus clients
+throughput   589,985 req/s
+cpu          16.91 us/req (9.98 cores busy) -- server: process minus clients
 client cpu   6.78 us/req (4.00 cores busy)
-migrations   3.0% of 184,401 sampled messages ran on another carrier than the one before
-backend cpu  2.47 CPUs busy
-latency      p50 691.7  p90 1231.9  p99 2199.6  p99.9 3463.2  max 6484.0 us (from the scheduled send)
+migrations   2.8% of 184,399 sampled messages ran on another carrier than the one before
+backend cpu  2.55 CPUs busy
+latency      p50 561.7  p90 899.6  p99 1436.7  p99.9 3465.2  max 8446.0 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         610,000 req/s, 10s measured
-throughput   610,094 req/s
-cpu          16.32 us/req (9.96 cores busy) -- server: process minus clients
+throughput   610,018 req/s
+cpu          16.31 us/req (9.95 cores busy) -- server: process minus clients
 client cpu   6.55 us/req (4.00 cores busy)
-migrations   3.1% of 190,675 sampled messages ran on another carrier than the one before
-backend cpu  2.50 CPUs busy
-latency      p50 916.0  p90 1811.5  p99 3317.8  p99.9 5017.6  max 9134.1 us (from the scheduled send)
+migrations   2.6% of 190,671 sampled messages ran on another carrier than the one before
+backend cpu  2.61 CPUs busy
+latency      p50 667.6  p90 1160.2  p99 2385.9  p99.9 4048.9  max 9216.0 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         630,000 req/s, 10s measured
-throughput   630,020 req/s
-cpu          15.78 us/req (9.94 cores busy) -- server: process minus clients
+throughput   630,039 req/s
+cpu          15.82 us/req (9.97 cores busy) -- server: process minus clients
 client cpu   6.34 us/req (4.00 cores busy)
-migrations   2.1% of 196,928 sampled messages ran on another carrier than the one before
-backend cpu  2.61 CPUs busy
-latency      p50 891.9  p90 1660.9  p99 3637.2  p99.9 5701.6  max 13369.3 us (from the scheduled send)
+migrations   2.6% of 196,990 sampled messages ran on another carrier than the one before
+backend cpu  2.66 CPUs busy
+latency      p50 858.6  p90 1748.0  p99 3604.5  p99.9 6393.9  max 10174.5 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         650,000 req/s, 10s measured
-throughput   650,036 req/s
-cpu          15.30 us/req (9.94 cores busy) -- server: process minus clients
+throughput   649,981 req/s
+cpu          15.32 us/req (9.96 cores busy) -- server: process minus clients
 client cpu   6.15 us/req (4.00 cores busy)
-migrations   1.9% of 203,194 sampled messages ran on another carrier than the one before
-backend cpu  2.68 CPUs busy
-latency      p50 1041.9  p90 1996.8  p99 4118.5  p99.9 6463.5  max 13582.3 us (from the scheduled send)
+migrations   2.3% of 203,155 sampled messages ran on another carrier than the one before
+backend cpu  2.73 CPUs busy
+latency      p50 1047.0  p90 2289.7  p99 4857.9  p99.9 7155.7  max 10182.7 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         670,000 req/s, 10s measured
-throughput   669,841 req/s
-cpu          14.71 us/req (9.85 cores busy) -- server: process minus clients
-client cpu   5.96 us/req (4.00 cores busy)
-migrations   1.6% of 209,406 sampled messages ran on another carrier than the one before
-backend cpu  2.74 CPUs busy
-latency      p50 1258.5  p90 2670.6  p99 5222.4  p99.9 8085.5  max 17104.9 us (from the scheduled send)
+throughput   669,885 req/s
+cpu          14.91 us/req (9.99 cores busy) -- server: process minus clients
+client cpu   5.97 us/req (4.00 cores busy)
+migrations   2.0% of 209,421 sampled messages ran on another carrier than the one before
+backend cpu  2.82 CPUs busy
+latency      p50 1143.8  p90 2504.7  p99 5644.3  p99.9 9502.7  max 14090.2 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
-*** did not keep up with 670,000 req/s: sent 669,968 req/s, 484 dropped, 0 unanswered, 0 failed -- not a measurement ***
 
-ramp         kept up with 650,000 req/s
+step         690,000 req/s, 10s measured
+throughput   689,946 req/s
+cpu          14.46 us/req (9.98 cores busy) -- server: process minus clients
+client cpu   5.79 us/req (3.99 cores busy)
+migrations   1.7% of 215,685 sampled messages ran on another carrier than the one before
+backend cpu  2.90 CPUs busy
+latency      p50 1272.8  p90 2871.3  p99 6848.5  p99.9 10879.0  max 16842.8 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+*** did not keep up with 690,000 req/s: sent 690,010 req/s, 23 dropped, 0 unanswered, 0 failed -- not a measurement ***
+
+ramp         kept up with 670,000 req/s

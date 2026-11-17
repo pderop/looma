@@ -1,7 +1,7 @@
 # User benchmark
 
 ```
-date         2026-11-17 02:25:20 +0000
+date         2026-11-22 01:37:52 +0000
 host         gabuzo-amd, Linux 7.0.0-43-generic
 cpu model    AMD Ryzen 9 9950X 16-Core Processor
 turbo        off
@@ -11,14 +11,15 @@ carriers     CPUs 2-7,10-13
 clients      CPUs 0,1,16,17
 backend      CPUs 8,9,14,15,24,25,30,31, 8 reactors, 8 connections per pool
 heap         2g, G1; the epsilon runs 12g, Epsilon
-command      scripts/bench-user.sh
+command      scripts/bench-user.sh --users-per-group 8000,200000 --depth 256 --rate 150000 --step 20000 --out bench/user-pr227-20261122-013751
 ```
 
 ## The runs
 
 What the benchmark is: [benchmark-user.md](../../../benchmark-user.md).
 
-150000 req/s. Each group has 8 backend connections. The cases, by users per group:
+150000 req/s. Each group has 8 backend connections.
+The cases, by users per group:
 
 - small: 8000 users per group, about 640 KiB per group.
 - big: 200000 users per group, about 16 MiB per group.
@@ -36,8 +37,7 @@ seconds for the late answers, then 3 seconds to go up to the next rate.
 - Open loop: the clients send at a fixed rate. A latency is from the planned send time of a
   request to its answer. cpu µs/req is the server's: the process minus the clients.
 - Each carrier has a core to itself: the script refuses two carrier CPUs on one core.
-- The schedulers: mpsc, mpsc-affine, mpsc-pinned, mpsc-affine-pinned, jdk, jdk-pinned.
-- jdk-pinned is jdk with each of its workers pinned to one carrier CPU.
+- The schedulers: mpsc, mpsc-affine, mpsc-affine-pinned, jdk.
 - The clients are pinned to their own CPUs.
 - The JDK's poller mode is not set. On Linux, the JDK then uses mode 4 under the MPSC scheduler (one epoll per carrier), and mode 2 under jdk (pollers that run as virtual threads).
 - Heap: -Xms2g -Xmx2g -XX:+AlwaysPreTouch, G1, and a GC log per run. The epsilon run:
@@ -53,12 +53,10 @@ seconds for the late answers, then 3 seconds to go up to the next rate.
 
 | scheduler | small, cpu µs/req | small, max req/s | small, max req/s with p99 < 1 ms | big, cpu µs/req | big, max req/s | big, max req/s with p99 < 1 ms |
 |---|---|---|---|---|---|---|
-| mpsc | 27.92 | 610k/570k | 530k/550k | 65.06 | 170k/170k | none/none |
-| mpsc-affine | 15.09 | 570k/850k | 570k/850k | 53.56 | 190k/190k | none/170k |
-| mpsc-pinned | 27.23 | 610k/590k | 550k/550k | 65.23 | 170k/170k | none/none |
-| mpsc-affine-pinned | 15.16 | 1,050k/1,070k | 1,030k/1,050k | 54.36 | 190k/190k | 170k/170k |
-| jdk | 40.45 | 650k/670k | 470k/450k | 64.14 | 150k/170k | none/none |
-| jdk-pinned | 40.28 | 630k/650k | 530k/530k | 65.35 | 190k/190k | none/none |
+| mpsc | 27.84 | 630k/610k | 550k/550k | 64.11 | 190k/170k | none/none |
+| mpsc-affine | 15.32 | 890k/870k | 830k/870k | 54.06 | 190k/190k | 170k/170k |
+| mpsc-affine-pinned | 14.57 | 1,070k/1,090k | 1,070k/1,090k | 54.38 | 190k/190k | 170k/170k |
+| jdk | 40.20 | 670k/670k | 530k/510k | 64.36 | 190k/150k | none/none |
 
 cpu µs/req at depth 256, the mean of r1 and r2, as in In short.
 max req/s: the highest rate kept up with by the ramp of each round at depth 256, r1/r2 ...: the
@@ -72,39 +70,29 @@ lines of its console, step by step. none: the p99 of the first step is already a
 - mpsc: the JDK's MPSC scheduler, **no carrier pinned** and **no affinity**: an actor can run
   on any carrier (`Carriers.mpsc(n)`).
 - mpsc-affine: mpsc where **each actor stays on its carrier**, no carrier pinned (`Carriers.mpsc(n).affine(true)`).
-- mpsc-pinned: mpsc where **each carrier is pinned to one CPU**, no affinity (`Carriers.mpsc(n).pinned(true)`).
 - mpsc-affine-pinned: both, **each actor stays on its carrier** and **each carrier is pinned to one CPU** (`Carriers.mpsc(n).affine(true).pinned(true)`).
 - jdk: the JDK's default scheduler, **a ForkJoinPool** (`Carriers.builtin(n)`).
-- jdk-pinned: jdk, and the script **pins each worker to one carrier CPU**.
 
 ## In short
 
 | case | scheduler | depth | cpu µs/req | cpu range | vs jdk | p50 µs | p99 µs | p99.9 µs | migrations | backend CPUs |
 |---|---|---|---|---|---|---|---|---|---|---|
-| small | mpsc | 256 | 27.92 | 27.31–28.54 | -31.0% | 36–37 | 84 | 135–376 | 56.7% | 0.80–0.93 |
-| small | mpsc-affine | 256 | 15.09 | 14.93–15.24 | -62.7% | 20 | 31–32 | 246–263 | 0.0% | 0.86–0.87 |
-| small | mpsc-pinned | 256 | 27.23 | 26.63–27.83 | -32.7% | 35–36 | 84 | 246–448 | 57.2% | 0.91–0.93 |
-| small | mpsc-affine-pinned | 256 | 15.16 | 14.83–15.48 | -62.5% | 20 | 30 | 198–453 | 0.0% | 0.84–0.85 |
-| small | jdk | 256 | 40.45 | 40.28–40.61 |  | 40 | 88–92 | 1,192–1,324 | 62.8% | 0.83 |
-| small | jdk-pinned | 256 | 40.28 | 39.88–40.68 | -0.4% | 43 | 90–97 | 367–679 | 61.4% | 0.83–0.85 |
-| small | mpsc | 0 | 11.82 | 10.96–12.67 | -58.8% | 15–16 | 23 | 29–69 | 70.8% | 0.78–1.05 |
-| small | mpsc-affine | 0 | 12.12 | 11.98–12.26 | -57.8% | 17 | 26–27 | 203–216 | 0.0% | 0.86–0.87 |
-| small | mpsc-pinned | 0 | 12.28 | 12.03–12.53 | -57.2% | 17 | 24–26 | 35–48 | 74.2% | 1.00–1.02 |
-| small | mpsc-affine-pinned | 0 | 11.26 | 10.91–11.61 | -60.8% | 17 | 26–27 | 38–76 | 0.0% | 0.87 |
-| small | jdk | 0 | 28.69 | 28.44–28.94 |  | 20–24 | 30–31 | 1,166–1,272 | 83.5% | 0.81–0.82 |
-| small | jdk-pinned | 0 | 29.66 | 29.34–29.99 | +3.4% | 20–22 | 30–31 | 48–59 | 84.2% | 0.83 |
-| big | mpsc | 256 | 65.06 | 64.75–65.36 | +1.4% | 291–386 | 1,553–8,684 | 7,770–36,176 | 6.1% | 0.81 |
-| big | mpsc-affine | 256 | 53.56 | 53.31–53.82 | -16.5% | 103 | 541–547 | 6,025–6,885 | 0.0% | 0.79–0.81 |
-| big | mpsc-pinned | 256 | 65.23 | 65.08–65.38 | +1.7% | 308–331 | 1,493–1,865 | 7,316–8,962 | 6.3% | 0.79–0.81 |
-| big | mpsc-affine-pinned | 256 | 54.36 | 54.22–54.49 | -15.3% | 105–109 | 534–541 | 2,580–3,410 | 0.0% | 0.79–0.80 |
-| big | jdk | 256 | 64.14 | 64.09–64.19 |  | 751–770 | 9,994–15,057 | 25,756–64,979 | 4.9% | 0.73–0.77 |
-| big | jdk-pinned | 256 | 65.35 | 64.96–65.74 | +1.9% | 606–949 | 1,875–2,869 | 6,103–8,245 | 4.5% | 0.75–0.76 |
-| big | mpsc | 0 | 13.19 | 13.03–13.35 | -55.1% | 16 | 23 | 28–29 | 75.7% | 0.79–0.88 |
-| big | mpsc-affine | 0 | 11.89 | 11.23–12.55 | -59.6% | 17 | 26 | 32 | 0.0% | 0.85–0.88 |
-| big | mpsc-pinned | 0 | 12.18 | 12.13–12.22 | -58.6% | 17 | 23–25 | 27–29 | 73.8% | 1.00–1.02 |
-| big | mpsc-affine-pinned | 0 | 11.29 | 11.18–11.41 | -61.6% | 16 | 25 | 30–31 | 0.0% | 0.85–0.86 |
-| big | jdk | 0 | 29.40 | 28.55–30.25 |  | 18–21 | 28–31 | 45–184 | 83.8% | 0.81–0.82 |
-| big | jdk-pinned | 0 | 29.34 | 28.20–30.47 | -0.2% | 21–24 | 30–31 | 36–38 | 83.8% | 0.82–0.83 |
+| small | mpsc | 256 | 27.84 | 27.16–28.53 | -30.7% | 36 | 80–84 | 118–133 | 58.0% | 0.87–0.92 |
+| small | mpsc-affine | 256 | 15.32 | 15.21–15.42 | -61.9% | 20 | 29–30 | 35–36 | 0.0% | 0.85 |
+| small | mpsc-affine-pinned | 256 | 14.57 | 14.07–15.08 | -63.7% | 20 | 29–30 | 35–37 | 0.0% | 0.84–0.87 |
+| small | jdk | 256 | 40.20 | 40.04–40.35 |  | 42–43 | 90–94 | 670–907 | 60.7% | 0.83 |
+| small | mpsc | 0 | 12.38 | 12.37–12.40 | -56.0% | 15–16 | 23 | 28 | 73.0% | 0.77–0.85 |
+| small | mpsc-affine | 0 | 11.62 | 11.40–11.84 | -58.7% | 16 | 25 | 29–30 | 0.0% | 0.85–0.86 |
+| small | mpsc-affine-pinned | 0 | 10.92 | 10.59–11.25 | -61.2% | 16 | 25–26 | 31–73 | 0.0% | 0.85–0.87 |
+| small | jdk | 0 | 28.14 | 27.91–28.38 |  | 20–23 | 30 | 35–469 | 84.3% | 0.80–0.83 |
+| big | mpsc | 256 | 64.11 | 63.47–64.75 | -0.4% | 235–287 | 1,195–1,218 | 3,428–6,480 | 8.8% | 0.79–0.81 |
+| big | mpsc-affine | 256 | 54.06 | 54.00–54.13 | -16.0% | 106–107 | 488–569 | 1,615–2,759 | 0.0% | 0.79–0.80 |
+| big | mpsc-affine-pinned | 256 | 54.38 | 54.36–54.41 | -15.5% | 108 | 470–485 | 1,799–1,800 | 0.0% | 0.79 |
+| big | jdk | 256 | 64.36 | 64.27–64.46 |  | 818–872 | 8,872–16,704 | 24,576–47,415 | 4.2% | 0.75 |
+| big | mpsc | 0 | 12.73 | 12.43–13.03 | -56.2% | 15–17 | 22–24 | 25–27 | 74.5% | 0.86–0.90 |
+| big | mpsc-affine | 0 | 11.71 | 11.47–11.95 | -59.7% | 16 | 24–25 | 28–29 | 0.0% | 0.84 |
+| big | mpsc-affine-pinned | 0 | 10.77 | 10.70–10.85 | -62.9% | 16 | 24–25 | 28–29 | 0.0% | 0.85–0.87 |
+| big | jdk | 0 | 29.04 | 29.02–29.05 |  | 19 | 28–29 | 36–47 | 84.2% | 0.81–0.82 |
 
 ```
 vs jdk = cpu µs/req / cpu µs/req of jdk, same case and depth, - 1
@@ -124,30 +112,22 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | case | scheduler | depth | req/s | GCs | live StackChunks | note |
 |---|---|---|---|---|---|---|
-| small | mpsc | 256 | 150,000–150,001 | 7 | 6 → 2 |  |
-| small | mpsc-affine | 256 | 150,000–150,003 | 7–8 | 3 → 0 |  |
-| small | mpsc-pinned | 256 | 150,000 | 7 | 3 → 1 |  |
-| small | mpsc-affine-pinned | 256 | 150,001–150,002 | 8 | 3 → 2 |  |
-| small | jdk | 256 | 150,000–150,004 | 7–8 | 21 → 18 |  |
-| small | jdk-pinned | 256 | 150,000–150,003 | 7–8 | 28 → 26 |  |
-| small | mpsc | 0 | 150,000–150,003 | 7–8 |  |  |
-| small | mpsc-affine | 0 | 150,000–150,003 | 8 |  |  |
-| small | mpsc-pinned | 0 | 149,999–150,000 | 7 |  |  |
-| small | mpsc-affine-pinned | 0 | 149,990–150,003 | 7–8 |  |  |
-| small | jdk | 0 | 149,998–150,003 | 8 |  |  |
-| small | jdk-pinned | 0 | 149,999–150,000 | 8 |  |  |
-| big | mpsc | 256 | 150,005–150,006 | 7 | 108 → 6 |  |
-| big | mpsc-affine | 256 | 149,999–150,002 | 8 | 4 → 4 |  |
-| big | mpsc-pinned | 256 | 150,008–150,061 | 7 | 26 → 4 |  |
-| big | mpsc-affine-pinned | 256 | 150,002–150,003 | 7–8 | 6 → 5 |  |
-| big | jdk | 256 | 149,983–150,027 | 8 | 1052 → 37 |  |
-| big | jdk-pinned | 256 | 150,004–150,011 | 7–8 | 155 → 27 |  |
-| big | mpsc | 0 | 150,000 | 8–9 |  |  |
-| big | mpsc-affine | 0 | 150,000–150,003 | 9 |  |  |
-| big | mpsc-pinned | 0 | 150,002 | 8–9 |  |  |
-| big | mpsc-affine-pinned | 0 | 150,002–150,003 | 8–9 |  |  |
-| big | jdk | 0 | 150,001–150,052 | 9–10 |  |  |
-| big | jdk-pinned | 0 | 150,000 | 9 |  |  |
+| small | mpsc | 256 | 149,999 | 7 | 2 → 1 |  |
+| small | mpsc-affine | 256 | 149,999 | 7 | 4 → 3 |  |
+| small | mpsc-affine-pinned | 256 | 149,999–150,000 | 7–8 | 0 → 0 |  |
+| small | jdk | 256 | 149,999–150,000 | 7–8 | 31 → 100 |  |
+| small | mpsc | 0 | 149,999 | 7–8 |  |  |
+| small | mpsc-affine | 0 | 149,999 | 7–8 |  |  |
+| small | mpsc-affine-pinned | 0 | 149,999 | 8 |  |  |
+| small | jdk | 0 | 149,999 | 8 |  |  |
+| big | mpsc | 256 | 149,972–149,997 | 7 | 36 → 33 |  |
+| big | mpsc-affine | 256 | 149,999 | 8 | 9 → 6 |  |
+| big | mpsc-affine-pinned | 256 | 149,999–150,000 | 7–8 | 11 → 1 |  |
+| big | jdk | 256 | 149,988–150,004 | 7–8 | 20 → 37 |  |
+| big | mpsc | 0 | 149,999 | 8–9 |  |  |
+| big | mpsc-affine | 0 | 150,000 | 8–9 |  |  |
+| big | mpsc-affine-pinned | 0 | 149,999–150,000 | 9 |  |  |
+| big | jdk | 0 | 149,999 | 9 |  |  |
 
 From the files of each run, in runs/. req/s: the `throughput` line of its console. GCs: the Pause
 lines of its GC log, less the full GCs of the StackChunk counts. live StackChunks: the
@@ -160,18 +140,14 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | case | scheduler | instructions/req | IPC | cycles per instruction | cycles/req | instructions | cycles | requests | note |
 |---|---|---|---|---|---|---|---|---|---|
-| small | mpsc | 72,981 | 0.63 | 1.59 | 115,754 | 153,260,430,379 | 243,084,192,157 | 2,100,000 |  |
-| small | mpsc-affine | 73,562 | 1.15 | 0.87 | 63,832 | 154,479,184,078 | 134,046,777,157 | 2,100,000 |  |
-| small | mpsc-pinned | 67,528 | 0.61 | 1.63 | 110,054 | 141,808,722,329 | 231,112,620,307 | 2,100,000 |  |
-| small | mpsc-affine-pinned | 73,350 | 1.16 | 0.86 | 63,282 | 154,034,286,420 | 132,891,552,479 | 2,100,000 |  |
-| small | jdk | 115,845 | 0.70 | 1.43 | 165,688 | 243,275,426,436 | 347,944,659,755 | 2,100,000 |  |
-| small | jdk-pinned | 114,888 | 0.68 | 1.46 | 167,934 | 241,264,898,411 | 352,661,288,885 | 2,100,000 |  |
-| big | mpsc | 51,191 | 0.18 | 5.48 | 280,344 | 107,501,319,271 | 588,722,340,121 | 2,100,000 |  |
-| big | mpsc-affine | 61,664 | 0.26 | 3.83 | 236,421 | 129,495,348,016 | 496,484,319,152 | 2,100,000 |  |
-| big | mpsc-pinned | 53,425 | 0.20 | 5.05 | 269,794 | 112,193,211,195 | 566,567,754,227 | 2,100,000 |  |
-| big | mpsc-affine-pinned | 59,479 | 0.26 | 3.86 | 229,433 | 124,905,250,328 | 481,808,702,461 | 2,100,000 |  |
-| big | jdk | 54,995 | 0.20 | 5.01 | 275,518 | 115,489,137,053 | 578,588,833,155 | 2,100,000 |  |
-| big | jdk-pinned | 55,282 | 0.20 | 5.01 | 277,087 | 116,093,029,030 | 581,882,090,739 | 2,100,000 |  |
+| small | mpsc | 67,055 | 0.57 | 1.77 | 118,649 | 140,815,578,800 | 249,163,482,623 | 2,100,000 |  |
+| small | mpsc-affine | 69,563 | 1.16 | 0.87 | 60,195 | 146,081,841,318 | 126,410,290,435 | 2,100,000 |  |
+| small | mpsc-affine-pinned | 74,651 | 1.28 | 0.78 | 58,229 | 156,766,692,286 | 122,280,776,924 | 2,100,000 |  |
+| small | jdk | 120,633 | 0.71 | 1.40 | 168,838 | 253,329,669,250 | 354,558,762,420 | 2,100,000 |  |
+| big | mpsc | 49,546 | 0.18 | 5.62 | 278,339 | 104,047,629,087 | 584,512,208,576 | 2,100,000 |  |
+| big | mpsc-affine | 62,955 | 0.28 | 3.58 | 225,379 | 132,204,856,461 | 473,295,711,862 | 2,100,000 |  |
+| big | mpsc-affine-pinned | 62,820 | 0.27 | 3.66 | 229,811 | 131,922,852,412 | 482,603,704,632 | 2,100,000 |  |
+| big | jdk | 53,992 | 0.20 | 5.06 | 273,031 | 113,383,619,965 | 573,365,972,301 | 2,100,000 |  |
 
 ```
 instructions/req       = instructions / requests
@@ -189,18 +165,14 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | case | scheduler | migrations | other L3 | DRAM | Load Operations | Load Remote HITM | Load DRAM | note |
 |---|---|---|---|---|---|---|---|---|
-| small | mpsc | 59.2% | 4.00% | 0.49% | 36,643 | 1,464 | 180 |  |
-| small | mpsc-affine | 0.0% | 0.28% | 0.07% | 21,086 | 58 | 14 |  |
-| small | mpsc-pinned | 61.4% | 2.58% | 0.18% | 35,373 | 911 | 64 |  |
-| small | mpsc-affine-pinned | 0.0% | 0.29% | 0.03% | 21,347 | 62 | 7 |  |
-| small | jdk | 63.4% | 2.16% | 0.22% | 43,261 | 935 | 97 |  |
-| small | jdk-pinned | 60.9% | 2.21% | 0.16% | 50,883 | 1,127 | 83 |  |
-| big | mpsc | 6.0% | 0.53% | 6.04% | 58,699 | 309 | 3,547 |  |
-| big | mpsc-affine | 0.0% | 0.43% | 4.76% | 51,823 | 221 | 2,467 |  |
-| big | mpsc-pinned | 6.1% | 0.61% | 5.67% | 53,522 | 324 | 3,034 |  |
-| big | mpsc-affine-pinned | 0.0% | 0.36% | 4.86% | 53,039 | 189 | 2,580 |  |
-| big | jdk | 3.3% | 0.48% | 4.99% | 54,302 | 258 | 2,707 |  |
-| big | jdk-pinned | 4.4% | 0.58% | 5.70% | 62,171 | 360 | 3,546 |  |
+| small | mpsc | 57.9% | 3.09% | 0.24% | 34,369 | 1,062 | 82 |  |
+| small | mpsc-affine | 0.0% | 0.34% | 0.02% | 20,600 | 71 | 4 |  |
+| small | mpsc-affine-pinned | 0.0% | 0.36% | 0.02% | 20,986 | 76 | 5 |  |
+| small | jdk | 61.4% | 2.62% | 0.25% | 41,942 | 1,097 | 105 |  |
+| big | mpsc | 6.7% | 0.63% | 6.10% | 54,133 | 341 | 3,304 |  |
+| big | mpsc-affine | 0.0% | 0.48% | 5.39% | 48,099 | 231 | 2,593 |  |
+| big | mpsc-affine-pinned | 0.0% | 0.41% | 5.50% | 54,340 | 223 | 2,990 |  |
+| big | jdk | 5.1% | 0.63% | 5.93% | 49,654 | 311 | 2,943 |  |
 
 ```
 other L3 = Load Remote HITM / Load Operations
@@ -222,18 +194,14 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | case | scheduler | walk cycles/req | walk cycles | requests | note |
 |---|---|---|---|---|---|
-| small | mpsc | 66,734 | 140,141,526,150 | 2,100,000 |  |
-| small | mpsc-affine | 16,158 | 33,931,976,395 | 2,100,000 |  |
-| small | mpsc-pinned | 63,309 | 132,949,745,767 | 2,100,000 |  |
-| small | mpsc-affine-pinned | 15,230 | 31,983,168,862 | 2,100,000 |  |
-| small | jdk | 66,815 | 140,310,704,524 | 2,100,000 |  |
-| small | jdk-pinned | 68,965 | 144,826,404,603 | 2,100,000 |  |
-| big | mpsc | 247,076 | 518,860,114,002 | 2,100,000 |  |
-| big | mpsc-affine | 191,852 | 402,888,605,572 | 2,100,000 |  |
-| big | mpsc-pinned | 253,078 | 531,463,027,165 | 2,100,000 |  |
-| big | mpsc-affine-pinned | 194,539 | 408,531,667,029 | 2,100,000 |  |
-| big | jdk | 238,571 | 500,999,482,700 | 2,100,000 |  |
-| big | jdk-pinned | 242,168 | 508,552,195,132 | 2,100,000 |  |
+| small | mpsc | 69,076 | 145,059,856,272 | 2,100,000 |  |
+| small | mpsc-affine | 14,931 | 31,355,880,469 | 2,100,000 |  |
+| small | mpsc-affine-pinned | 15,002 | 31,503,305,641 | 2,100,000 |  |
+| small | jdk | 67,479 | 141,706,625,136 | 2,100,000 |  |
+| big | mpsc | 253,610 | 532,580,073,982 | 2,100,000 |  |
+| big | mpsc-affine | 190,516 | 400,083,510,557 | 2,100,000 |  |
+| big | mpsc-affine-pinned | 188,546 | 395,947,446,905 | 2,100,000 |  |
+| big | jdk | 240,761 | 505,597,753,446 | 2,100,000 |  |
 
 ```
 walk cycles/req = walk cycles / requests
@@ -250,18 +218,14 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | case | scheduler | cpu µs/req G1 | cpu µs/req Epsilon | difference | heap used | note |
 |---|---|---|---|---|---|---|
-| small | mpsc | 27.92 | 28.48 | +0.56 | 7,193 MiB |  |
-| small | mpsc-affine | 15.09 | 17.82 | +2.73 | 7,785 MiB |  |
-| small | mpsc-pinned | 27.23 | 26.65 | -0.58 | 6,993 MiB |  |
-| small | mpsc-affine-pinned | 15.16 | 15.27 | +0.11 | 7,317 MiB |  |
-| small | jdk | 40.45 | 41.16 | +0.71 | 7,571 MiB |  |
-| small | jdk-pinned | 40.28 | 40.45 | +0.17 | 7,633 MiB |  |
-| big | mpsc | 65.06 | 66.36 | +1.30 | 5,603 MiB |  |
-| big | mpsc-affine | 53.56 | 58.49 | +4.93 | 6,371 MiB |  |
-| big | mpsc-pinned | 65.23 | 66.33 | +1.10 | 5,639 MiB |  |
-| big | mpsc-affine-pinned | 54.36 | 58.61 | +4.25 | 6,444 MiB |  |
-| big | jdk | 64.14 | 64.31 | +0.17 | 6,340 MiB |  |
-| big | jdk-pinned | 65.35 | 66.13 | +0.78 | 6,209 MiB |  |
+| small | mpsc | 27.84 | 27.34 | -0.50 | 6,789 MiB |  |
+| small | mpsc-affine | 15.32 | 15.95 | +0.63 | 7,161 MiB |  |
+| small | mpsc-affine-pinned | 14.57 | 14.70 | +0.12 | 7,694 MiB |  |
+| small | jdk | 40.20 | 40.77 | +0.58 | 7,591 MiB |  |
+| big | mpsc | 64.11 | 66.30 | +2.19 | 5,343 MiB |  |
+| big | mpsc-affine | 54.06 | 57.43 | +3.37 | 6,379 MiB |  |
+| big | mpsc-affine-pinned | 54.38 | 57.43 | +3.05 | 6,568 MiB |  |
+| big | jdk | 64.36 | 65.40 | +1.04 | 7,053 MiB |  |
 
 ```
 difference = cpu µs/req Epsilon - cpu µs/req G1
@@ -277,30 +241,22 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | case | scheduler | run | kept up with req/s | cpu µs/req | p99 µs | missed req/s | achieved req/s | p99 µs |
 |---|---|---|---|---|---|---|---|---|
-| small | mpsc | r1 | 610,000 | 16.37 | 6127.6 | 630,000 | 622,175 | 26509.3 |
-| small | mpsc | r2 | 570,000 | 17.52 | 1455.1 | 590,000 | 589,901 | 5730.3 |
-| small | mpsc-affine | r1 | 570,000 | 13.70 | 37.9 | 590,000 | 589,886 | 38.7 |
-| small | mpsc-affine | r2 | 850,000 | 11.52 | 613.9 | 870,000 | 869,348 | 4866.0 |
-| small | mpsc-pinned | r1 | 610,000 | 16.37 | 3239.9 | 630,000 | 629,929 | 16859.1 |
-| small | mpsc-pinned | r2 | 590,000 | 16.93 | 1640.4 | 610,000 | 610,016 | 4032.5 |
-| small | mpsc-affine-pinned | r1 | 1,050,000 | 9.51 | 1649.7 | 1,070,000 | 1,053,693 | 36143.1 |
-| small | mpsc-affine-pinned | r2 | 1,070,000 | 9.33 | 4161.5 | 1,090,000 | 1,068,114 | 35192.8 |
-| small | jdk | r1 | 650,000 | 15.30 | 4118.5 | 670,000 | 669,841 | 5222.4 |
-| small | jdk | r2 | 670,000 | 14.82 | 6000.6 | 690,000 | 690,156 | 8437.8 |
-| small | jdk-pinned | r1 | 630,000 | 15.84 | 6234.1 | 650,000 | 650,047 | 7671.8 |
-| small | jdk-pinned | r2 | 650,000 | 15.36 | 8069.1 | 670,000 | 670,051 | 10534.9 |
-| big | mpsc | r1 | 170,000 | 58.25 | 15392.8 | 190,000 | 189,521 | 83296.3 |
-| big | mpsc | r2 | 170,000 | 58.29 | 39551.0 | 190,000 | 187,283 | 97386.5 |
-| big | mpsc-affine | r1 | 190,000 | 50.98 | 58589.2 | 210,000 | 194,592 | 207093.8 |
-| big | mpsc-affine | r2 | 190,000 | 49.96 | 2038.8 | 210,000 | 207,320 | 187170.8 |
-| big | mpsc-pinned | r1 | 170,000 | 58.54 | 11141.1 | 190,000 | 189,938 | 90308.6 |
-| big | mpsc-pinned | r2 | 170,000 | 58.55 | 10469.4 | 190,000 | 190,176 | 101187.6 |
-| big | mpsc-affine-pinned | r1 | 190,000 | 50.15 | 1047.0 | 210,000 | 205,128 | 189530.1 |
-| big | mpsc-affine-pinned | r2 | 190,000 | 49.85 | 1044.5 | 210,000 | 209,965 | 72941.6 |
-| big | jdk | r1 | 150,000 | 64.88 | 17006.6 | 170,000 | 169,945 | 60784.6 |
-| big | jdk | r2 | 170,000 | 57.69 | 26132.5 | 190,000 | 189,533 | 95354.9 |
-| big | jdk-pinned | r1 | 190,000 | 52.70 | 44826.6 | 210,000 | 196,259 | 125173.8 |
-| big | jdk-pinned | r2 | 190,000 | 52.52 | 21889.0 | 210,000 | 196,766 | 129105.9 |
+| small | mpsc | r1 | 630,000 | 15.84 | 6578.2 | 650,000 | 644,223 | 28770.3 |
+| small | mpsc | r2 | 610,000 | 16.37 | 4370.4 | 630,000 | 629,632 | 19316.7 |
+| small | mpsc-affine | r1 | 890,000 | 11.14 | 82.9 | 910,000 | 909,904 | 456.4 |
+| small | mpsc-affine | r2 | 870,000 | 11.30 | 134.8 | 890,000 | 889,736 | 100.3 |
+| small | mpsc-affine-pinned | r1 | 1,070,000 | 9.33 | 670.2 | 1,090,000 | 1,085,154 | 35029.0 |
+| small | mpsc-affine-pinned | r2 | 1,090,000 | 9.16 | 657.9 | 1,110,000 | 1,097,916 | 20594.7 |
+| small | jdk | r1 | 670,000 | 14.91 | 5644.3 | 690,000 | 689,946 | 6848.5 |
+| small | jdk | r2 | 670,000 | 14.89 | 5349.4 | 690,000 | 690,040 | 6258.7 |
+| big | mpsc | r1 | 190,000 | 52.30 | 58228.7 | 210,000 | 197,068 | 159776.8 |
+| big | mpsc | r2 | 170,000 | 58.51 | 6815.7 | 190,000 | 189,517 | 107544.6 |
+| big | mpsc-affine | r1 | 190,000 | 50.45 | 1968.1 | 210,000 | 206,309 | 181927.9 |
+| big | mpsc-affine | r2 | 190,000 | 48.57 | 1740.8 | 210,000 | 209,713 | 32964.6 |
+| big | mpsc-affine-pinned | r1 | 190,000 | 49.50 | 1091.6 | 210,000 | 208,897 | 124387.3 |
+| big | mpsc-affine-pinned | r2 | 190,000 | 50.42 | 1598.5 | 210,000 | 203,799 | 199884.8 |
+| big | jdk | r1 | 190,000 | 52.54 | 23740.4 | 210,000 | 199,209 | 79364.1 |
+| big | jdk | r2 | 150,000 | 64.61 | 15392.8 | 170,000 | 169,889 | 54460.4 |
 
 From the console of each ramp run, at depth 256, runs/<case>-r<n>-ramp-<scheduler>-256.out: from 150000 req/s,
 20000 req/s more at each step, 10s measured, until a step is not kept up with.

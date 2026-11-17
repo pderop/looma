@@ -1,0 +1,243 @@
+WARNING: failed to find node
+=================================================
+            Trace Event Information              
+=================================================
+  Total records                     :     162512
+  Locked Load/Store Operations      :        301
+  Load Operations                   :      38551
+  Loads - uncacheable               :          0
+  Loads - IO                        :          1
+  Loads - Miss                      :          0
+  Loads - no mapping                :      12645
+  Load Fill Buffer Hit              :          0
+  Load L1D hit                      :      23344
+  Load L2D hit                      :       1035
+  Load LLC hit                      :        548
+  Load Local HITM                   :        394
+  Load Remote HITM                  :        744
+  Load Remote HIT                   :          0
+  Load Local DRAM                   :        105
+  Load Remote DRAM                  :          0
+  Load MESI State Exclusive         :        105
+  Load MESI State Shared            :          0
+  Load LLC Misses                   :        849
+  Load access blocked by data       :          0
+  Load access blocked by address    :          0
+  Load HIT Local Peer               :          0
+  Load HIT Remote Peer              :          0
+  LLC Misses to Local DRAM          :       12.4%
+  LLC Misses to Remote DRAM         :        0.0%
+  LLC Misses to Remote cache (HIT)  :        0.0%
+  LLC Misses to Remote cache (HITM) :       87.6%
+  Store Operations                  :      13603
+  Store - uncacheable               :          1
+  Store - no mapping                :       1142
+  Store L1D Hit                     :      10463
+  Store L1D Miss                    :          0
+  Store No available memory level   :       1096
+  No Page Map Rejects               :      13808
+  Unable to parse data source       :     110358
+
+=================================================
+    Global Shared Cache Line Event Information   
+=================================================
+  Total Shared Cache Lines          :       1107
+  Load HITs on shared lines         :       1566
+  Fill Buffer Hits on shared lines  :          0
+  L1D hits on shared lines          :        399
+  L2D hits on shared lines          :         15
+  LLC hits on shared lines          :        399
+  Load hits on peer cache or nodes  :          0
+  Locked Access on shared lines     :         66
+  Blocked Access on shared lines    :          0
+  Store HITs on shared lines        :        179
+  Store L1D hits on shared lines    :        141
+  Store No available memory level   :         26
+  Total Merged records              :       1317
+
+=================================================
+                 c2c details                     
+=================================================
+  Events                            : ibs_op/ldlat=0/
+  Cachelines sort on                : Total HITMs
+  Cacheline data grouping           : offset,iaddr
+
+=================================================
+           Shared Data Cache Line Table          
+=================================================
+#
+#        ----------- Cacheline ----------      Tot  ------- Load Hitm -------    Total    Total    Total  --------- Stores --------  ----- Core Load Hit -----  - LLC Load Hit --  - RMT Load Hit --  --- Load Dram ----
+# Index             Address  Node  PA cnt     Hitm    Total  LclHitm  RmtHitm  records    Loads   Stores    L1Hit   L1Miss      N/A       FB       L1       L2    LclHit  LclHitm    RmtHit  RmtHitm       Lcl       Rmt
+# .....  ..................  ....  ......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  .......  ........  .......  ........  .......  ........  ........
+#
+      0          0xb2eb7000     0       1    0.44%        5        1        4        5        5        0        0        0        0        0        0        0         0        1         0        4         0         0
+      1      0x708b3c1ed180     0      32    0.35%        4        1        3       35       21       14        7        0        7        0       17        0         0        1         0        3         0         0
+      2  0xffff8c860d374e40     0       6    0.26%        3        3        0        7        7        0        0        0        0        0        4        0         0        3         0        0         0         0
+      3          0xb7500480     0       1    0.26%        3        1        2        4        4        0        0        0        0        0        1        0         0        1         0        2         0         0
+      4          0xbb400400     0       1    0.26%        3        1        2        5        5        0        0        0        0        0        2        0         0        1         0        2         0         0
+      5      0x708b3c1ed140     0      20    0.26%        3        3        0       23       20        3        2        0        1        0       17        0         0        3         0        0         0         0
+      6      0x708b3c4545c0     0      28    0.26%        3        2        1       35       23       13        8        0        4        0       20        0         0        2         0        1         0         0
+      7  0xffff8c86043be740     0       4    0.18%        2        0        2        7        6        1        1        0        0        0        4        0         0        0         0        2         0         0
+      8  0xffff8c862c9b8140     0       1    0.18%        2        1        1        2        2        0        0        0        0        0        0        0         0        1         0        1         0         0
+      9  0xffff8c863b716940     0       1    0.18%        2        1        1        3        3        0        0        0        0        0        1        0         0        1         0        1         0         0
+     10          0x814b7340     0       2    0.18%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     11          0x814fac80     0       2    0.18%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     12          0x81ef61c0     0       2    0.18%        2        1        1        2        2        1        0        0        0        0        0        0         0        1         0        1         0         0
+     13          0x81efb780     0       2    0.18%        2        2        0        2        2        0        0        0        0        0        0        0         0        2         0        0         0         0
+     14          0x82aa0140     0       3    0.18%        2        0        2        9        9        0        0        0        0        0        7        0         0        0         0        2         0         0
+     15          0xafbac4c0     0       1    0.18%        2        2        0        6        6        0        0        0        0        0        4        0         0        2         0        0         0         0
+     16          0xb055ee00     0       1    0.18%        2        0        2        6        6        0        0        0        0        0        4        0         0        0         0        2         0         0
+     17          0xb2459840     0       4    0.18%        2        1        1        4        3        1        1        0        0        0        1        0         0        1         0        1         0         0
+     18          0xb397e140     0       1    0.18%        2        0        2        3        3        0        0        0        0        0        1        0         0        0         0        2         0         0
+     19          0xb9ad1540     0       2    0.18%        2        0        2        2        2        0        0        0        0        0        0        0         0        0         0        2         0         0
+     20          0xffe00600     0       2    0.18%        2        2        0        3        3        0        0        0        0        0        1        0         0        2         0        0         0         0
+
+=================================================
+      Shared Cache Line Distribution Pareto      
+=================================================
+#
+#        ----- HITM -----  ------- Store Refs ------  --------- Data address ---------                      ---------- cycles ----------    Total       cpu                                                                                            Shared                                                                                       
+#   Num  RmtHitm  LclHitm   L1 Hit  L1 Miss      N/A              Offset  Node  PA cnt        Code address  rmt hitm  lcl hitm      load  records       cnt                                                                           Symbol           Object                                                                      Source:Line  Node
+# .....  .......  .......  .......  .......  .......  ..................  ....  ......  ..................  ........  ........  ........  .......  ........  ...............................................................................  ...............  ...............................................................................  ....
+#
+  ----------------------------------------------------------------------
+      0        4        1        0        0        0          0xb2eb7000
+  ----------------------------------------------------------------------
+          75.00%  100.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x708b2bf64812       342        42         0        4         3  [.] void java.lang.MpscCarrierThread.submit(java.lang.Thread$VirtualThreadTask)  [JIT] tid 68747  void java.lang.MpscCarrierThread.submit(java.lang.Thread$VirtualThreadTask)+786   0
+          25.00%    0.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x708b2bf6467e       768         0         0        1         1  [.] void java.lang.MpscCarrierThread.submit(java.lang.Thread$VirtualThreadTask)  [JIT] tid 68747  void java.lang.MpscCarrierThread.submit(java.lang.Thread$VirtualThreadTask)+382   0
+
+  ----------------------------------------------------------------------
+      1        3        1        7        0        7      0x708b3c1ed180
+  ----------------------------------------------------------------------
+           0.00%    0.00%   85.71%    0.00%   28.57%                 0x0     0       1      0x708b2bf4ea64         0         0         0        8         5  [.] void jdk.internal.vm.Continuation.run()                                                                                            [JIT] tid 68747  void jdk.internal.vm.Continuation.run()+484                                                                                            0
+          33.33%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x708b2bf4f6c6       282         0         0        1         1  [.] void java.lang.VirtualThread.runContinuation()                                                                                     [JIT] tid 68747  void java.lang.VirtualThread.runContinuation()+326                                                                                     0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x10     0       1      0x708b2bf5a4df         0        85         0        1         1  [.] void java.lang.VirtualThread.submitRunContinuation(boolean)                                                                        [JIT] tid 68747  void java.lang.VirtualThread.submitRunContinuation(boolean)+95                                                                         0
+           0.00%    0.00%    0.00%    0.00%   14.29%                0x10     0       1      0x708b2bf4f741         0         0         0        1         1  [.] void java.lang.VirtualThread.runContinuation()                                                                                     [JIT] tid 68747  void java.lang.VirtualThread.runContinuation()+449                                                                                     0
+           0.00%    0.00%    0.00%    0.00%   14.29%                0x20     0       1      0x708b2bf4ea64         0         0         0        1         1  [.] void jdk.internal.vm.Continuation.run()                                                                                            [JIT] tid 68747  void jdk.internal.vm.Continuation.run()+484                                                                                            0
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x708b2c048e3e       450         0         0        1         1  [.] void java.lang.VirtualThread.runContinuation()                                                                                     [JIT] tid 68747  void java.lang.VirtualThread.runContinuation()+318                                                                                     0
+          33.33%    0.00%    0.00%    0.00%    0.00%                0x30     0       1      0x708b2bf5092d       294         0         0        1         1  [.] void java.util.concurrent.locks.AbstractQueuedSynchronizer.signalNext(java.util.concurrent.locks.AbstractQueuedSynchronizer$Node)  [JIT] tid 68747  void java.util.concurrent.locks.AbstractQueuedSynchronizer.signalNext(java.util.concurrent.locks.AbstractQueuedSynchronizer$Node)+45   0
+           0.00%    0.00%    0.00%    0.00%   14.29%                0x30     0       1      0x708b2bf4f741         0         0         0        1         1  [.] void java.lang.VirtualThread.runContinuation()                                                                                     [JIT] tid 68747  void java.lang.VirtualThread.runContinuation()+449                                                                                     0
+           0.00%    0.00%   14.29%    0.00%   28.57%                0x30     0       1      0x708b2bf4f7dd         0         0         0        3         2  [.] void java.lang.VirtualThread.runContinuation()                                                                                     [JIT] tid 68747  void java.lang.VirtualThread.runContinuation()+605                                                                                     0
+
+  ----------------------------------------------------------------------
+      2        0        3        0        0        0  0xffff8c860d374e40
+  ----------------------------------------------------------------------
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x10     0       1  0xffffffff9bd75254         0        97         0        1         1  [k] ep_poll           [kernel.kallsyms]  ep_poll+148            0
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x18     0       1  0xffffffff9bd7684b         0       101         0        1         1  [k] ep_poll_callback  [kernel.kallsyms]  ep_poll_callback+571   0
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x24     0       1  0xffffffff9bd75248         0        91         0        1         1  [k] ep_poll           [kernel.kallsyms]  ep_poll+136            0
+
+  ----------------------------------------------------------------------
+      3        2        1        0        0        0          0xb7500480
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x14     0       1      0x708b2bfdd3a3       410         0         0        2         2  [.] void java.lang.MpscCarrierThread.leaveParked()                               [JIT] tid 68747  void java.lang.MpscCarrierThread.leaveParked()+3491                               0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x14     0       1      0x708b2bfbccfa         0       652         0        1         1  [.] void java.lang.MpscCarrierThread.eventLoopSteal()                            [JIT] tid 68747  void java.lang.MpscCarrierThread.eventLoopSteal()+2810                            0
+
+  ----------------------------------------------------------------------
+      4        2        1        0        0        0          0xbb400400
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x708b2bf64812       572         0         0        3         3  [.] void java.lang.MpscCarrierThread.submit(java.lang.Thread$VirtualThreadTask)  [JIT] tid 68747  void java.lang.MpscCarrierThread.submit(java.lang.Thread$VirtualThreadTask)+786   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x1c     0       1      0x708b2bf6467e         0        97         0        1         1  [.] void java.lang.MpscCarrierThread.submit(java.lang.Thread$VirtualThreadTask)  [JIT] tid 68747  void java.lang.MpscCarrierThread.submit(java.lang.Thread$VirtualThreadTask)+382   0
+
+  ----------------------------------------------------------------------
+      5        0        3        2        0        1      0x708b3c1ed140
+  ----------------------------------------------------------------------
+           0.00%   33.33%    0.00%    0.00%    0.00%                 0x0     0       1      0x708b2bf4ea61         0        85         0        2         2  [.] void jdk.internal.vm.Continuation.run()                                                                                                                                                                   [JIT] tid 68747  void jdk.internal.vm.Continuation.run()+481                                                                                                                                                                    0
+           0.00%    0.00%    0.00%    0.00%  100.00%                 0x0     0       1      0x708b2bf4e8ec         0         0         0        1         1  [.] void jdk.internal.vm.Continuation.run()                                                                                                                                                                   [JIT] tid 68747  void jdk.internal.vm.Continuation.run()+108                                                                                                                                                                    0
+           0.00%   33.33%    0.00%    0.00%    0.00%                 0x8     0       1      0x708b2bf7a177         0        87         0        1         1  [.] int sun.nio.ch.IOUtil.read(java.io.FileDescriptor, java.nio.ByteBuffer, long, sun.nio.ch.NativeDispatcher)                                                                                                [JIT] tid 68747  int sun.nio.ch.IOUtil.read(java.io.FileDescriptor, java.nio.ByteBuffer, long, sun.nio.ch.NativeDispatcher)+1399                                                                                                0
+           0.00%   33.33%    0.00%    0.00%    0.00%                0x10     0       1      0x708b2bf600c9         0       569         0        1         1  [.] void java.lang.VirtualThread.afterYield()                                                                                                                                                                 [JIT] tid 68747  void java.lang.VirtualThread.afterYield()+73                                                                                                                                                                   0
+           0.00%    0.00%   50.00%    0.00%    0.00%                0x20     0       1      0x708b2bf4e8ec         0         0         0        1         1  [.] void jdk.internal.vm.Continuation.run()                                                                                                                                                                   [JIT] tid 68747  void jdk.internal.vm.Continuation.run()+108                                                                                                                                                                    0
+           0.00%    0.00%   50.00%    0.00%    0.00%                0x30     0       1      0x708b2c048f4d         0         0         0        1         1  [.] void java.lang.VirtualThread.runContinuation()                                                                                                                                                            [JIT] tid 68747  void java.lang.VirtualThread.runContinuation()+589                                                                                                                                                             0
+
+  ----------------------------------------------------------------------
+      6        1        2        8        0        4      0x708b3c4545c0
+  ----------------------------------------------------------------------
+           0.00%    0.00%   12.50%    0.00%   25.00%                 0x0     0       1      0x708b2bf4ea64         0         0         0        2         2  [.] void jdk.internal.vm.Continuation.run()                                                                                                                                          [JIT] tid 68747  void jdk.internal.vm.Continuation.run()+484                                                                                                                                           0
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x708b2bf4e902       436         0         0        2         2  [.] void jdk.internal.vm.Continuation.run()                                                                                                                                          [JIT] tid 68747  void jdk.internal.vm.Continuation.run()+130                                                                                                                                           0
+           0.00%    0.00%   12.50%    0.00%   25.00%                0x10     0       1      0x708b2bf4f7dd         0         0         0        2         2  [.] void java.lang.VirtualThread.runContinuation()                                                                                                                                   [JIT] tid 68747  void java.lang.VirtualThread.runContinuation()+605                                                                                                                                    0
+           0.00%    0.00%   37.50%    0.00%    0.00%                0x20     0       1      0x708b2bf4ea64         0         0         0        3         3  [.] void jdk.internal.vm.Continuation.run()                                                                                                                                          [JIT] tid 68747  void jdk.internal.vm.Continuation.run()+484                                                                                                                                           0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x28     0       1      0x708b2bf4f752         0        52         0        1         1  [.] void java.lang.VirtualThread.runContinuation()                                                                                                                                   [JIT] tid 68747  void java.lang.VirtualThread.runContinuation()+466                                                                                                                                    0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x28     0       1      0x708b2bf54486         0        83         0        1         1  [.] void java.lang.MpscVirtualThreadScheduler.onContinue(java.lang.Thread$VirtualThreadTask)                                                                                         [JIT] tid 68747  void java.lang.MpscVirtualThreadScheduler.onContinue(java.lang.Thread$VirtualThreadTask)+134                                                                                          0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x30     0       1      0x708b2bf4f741         0         0         0        1         1  [.] void java.lang.VirtualThread.runContinuation()                                                                                                                                   [JIT] tid 68747  void java.lang.VirtualThread.runContinuation()+449                                                                                                                                    0
+           0.00%    0.00%   12.50%    0.00%   50.00%                0x30     0       1      0x708b2bf4f7dd         0         0         0        3         2  [.] void java.lang.VirtualThread.runContinuation()                                                                                                                                   [JIT] tid 68747  void java.lang.VirtualThread.runContinuation()+605                                                                                                                                    0
+           0.00%    0.00%   12.50%    0.00%    0.00%                0x30     0       1      0x708b2c048eb9         0         0         0        1         1  [.] void java.lang.VirtualThread.runContinuation()                                                                                                                                   [JIT] tid 68747  void java.lang.VirtualThread.runContinuation()+441                                                                                                                                    0
+
+  ----------------------------------------------------------------------
+      7        2        0        1        0        0  0xffff8c86043be740
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1  0xffffffff9bd73646       551         0         0        1         1  [k] ep_start_scan  [kernel.kallsyms]  ep_start_scan+54   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x24     0       1  0xffffffff9bd756a6       367         0         0        1         1  [k] ep_poll        [kernel.kallsyms]  ep_poll+1254       0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x38     0       1  0xffffffff9bd73661         0         0         0        1         1  [k] ep_start_scan  [kernel.kallsyms]  ep_start_scan+81   0
+
+  ----------------------------------------------------------------------
+      8        1        1        0        0        0  0xffff8c862c9b8140
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x26     0       1  0xffffffff9c7f7a86       453       149         0        2         2  [k] kfree_skbmem  [kernel.kallsyms]  kfree_skbmem+6   0
+
+  ----------------------------------------------------------------------
+      9        1        1        0        0        0  0xffff8c863b716940
+  ----------------------------------------------------------------------
+         100.00%  100.00%    0.00%    0.00%    0.00%                0x14     0       1  0xffffffff9c9acb44       375        82         0        3         3  [k] cubictcp_cwnd_event  [kernel.kallsyms]  cubictcp_cwnd_event+36   0
+
+  ----------------------------------------------------------------------
+     10        0        2        0        0        0          0x814b7340
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x38     0       1      0x708b2c01976b         0        88         0        1         1  [.] void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 68747  void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+2795   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x3c     0       1      0x708b2c019221         0        83         0        1         1  [.] void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 68747  void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+1441   0
+
+  ----------------------------------------------------------------------
+     11        0        2        0        0        0          0x814fac80
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x10     0       1      0x708b2c01925f         0       143         0        1         1  [.] void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 68747  void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+1503   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x18     0       1      0x708b2c01976b         0        82         0        1         1  [.] void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 68747  void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+2795   0
+
+  ----------------------------------------------------------------------
+     12        1        1        0        0        0          0x81ef61c0
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0xc     0       1      0x708b2c019221       398         0         0        1         1  [.] void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 68747  void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+1441   0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x18     0       1      0x708b2c01927e         0        82         0        1         1  [.] void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 68747  void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+1534   0
+           0.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x708b2c01978c         0         0         0        0         1  [.] void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 68747  void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+2828   0
+
+  ----------------------------------------------------------------------
+     13        0        2        0        0        0          0x81efb780
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x708b2c01927e         0        20         0        1         1  [.] void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 68747  void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+1534   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x28     0       1      0x708b2c01927e         0        30         0        1         1  [.] void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 68747  void io.github.pderop.looma.examples.servlet.FraudDetectorActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+1534   0
+
+  ----------------------------------------------------------------------
+     14        2        0        0        0        0          0x82aa0140
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x8     0       1      0x708b2bffcb63       198         0         0        8         5  [.] void io.github.pderop.looma.examples.servlet.ServletActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)  [JIT] tid 68747  void io.github.pderop.looma.examples.servlet.ServletActor.onReceive(io.github.pderop.looma.Message, io.github.pderop.looma.ActorRef, io.github.pderop.looma.ActorContext)+12387   0
+
+  ----------------------------------------------------------------------
+     15        0        2        0        0        0          0xafbac4c0
+  ----------------------------------------------------------------------
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x20     0       1      0x708b2bf7487e         0       192         0        3         3  [.] boolean java.lang.MpscCarrierThread.workBeforeBlocking()  [JIT] tid 68747  boolean java.lang.MpscCarrierThread.workBeforeBlocking()+766   0
+
+  ----------------------------------------------------------------------
+     16        2        0        0        0        0          0xb055ee00
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x708b2bf7487e       244         0         0        3         2  [.] boolean java.lang.MpscCarrierThread.workBeforeBlocking()  [JIT] tid 68747  boolean java.lang.MpscCarrierThread.workBeforeBlocking()+766    0
+
+  ----------------------------------------------------------------------
+     17        1        1        1        0        0          0xb2459840
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                0x10     0       1      0x708b2bf91bd4       327         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 68747  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+340    0
+           0.00%    0.00%  100.00%    0.00%    0.00%                0x38     0       1      0x708b2bf91c43         0         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 68747  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+451    0
+           0.00%  100.00%    0.00%    0.00%    0.00%                0x3c     0       1      0x708b2bf93c6a         0       109         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 68747  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+8682   0
+
+  ----------------------------------------------------------------------
+     18        2        0        0        0        0          0xb397e140
+  ----------------------------------------------------------------------
+         100.00%    0.00%    0.00%    0.00%    0.00%                 0x0     0       1      0x708b2bf74877       326         0         0        2         2  [.] boolean java.lang.MpscCarrierThread.workBeforeBlocking()  [JIT] tid 68747  boolean java.lang.MpscCarrierThread.workBeforeBlocking()+759   0
+
+  ----------------------------------------------------------------------
+     19        2        0        0        0        0          0xb9ad1540
+  ----------------------------------------------------------------------
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x18     0       1      0x708b2bf92208       360         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 68747  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+1928   0
+          50.00%    0.00%    0.00%    0.00%    0.00%                0x28     0       1      0x708b2bf9227b       350         0         0        1         1  [.] void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)  [JIT] tid 68747  void jdk.internal.vm.Continuation.enter(jdk.internal.vm.Continuation, boolean)+2043   0
+
+  ----------------------------------------------------------------------
+     20        0        2        0        0        0          0xffe00600
+  ----------------------------------------------------------------------
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x30     0       1      0x708b44488040         0        91         0        1         1  [.] long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)  libjvm.so  long* Thaw<Config<(oop_kind)0, G1BarrierSet> >::thaw_fast<false>(stackChunkOopDesc*)+128   0
+           0.00%   50.00%    0.00%    0.00%    0.00%                0x38     0       1      0x708b44b85bf7         0       100         0        2         2  [.] oopDesc::address_field(int) const                                                     libjvm.so  oopDesc::address_field(int) const+7                                                        0

@@ -1,7 +1,7 @@
 # Servlet benchmark
 
 ```
-date         2026-11-17 06:42:50 +0000
+date         2026-11-22 04:54:58 +0000
 host         gabuzo-amd, Linux 7.0.0-43-generic
 cpu model    AMD Ryzen 9 9950X 16-Core Processor
 turbo        off
@@ -11,7 +11,7 @@ carriers     CPUs 2-7,10-13
 clients      CPUs 0,1,16,17
 backend      CPUs 8,9,14,15,24,25,30,31, 8 reactors, 8 connections per pool
 heap         2g, G1; the backend 1g
-command      scripts/bench-servlet.sh
+command      scripts/bench-servlet.sh --containers 10 --rate 150000 --step 20000 --out bench/servlet-noaff-20261122-013751
 ```
 
 ## The runs
@@ -36,7 +36,7 @@ seconds for the late answers, then 3 seconds to go up to the next rate.
 - Open loop: the clients send at a fixed rate. A latency is from the planned send time of a
   request to its answer. cpu µs/req is the server's: the process minus the clients.
 - Each carrier has a core to itself: the script refuses two carrier CPUs on one core.
-- The schedulers: mpsc, jdk.
+- The schedulers: mpsc.
 - The clients are pinned to their own CPUs.
 - The JDK's poller mode is not set. On Linux, the JDK then uses mode 4 under the MPSC scheduler (one epoll per carrier), and mode 2 under jdk (pollers that run as virtual threads).
 - Heap: the server -Xms2g -Xmx2g, the backend -Xms1g -Xmx1g, both -XX:+AlwaysPreTouch and G1. A GC
@@ -48,8 +48,7 @@ seconds for the late answers, then 3 seconds to go up to the next rate.
 
 | scheduler | servlet, cpu µs/req | servlet, max req/s | servlet, max req/s with p99 < 1 ms |
 |---|---|---|---|
-| mpsc | 45.40 (r2) | 370k/370k | 310k/330k |
-| jdk | 55.02 | 330k/330k | none/none |
+| mpsc | 44.04 (r1) | 350k/370k | 330k/330k |
 
 cpu µs/req, the mean of r1 and r2, as in In short.
 max req/s: the highest rate kept up with by the ramp of each round, r1/r2 ...: the
@@ -62,14 +61,12 @@ lines of its console, step by step. none: the p99 of the first step is already a
 
 - mpsc: the JDK's MPSC scheduler, **no carrier pinned** and **no affinity**: an actor can run
   on any carrier (`Carriers.mpsc(n)`).
-- jdk: the JDK's default scheduler, **a ForkJoinPool** (`Carriers.builtin(n)`).
 
 ## In short
 
 | scheduler | cpu µs/req | cpu range | vs jdk | p50 µs | p99 µs | p99.9 µs | migrations | backend CPUs |
 |---|---|---|---|---|---|---|---|---|
-| mpsc | 45.40 (r2) | 45.40 (r2) | -17.5% | 54 (r2) | 85 (r2) | 6,484 (r2) | 74.0% (r2) | 1.89 (r2) |
-| jdk | 55.02 | 54.91–55.12 |  | 65–67 | 1,736–2,181 | 7,746–7,844 | 69.5% | 1.84–1.85 |
+| mpsc | 44.04 (r1) | 44.04 (r1) |  | 53 (r1) | 83 (r1) | 5,210 (r1) | 74.0% (r1) | 1.87 (r1) |
 
 ```
 vs jdk = cpu µs/req / cpu µs/req of jdk, same rate, - 1
@@ -89,8 +86,7 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | scheduler | req/s | GCs | note |
 |---|---|---|---|
-| mpsc | 149,957 | 10–11 | not a measurement (r1) |
-| jdk | 149,951–149,968 | 17–18 |  |
+| mpsc | 149,964–149,978 | 10–11 | not a measurement (r2) |
 
 From the files of each run, in runs/. req/s: the `throughput` line of its console. GCs: the Pause
 lines of its GC log. req/s and GCs: the lowest and the highest of r1 and r2. A run is not a measurement when its console
@@ -102,8 +98,7 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | scheduler | instructions/req | IPC | cycles per instruction | cycles/req | instructions | cycles | requests | note |
 |---|---|---|---|---|---|---|---|---|
-| mpsc | 248,854 | 1.36 | 0.74 | 183,584 | 522,592,547,540 | 385,525,744,973 | 2,100,000 |  |
-| jdk | 283,397 | 1.23 | 0.81 | 229,786 | 595,133,427,695 | 482,551,277,433 | 2,100,000 |  |
+| mpsc | 257,981 | 1.41 | 0.71 | 183,033 | 541,759,383,613 | 384,368,584,910 | 2,100,000 |  |
 
 ```
 instructions/req       = instructions / requests
@@ -121,8 +116,7 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | scheduler | other L3 | DRAM | Load Operations | Load Remote HITM | Load DRAM | note |
 |---|---|---|---|---|---|---|
-| mpsc | 2.02% | 0.21% | 37,339 | 756 | 78 |  |
-| jdk | 1.74% | 0.25% | 44,681 | 779 | 110 |  |
+| mpsc | 1.98% | 0.19% | 37,602 | 746 | 70 |  |
 
 ```
 other L3 = Load Remote HITM / Load Operations
@@ -142,10 +136,8 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | scheduler | run | kept up with req/s | cpu µs/req | p99 µs | missed req/s | achieved req/s | p99 µs |
 |---|---|---|---|---|---|---|---|
-| mpsc | r1 | 370,000 | 26.84 | 5779.5 | 390,000 | 388,352 | 21184.5 |
-| mpsc | r2 | 370,000 | 26.81 | 9478.1 | 390,000 | 388,997 | 20267.0 |
-| jdk | r1 | 330,000 | 30.26 | 3180.5 | 350,000 | 349,863 | 9781.2 |
-| jdk | r2 | 330,000 | 30.24 | 3344.4 | 350,000 | 349,921 | 9519.1 |
+| mpsc | r1 | 350,000 | 28.49 | 2355.2 | 370,000 | 369,848 | 12976.1 |
+| mpsc | r2 | 370,000 | 26.82 | 4771.8 | 390,000 | 389,908 | 12132.4 |
 
 From the console of each ramp run, runs/servlet-r<n>-ramp-<scheduler>.out: from 150000 req/s,
 20000 req/s more at each step, 10s measured, until a step is not kept up with.

@@ -1,7 +1,7 @@
 # Servlet benchmark
 
 ```
-date         2026-11-17 04:58:54 +0000
+date         2026-11-22 03:30:52 +0000
 host         gabuzo-amd, Linux 7.0.0-43-generic
 cpu model    AMD Ryzen 9 9950X 16-Core Processor
 turbo        off
@@ -11,7 +11,7 @@ carriers     CPUs 2-7,10-13
 clients      CPUs 0,1,16,17
 backend      CPUs 8,9,14,15,24,25,30,31, 8 reactors, 8 connections per pool
 heap         2g, G1; the backend 1g
-command      scripts/bench-servlet.sh
+command      scripts/bench-servlet.sh --containers 10 --rate 150000 --step 20000 --out bench/servlet-pr227-20261122-013751
 ```
 
 ## The runs
@@ -36,8 +36,7 @@ seconds for the late answers, then 3 seconds to go up to the next rate.
 - Open loop: the clients send at a fixed rate. A latency is from the planned send time of a
   request to its answer. cpu µs/req is the server's: the process minus the clients.
 - Each carrier has a core to itself: the script refuses two carrier CPUs on one core.
-- The schedulers: mpsc, mpsc-affine, mpsc-pinned, mpsc-affine-pinned, jdk, jdk-pinned.
-- jdk-pinned is jdk with each of its workers pinned to one carrier CPU.
+- The schedulers: mpsc, mpsc-affine, mpsc-affine-pinned, jdk.
 - The clients are pinned to their own CPUs.
 - The JDK's poller mode is not set. On Linux, the JDK then uses mode 4 under the MPSC scheduler (one epoll per carrier), and mode 2 under jdk (pollers that run as virtual threads).
 - Heap: the server -Xms2g -Xmx2g, the backend -Xms1g -Xmx1g, both -XX:+AlwaysPreTouch and G1. A GC
@@ -49,12 +48,10 @@ seconds for the late answers, then 3 seconds to go up to the next rate.
 
 | scheduler | servlet, cpu µs/req | servlet, max req/s | servlet, max req/s with p99 < 1 ms |
 |---|---|---|---|
-| mpsc | 41.11 | 290k/310k | 290k/290k |
-| mpsc-affine | 33.03 | 390k/390k | 350k/350k |
-| mpsc-pinned | 40.34 | 310k/310k | 310k/310k |
-| mpsc-affine-pinned | 32.19 | 430k/430k | 410k/430k |
-| jdk | 55.20 | 350k/350k | none/none |
-| jdk-pinned | 56.07 | 350k/350k | 290k/290k |
+| mpsc | 40.12 | 310k/310k | 290k/310k |
+| mpsc-affine | 31.81 | 390k/370k | 350k/350k |
+| mpsc-affine-pinned | 31.70 | 430k/450k | 430k/410k |
+| jdk | 54.61 | 350k/330k | none/150k |
 
 cpu µs/req, the mean of r1 and r2, as in In short.
 max req/s: the highest rate kept up with by the ramp of each round, r1/r2 ...: the
@@ -68,21 +65,17 @@ lines of its console, step by step. none: the p99 of the first step is already a
 - mpsc: the JDK's MPSC scheduler, **no carrier pinned** and **no affinity**: an actor can run
   on any carrier (`Carriers.mpsc(n)`).
 - mpsc-affine: mpsc where **each actor stays on its carrier**, no carrier pinned (`Carriers.mpsc(n).affine(true)`).
-- mpsc-pinned: mpsc where **each carrier is pinned to one CPU**, no affinity (`Carriers.mpsc(n).pinned(true)`).
 - mpsc-affine-pinned: both, **each actor stays on its carrier** and **each carrier is pinned to one CPU** (`Carriers.mpsc(n).affine(true).pinned(true)`).
 - jdk: the JDK's default scheduler, **a ForkJoinPool** (`Carriers.builtin(n)`).
-- jdk-pinned: jdk, and the script **pins each worker to one carrier CPU**.
 
 ## In short
 
 | scheduler | cpu µs/req | cpu range | vs jdk | p50 µs | p99 µs | p99.9 µs | migrations | backend CPUs |
 |---|---|---|---|---|---|---|---|---|
-| mpsc | 41.11 | 40.81–41.40 | -25.5% | 53–54 | 96–122 | 7,168–7,504 | 78.7% | 1.89–1.90 |
-| mpsc-affine | 33.03 | 32.53–33.52 | -40.2% | 47–49 | 79–85 | 6,066–7,217 | 0.0% | 1.87–1.89 |
-| mpsc-pinned | 40.34 | 40.23–40.46 | -26.9% | 52 | 78–79 | 5,886–6,124 | 79.5% | 1.90–1.92 |
-| mpsc-affine-pinned | 32.19 | 32.05–32.32 | -41.7% | 47 | 77–78 | 5,419–5,480 | 0.0% | 1.85–1.87 |
-| jdk | 55.20 | 54.44–55.96 |  | 66 | 1,997–2,148 | 6,701–7,020 | 69.6% | 1.81–1.84 |
-| jdk-pinned | 56.07 | 54.61–57.53 | +1.6% | 64–66 | 115–117 | 5,878–6,660 | 72.6% | 1.82–1.83 |
+| mpsc | 40.12 | 39.91–40.34 | -26.5% | 52 | 78–80 | 5,398–5,468 | 79.7% | 1.89–1.90 |
+| mpsc-affine | 31.81 | 31.65–31.98 | -41.7% | 46 | 74 | 4,661–4,911 | 0.0% | 1.84–1.87 |
+| mpsc-affine-pinned | 31.70 | 31.20–32.20 | -41.9% | 46–47 | 72–76 | 4,465–4,633 | 0.0% | 1.82–1.83 |
+| jdk | 54.61 | 54.37–54.84 |  | 62–66 | 1,252–1,338 | 4,936–5,280 | 70.3% | 1.80–1.81 |
 
 ```
 vs jdk = cpu µs/req / cpu µs/req of jdk, same rate, - 1
@@ -102,12 +95,10 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | scheduler | req/s | GCs | note |
 |---|---|---|---|
-| mpsc | 149,951–149,960 | 16 |  |
-| mpsc-affine | 149,946–149,973 | 16–17 |  |
-| mpsc-pinned | 149,967–149,968 | 16 |  |
-| mpsc-affine-pinned | 149,957–149,964 | 16–17 |  |
-| jdk | 149,946–149,974 | 17 |  |
-| jdk-pinned | 149,938–149,951 | 17 |  |
+| mpsc | 149,952–149,974 | 16 |  |
+| mpsc-affine | 149,971–149,975 | 16 |  |
+| mpsc-affine-pinned | 149,968–149,969 | 16 |  |
+| jdk | 149,976–149,978 | 17 |  |
 
 From the files of each run, in runs/. req/s: the `throughput` line of its console. GCs: the Pause
 lines of its GC log. req/s and GCs: the lowest and the highest of r1 and r2. A run is not a measurement when its console
@@ -119,12 +110,10 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | scheduler | instructions/req | IPC | cycles per instruction | cycles/req | instructions | cycles | requests | note |
 |---|---|---|---|---|---|---|---|---|
-| mpsc | 249,493 | 1.45 | 0.69 | 171,493 | 523,934,324,551 | 360,136,258,137 | 2,100,000 |  |
-| mpsc-affine | 259,215 | 1.87 | 0.54 | 138,760 | 544,351,418,705 | 291,396,552,252 | 2,100,000 |  |
-| mpsc-pinned | 262,865 | 1.62 | 0.62 | 162,699 | 552,017,446,518 | 341,668,002,454 | 2,100,000 |  |
-| mpsc-affine-pinned | 250,949 | 1.89 | 0.53 | 132,841 | 526,993,407,528 | 278,966,670,985 | 2,100,000 |  |
-| jdk | 288,664 | 1.25 | 0.80 | 230,955 | 606,193,668,384 | 485,005,478,041 | 2,100,000 |  |
-| jdk-pinned | 274,520 | 1.22 | 0.82 | 224,154 | 576,491,234,758 | 470,722,391,627 | 2,100,000 |  |
+| mpsc | 258,288 | 1.57 | 0.64 | 164,802 | 542,405,426,132 | 346,084,778,281 | 2,100,000 |  |
+| mpsc-affine | 257,702 | 1.93 | 0.52 | 133,674 | 541,173,655,343 | 280,715,462,047 | 2,100,000 |  |
+| mpsc-affine-pinned | 262,745 | 1.98 | 0.50 | 132,530 | 551,765,015,113 | 278,312,647,307 | 2,100,000 |  |
+| jdk | 288,068 | 1.25 | 0.80 | 229,721 | 604,943,258,558 | 482,414,241,038 | 2,100,000 |  |
 
 ```
 instructions/req       = instructions / requests
@@ -142,12 +131,10 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | scheduler | other L3 | DRAM | Load Operations | Load Remote HITM | Load DRAM | note |
 |---|---|---|---|---|---|---|
-| mpsc | 2.02% | 0.28% | 35,876 | 723 | 99 |  |
-| mpsc-affine | 1.05% | 0.10% | 30,826 | 324 | 31 |  |
-| mpsc-pinned | 1.88% | 0.21% | 34,941 | 658 | 74 |  |
-| mpsc-affine-pinned | 1.13% | 0.11% | 31,668 | 359 | 34 |  |
-| jdk | 1.83% | 0.18% | 43,342 | 792 | 76 |  |
-| jdk-pinned | 2.06% | 0.23% | 44,184 | 912 | 102 |  |
+| mpsc | 1.90% | 0.17% | 35,175 | 667 | 60 |  |
+| mpsc-affine | 1.04% | 0.08% | 31,852 | 332 | 26 |  |
+| mpsc-affine-pinned | 1.09% | 0.09% | 30,956 | 337 | 29 |  |
+| jdk | 1.94% | 0.18% | 43,176 | 839 | 78 |  |
 
 ```
 other L3 = Load Remote HITM / Load Operations
@@ -167,18 +154,14 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | scheduler | run | kept up with req/s | cpu µs/req | p99 µs | missed req/s | achieved req/s | p99 µs |
 |---|---|---|---|---|---|---|---|
-| mpsc | r1 | 290,000 | 34.37 | 262.1 | 310,000 | 308,046 | 43974.7 |
-| mpsc | r2 | 310,000 | 32.13 | 22118.4 | 330,000 | 311,482 | 50298.9 |
-| mpsc-affine | r1 | 390,000 | 25.48 | 9527.3 | 410,000 | 409,052 | 33308.7 |
-| mpsc-affine | r2 | 390,000 | 25.56 | 423.2 | 410,000 | 409,790 | 18726.9 |
-| mpsc-pinned | r1 | 310,000 | 32.17 | 590.3 | 330,000 | 313,907 | 48791.6 |
-| mpsc-pinned | r2 | 310,000 | 32.17 | 945.7 | 330,000 | 313,831 | 56623.1 |
-| mpsc-affine-pinned | r1 | 430,000 | 23.24 | 1387.5 | 450,000 | 423,764 | 95027.2 |
-| mpsc-affine-pinned | r2 | 430,000 | 23.22 | 766.5 | 450,000 | 435,529 | 90112.0 |
-| jdk | r1 | 350,000 | 28.55 | 10911.7 | 370,000 | 364,198 | 25264.1 |
-| jdk | r2 | 350,000 | 28.55 | 8740.9 | 370,000 | 362,332 | 18726.9 |
-| jdk-pinned | r1 | 350,000 | 28.54 | 4935.7 | 370,000 | 369,934 | 10682.4 |
-| jdk-pinned | r2 | 350,000 | 28.55 | 4673.5 | 370,000 | 369,936 | 13156.4 |
+| mpsc | r1 | 310,000 | 32.16 | 1058.8 | 330,000 | 312,922 | 54558.7 |
+| mpsc | r2 | 310,000 | 32.16 | 791.0 | 330,000 | 316,214 | 49152.0 |
+| mpsc-affine | r1 | 390,000 | 25.36 | 15671.3 | 410,000 | 409,876 | 4362.2 |
+| mpsc-affine | r2 | 370,000 | 26.77 | 4370.4 | 390,000 | 389,271 | 27672.6 |
+| mpsc-affine-pinned | r1 | 430,000 | 23.23 | 671.2 | 450,000 | 437,213 | 89260.0 |
+| mpsc-affine-pinned | r2 | 450,000 | 22.20 | 1743.9 | 470,000 | 440,915 | 90112.0 |
+| jdk | r1 | 350,000 | 28.52 | 5566.5 | 370,000 | 369,938 | 9592.8 |
+| jdk | r2 | 330,000 | 30.23 | 4159.5 | 350,000 | 349,660 | 9764.9 |
 
 From the console of each ramp run, runs/servlet-r<n>-ramp-<scheduler>.out: from 150000 req/s,
 20000 req/s more at each step, 10s measured, until a step is not kept up with.

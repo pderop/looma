@@ -1,7 +1,7 @@
 # User benchmark
 
 ```
-date         2026-11-17 05:50:20 +0000
+date         2026-11-22 04:25:35 +0000
 host         gabuzo-amd, Linux 7.0.0-43-generic
 cpu model    AMD Ryzen 9 9950X 16-Core Processor
 turbo        off
@@ -11,14 +11,15 @@ carriers     CPUs 2-7,10-13
 clients      CPUs 0,1,16,17
 backend      CPUs 8,9,14,15,24,25,30,31, 8 reactors, 8 connections per pool
 heap         2g, G1; the epsilon runs 12g, Epsilon
-command      scripts/bench-user.sh
+command      scripts/bench-user.sh --users-per-group 8000,200000 --depth 256 --rate 150000 --step 20000 --out bench/user-noaff-20261122-013751
 ```
 
 ## The runs
 
 What the benchmark is: [benchmark-user.md](../../../benchmark-user.md).
 
-150000 req/s. Each group has 8 backend connections. The cases, by users per group:
+150000 req/s. Each group has 8 backend connections.
+The cases, by users per group:
 
 - small: 8000 users per group, about 640 KiB per group.
 - big: 200000 users per group, about 16 MiB per group.
@@ -36,7 +37,7 @@ seconds for the late answers, then 3 seconds to go up to the next rate.
 - Open loop: the clients send at a fixed rate. A latency is from the planned send time of a
   request to its answer. cpu µs/req is the server's: the process minus the clients.
 - Each carrier has a core to itself: the script refuses two carrier CPUs on one core.
-- The schedulers: mpsc, jdk.
+- The schedulers: mpsc.
 - The clients are pinned to their own CPUs.
 - The JDK's poller mode is not set. On Linux, the JDK then uses mode 4 under the MPSC scheduler (one epoll per carrier), and mode 2 under jdk (pollers that run as virtual threads).
 - Heap: -Xms2g -Xmx2g -XX:+AlwaysPreTouch, G1, and a GC log per run. The epsilon run:
@@ -52,8 +53,7 @@ seconds for the late answers, then 3 seconds to go up to the next rate.
 
 | scheduler | small, cpu µs/req | small, max req/s | small, max req/s with p99 < 1 ms | big, cpu µs/req | big, max req/s | big, max req/s with p99 < 1 ms |
 |---|---|---|---|---|---|---|
-| mpsc | 29.86 | 830k/850k | 690k/690k | 64.97 | 150k/190k | none/none |
-| jdk | 40.58 | 650k/690k | 510k/510k | 64.41 | 150k/150k | none/none |
+| mpsc | 29.29 | 870k/830k | 770k/750k | 64.41 | 190k/190k | none/none |
 
 cpu µs/req at depth 256, the mean of r1 and r2, as in In short.
 max req/s: the highest rate kept up with by the ramp of each round at depth 256, r1/r2 ...: the
@@ -66,20 +66,15 @@ lines of its console, step by step. none: the p99 of the first step is already a
 
 - mpsc: the JDK's MPSC scheduler, **no carrier pinned** and **no affinity**: an actor can run
   on any carrier (`Carriers.mpsc(n)`).
-- jdk: the JDK's default scheduler, **a ForkJoinPool** (`Carriers.builtin(n)`).
 
 ## In short
 
 | case | scheduler | depth | cpu µs/req | cpu range | vs jdk | p50 µs | p99 µs | p99.9 µs | migrations | backend CPUs |
 |---|---|---|---|---|---|---|---|---|---|---|
-| small | mpsc | 256 | 29.86 | 29.77–29.94 | -26.4% | 37–38 | 85–87 | 139–149 | 43.9% | 0.86 |
-| small | jdk | 256 | 40.58 | 40.49–40.67 |  | 39 | 87–91 | 968–2,482 | 63.5% | 0.82–0.83 |
-| small | mpsc | 0 | 14.37 | 14.27–14.47 | -49.5% | 17 | 24–25 | 29–30 | 34.4% | 0.88–0.91 |
-| small | jdk | 0 | 28.44 | 28.36–28.51 |  | 21–23 | 30 | 722–1,053 | 83.9% | 0.81 |
-| big | mpsc | 256 | 64.97 | 64.70–65.23 | +0.9% | 299–366 | 2,018–3,426 | 10,977–59,015 | 4.2% | 0.79–0.80 |
-| big | jdk | 256 | 64.41 | 64.20–64.63 |  | 797–1,029 | 20,890–33,587 | 66,847–100,139 | 3.8% | 0.72–0.76 |
-| big | mpsc | 0 | 14.50 | 14.43–14.56 | -51.3% | 16–17 | 24 | 29 | 42.8% | 0.87–0.89 |
-| big | jdk | 0 | 29.74 | 28.67–30.81 |  | 22 | 30–31 | 50–52 | 84.5% | 0.81–0.83 |
+| small | mpsc | 256 | 29.29 | 29.03–29.55 |  | 37 | 85–86 | 120–131 | 37.0% | 0.85–0.88 |
+| small | mpsc | 0 | 14.10 | 14.05–14.15 |  | 16 | 23 | 27 | 42.6% | 0.88–0.89 |
+| big | mpsc | 256 | 64.41 | 64.33–64.49 |  | 275–288 | 1,258–1,489 | 3,258–7,037 | 5.7% | 0.78–0.79 |
+| big | mpsc | 0 | 13.60 | 13.48–13.72 |  | 16–17 | 23–25 | 27–28 | 22.2% | 0.89–0.90 |
 
 ```
 vs jdk = cpu µs/req / cpu µs/req of jdk, same case and depth, - 1
@@ -99,14 +94,10 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | case | scheduler | depth | req/s | GCs | live StackChunks | note |
 |---|---|---|---|---|---|---|
-| small | mpsc | 256 | 150,002 | 5 | 21 → 21 |  |
-| small | jdk | 256 | 150,003–150,004 | 8 | 27 → 26 |  |
-| small | mpsc | 0 | 150,001 | 5 |  |  |
-| small | jdk | 0 | 149,999–150,002 | 8–9 |  |  |
-| big | mpsc | 256 | 149,996–150,015 | 7 | 47 → 52 |  |
-| big | jdk | 256 | 149,935–150,043 | 7–8 | 149 → 38 |  |
-| big | mpsc | 0 | 150,000–150,002 | 6–7 |  |  |
-| big | jdk | 0 | 150,002 | 9–10 |  |  |
+| small | mpsc | 256 | 149,999 | 5–6 | 23 → 21 |  |
+| small | mpsc | 0 | 149,999–150,000 | 6 |  |  |
+| big | mpsc | 256 | 149,997–150,009 | 7 | 30 → 38 |  |
+| big | mpsc | 0 | 149,999–150,000 | 6–7 |  |  |
 
 From the files of each run, in runs/. req/s: the `throughput` line of its console. GCs: the Pause
 lines of its GC log, less the full GCs of the StackChunk counts. live StackChunks: the
@@ -119,10 +110,8 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | case | scheduler | instructions/req | IPC | cycles per instruction | cycles/req | instructions | cycles | requests | note |
 |---|---|---|---|---|---|---|---|---|---|
-| small | mpsc | 71,274 | 0.58 | 1.72 | 122,368 | 149,675,485,545 | 256,971,901,472 | 2,100,000 |  |
-| small | jdk | 125,190 | 0.74 | 1.35 | 168,410 | 262,899,678,278 | 353,660,865,449 | 2,100,000 |  |
-| big | mpsc | 53,348 | 0.19 | 5.25 | 280,268 | 112,030,640,445 | 588,563,442,840 | 2,100,000 |  |
-| big | jdk | 56,715 | 0.21 | 4.81 | 273,076 | 119,102,023,444 | 573,460,035,811 | 2,100,000 |  |
+| small | mpsc | 67,977 | 0.55 | 1.81 | 122,987 | 142,750,982,865 | 258,272,138,324 | 2,100,000 |  |
+| big | mpsc | 50,845 | 0.18 | 5.48 | 278,469 | 106,773,767,836 | 584,785,305,844 | 2,100,000 |  |
 
 ```
 instructions/req       = instructions / requests
@@ -140,10 +129,8 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | case | scheduler | migrations | other L3 | DRAM | Load Operations | Load Remote HITM | Load DRAM | note |
 |---|---|---|---|---|---|---|---|---|
-| small | mpsc | 43.8% | 2.85% | 0.14% | 37,421 | 1,065 | 52 |  |
-| small | jdk | 62.7% | 2.42% | 0.33% | 43,142 | 1,046 | 142 |  |
-| big | mpsc | 3.4% | 0.48% | 6.01% | 59,719 | 286 | 3,590 |  |
-| big | jdk | 3.8% | 0.74% | 7.07% | 51,257 | 380 | 3,626 |  |
+| small | mpsc | 29.5% | 3.00% | 0.15% | 38,376 | 1,153 | 59 |  |
+| big | mpsc | 5.2% | 0.60% | 6.03% | 60,279 | 359 | 3,633 |  |
 
 ```
 other L3 = Load Remote HITM / Load Operations
@@ -165,10 +152,8 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | case | scheduler | walk cycles/req | walk cycles | requests | note |
 |---|---|---|---|---|---|
-| small | mpsc | 68,788 | 144,454,574,608 | 2,100,000 |  |
-| small | jdk | 67,458 | 141,661,659,509 | 2,100,000 |  |
-| big | mpsc | 243,295 | 510,918,452,973 | 2,100,000 |  |
-| big | jdk | 239,402 | 502,744,242,882 | 2,100,000 |  |
+| small | mpsc | 67,816 | 142,413,928,417 | 2,100,000 |  |
+| big | mpsc | 246,469 | 517,585,799,821 | 2,100,000 |  |
 
 ```
 walk cycles/req = walk cycles / requests
@@ -185,10 +170,8 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | case | scheduler | cpu µs/req G1 | cpu µs/req Epsilon | difference | heap used | note |
 |---|---|---|---|---|---|---|
-| small | mpsc | 29.86 | 29.93 | +0.07 | 5,417 MiB |  |
-| small | jdk | 40.58 | 40.67 | +0.09 | 8,119 MiB |  |
-| big | mpsc | 64.97 | 66.02 | +1.05 | 5,231 MiB |  |
-| big | jdk | 64.41 | 65.46 | +1.05 | 6,705 MiB |  |
+| small | mpsc | 29.29 | 28.93 | -0.36 | 5,065 MiB |  |
+| big | mpsc | 64.41 | 65.79 | +1.38 | 5,582 MiB |  |
 
 ```
 difference = cpu µs/req Epsilon - cpu µs/req G1
@@ -204,14 +187,10 @@ Step by step: [Where the numbers come from](../../campaigns.md#where-the-numbers
 
 | case | scheduler | run | kept up with req/s | cpu µs/req | p99 µs | missed req/s | achieved req/s | p99 µs |
 |---|---|---|---|---|---|---|---|---|
-| small | mpsc | r1 | 830,000 | 12.01 | 1891.3 | 850,000 | 849,890 | 6189.1 |
-| small | mpsc | r2 | 850,000 | 11.75 | 1810.4 | 870,000 | 869,757 | 7503.9 |
-| small | jdk | r1 | 650,000 | 15.22 | 9093.1 | 670,000 | 669,927 | 15786.0 |
-| small | jdk | r2 | 690,000 | 14.45 | 7852.0 | 710,000 | 708,863 | 15278.1 |
-| big | mpsc | r1 | 150,000 | 65.08 | 4689.9 | 170,000 | 169,951 | 14802.9 |
-| big | mpsc | r2 | 190,000 | 52.47 | 5472.3 | 210,000 | 195,004 | 204210.2 |
-| big | jdk | r1 | 150,000 | 64.00 | 10420.2 | 170,000 | 169,624 | 90505.2 |
-| big | jdk | r2 | 150,000 | 64.58 | 25100.3 | 170,000 | 169,866 | 35782.7 |
+| small | mpsc | r1 | 870,000 | 11.47 | 3467.3 | 890,000 | 888,631 | 12083.2 |
+| small | mpsc | r2 | 830,000 | 12.00 | 2678.8 | 850,000 | 849,945 | 7163.9 |
+| big | mpsc | r1 | 190,000 | 52.55 | 18382.8 | 210,000 | 201,636 | 134021.1 |
+| big | mpsc | r2 | 190,000 | 52.66 | 47251.5 | 210,000 | 185,780 | 207749.1 |
 
 From the console of each ramp run, at depth 256, runs/<case>-r<n>-ramp-<scheduler>-256.out: from 150000 req/s,
 20000 req/s more at each step, 10s measured, until a step is not kept up with.

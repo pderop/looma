@@ -24,6 +24,20 @@ the JVM's CPU minus theirs. One piece of client work stays on the server: the ac
 client's future on its carrier. The client only takes the time there, and hands the request back
 to its own thread.
 
+### A skewed load
+
+By default, each request picks its key at random: a user, or a session. Each key goes to one
+actor: a group of the user benchmark, a container of the servlet one. Actor i starts on carrier
+i % carriers: one per carrier, or several with the servlet's `--containers`. So each one gets the
+same share of the requests.
+
+With `--hot-carrier <pct>`, the load is skewed. The actors of carrier 0 get pct % of the requests.
+The other actors share the rest. pct is more than the even share of a carrier, 100 / carriers.
+With 10 carriers, 20 containers and `--hot-carrier 50`: containers 0 and 10 start on carrier 0 and
+get 25% each, the 18 others 2.8% each. The keys, their
+data and the actors stay the same: only the choice of the key changes. The `skew` line of the
+console says it.
+
 ## The runs
 
 **One run** = one JVM, one scheduler. 10 seconds of warm-up, then 20 seconds measured. Each server
@@ -74,8 +88,9 @@ with each carrier pinned to one CPU by the script (Linux only).
 `--schedulers` picks them, e.g. `scripts/bench-user.sh --schedulers mpsc,jdk`. The default depends
 on the build of the JDK ([the two builds](../mpsc-scheduler/README.md#the-jdk)):
 
-- `pr227` has `Thread.Affinity`: all six.
-- `noaff` has none: `mpsc` and `jdk`. It also runs `jdk-pinned` if asked. The scripts refuse
+- `pr227` has `Thread.Affinity`: `mpsc`, `mpsc-affine`, `mpsc-affine-pinned` and `jdk`. It also
+  runs `mpsc-pinned` and `jdk-pinned` if asked.
+- `noaff` has none: `mpsc`. It also runs `jdk` and `jdk-pinned` if asked. The scripts refuse
   the others before any run. There, with `mpsc`, the mailbox thread of an idle actor waits for the
   next message ([the keep-alive](schedulers.md#the-keep-alive)).
 
@@ -144,10 +159,15 @@ scripts/bench-user.sh                   # the user benchmark; CPU lists of the A
 scripts/bench-servlet.sh                # the servlet benchmark
 scripts/publish.sh bench/user-<date>-<time> bench/servlet-<date>-<time>
                                         # publish the runs, of one JDK or more: -> docs/results/<jdk>/
+scripts/bench-user.sh --hot-carrier 50  # the skewed load: the actors that start on carrier 0 get half the requests
+scripts/bench-servlet.sh --hot-carrier 50
+scripts/bench-full.sh                   # all the benchmarks of results/summary.md, both builds
+scripts/publish.sh bench/*              # publish the newest run of each benchmark
 ```
 
 Each script writes `bench/user-<date>-<time>/` or `bench/servlet-<date>-<time>/` (`--out` changes
-it): its `summary.md` and the files behind each number. What `publish.sh` does with them:
+it): its `summary.md` and the files behind each number. With `--hot-carrier`, `bench/user-skewed-<date>-<time>/`
+or `bench/servlet-skewed-<date>-<time>/`: they are published apart. What `publish.sh` does with them:
 [`results/campaigns.md`](results/campaigns.md).
 
 Each script first runs [`scripts/lib/linux-setup.sh`](../scripts/lib/linux-setup.sh) with sudo:
@@ -219,6 +239,10 @@ Elsewhere than Linux nothing is pinned: a smoke test of the script, not a measur
 - **`taskset` on the JVM:** gives the carriers their CPU list, and keeps the GC and the JIT on the
   carrier CPUs, away from the clients and the backend.
 - **`jdk-pinned`:** tells whether pinning alone makes the difference.
+- **The skewed load:** in a real server, some keys are much busier than others. A pool cannot
+  spread them: all the requests of a key go to its actor, which holds its data. So the carriers of
+  the busy actors do more. An actor that stays on its carrier cannot leave a busy one; a scheduler
+  that moves actors can. The skewed load shows what each scheduler does then.
 - **A fair pool of connections:** a connection given back goes straight to the call that has waited
   the longest. So a call that arrives later cannot take it first.
 - **The connection given back last:** the connections in use stay in the caches.

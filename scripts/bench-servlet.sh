@@ -5,6 +5,7 @@
 #
 #   scripts/bench-servlet.sh                        # the CPUs of an AMD Ryzen 9 9950X
 #   scripts/bench-servlet.sh --step 10000           # smaller steps in the ramp
+#   scripts/bench-servlet.sh --hot-carrier 50       # a skewed load: the actors that start on carrier 0 get half the requests
 #
 # Prerequisites: the Loom JDK selected (`sdk env`) and the project built. On Linux, it first runs
 # scripts/lib/linux-setup.sh, which needs sudo.
@@ -21,6 +22,7 @@ PRODUCTS=10000
 CART_MAX=20
 RECENT_MAX=20
 BACKEND_WARMUP=30
+CONTAINERS=
 
 usage() {
 	echo "Usage: scripts/bench-servlet.sh [options]"
@@ -30,6 +32,8 @@ usage() {
 The servlet benchmark first warms its backend with a throwaway JVM. Its warm-up is 10 seconds, the
 rate going up from a tenth of --rate.
 
+  --containers <n>         The containers, a multiple of the carriers: container i starts on carrier
+                           i % carriers. Default: one per carrier.
   --sessions <n>           Session ids the requests pick from. Default: 100000.
   --products <n>           Products the requests pick from. Default: 10000.
   --cart-max <n>           Lines a cart keeps. Default: 20.
@@ -45,6 +49,7 @@ bench_flag() {
 
 bench_option() {
 	case $1 in
+		--containers) CONTAINERS=$2 ;;
 		--sessions) SESSIONS=$2 ;;
 		--products) PRODUCTS=$2 ;;
 		--cart-max) CART_MAX=$2 ;;
@@ -59,11 +64,13 @@ bench_args() {
 	local s=$1 mode=$3
 	main=io.github.pderop.looma.examples.servlet.Main
 	args+=(-Dservlet.scheduler="${s/jdk-pinned/jdk}" -Dservlet.carriers="${#CARRIER_CPUS[@]}"
+		-Dservlet.containers="$CONTAINERS"
 		-Dservlet.rate="$RATE" -Dservlet.clientCpus="$CLIENT_LIST" -Dservlet.backendPort=8081
 		-Dservlet.backendPid="$BACKEND_PID"
 		-Dservlet.clkTck="$CLK" -Dservlet.sessions="$SESSIONS" -Dservlet.products="$PRODUCTS"
 		-Dservlet.cartMax="$CART_MAX" -Dservlet.recentMax="$RECENT_MAX" -Dservlet.warmupSeconds="$WARMUP"
-		-Dservlet.measureSeconds="$MEASURE" -Dservlet.settleSeconds="$SETTLE_SECONDS")
+		-Dservlet.measureSeconds="$MEASURE" -Dservlet.settleSeconds="$SETTLE_SECONDS"
+		-Dservlet.hotCarrier="$HOT_CARRIER")
 	[ "$mode" != ramp ] ||
 		args+=(-Dservlet.step="$STEP" -Dservlet.maxRate="$MAX_RATE" -Dservlet.stepSeconds="$STEP_SECONDS")
 	# The warm-up of the backend: a ramp of one step at the rate, as long as asked.
@@ -82,8 +89,16 @@ CASES=(servlet:0)
 CASE_DEPTH=
 [ "$SUMMARY_ONLY" = 0 ] || { resummarize; exit 0; }
 
+# Called by setup, before the output folder exists.
+bench_checks() {
+	((${#CARRIER_CPUS[@]} >= 2)) || die "the servlet benchmark needs at least 2 carrier CPUs: its container pool has a selector"
+	CONTAINERS=${CONTAINERS:-${#CARRIER_CPUS[@]}}
+	[[ $CONTAINERS =~ ^[0-9]+$ ]] && ((10#$CONTAINERS > 0 && 10#$CONTAINERS % ${#CARRIER_CPUS[@]} == 0)) ||
+		die "--containers must be a multiple of the carriers (${#CARRIER_CPUS[@]}), got '$CONTAINERS'"
+	CONTAINERS=$((10#$CONTAINERS))
+	((HOT_CARRIER == 0 || SESSIONS >= CONTAINERS)) || die "--hot-carrier needs at least one session per container: --sessions"
+}
 setup
-((${#CARRIER_CPUS[@]} >= 2)) || die "the servlet benchmark needs at least 2 carrier CPUs: its container pool has a selector"
 BACKEND_MAIN=io.github.pderop.looma.examples.servlet.ServletBackend
 BACKEND_ARGS=(-Xms1g -Xmx1g -XX:+AlwaysPreTouch -Xlog:gc:file="$RUNS/backend.gc.log"
 	-Dservlet.backendPort=8081 -Dservlet.backendThreads="$BACKEND_THREADS")
@@ -124,7 +139,10 @@ stop_backend
 	echo
 	echo "$RATE req/s. $SESSIONS sessions and $PRODUCTS products; a cart keeps up to $CART_MAX lines, a profile"
 	echo "up to $RECENT_MAX viewed products. Each request makes two backend calls: its fraud check, then its servlet's."
-	echo "Each container has $CONNECTIONS backend connections, shared by its two servlets and its fraud detector: at most $((${#CARRIER_CPUS[@]} * CONNECTIONS)) backend calls at once. The backend is one JVM for all the runs, with $BACKEND_THREADS reactors,"
+	((CONTAINERS == ${#CARRIER_CPUS[@]})) ||
+		echo "$CONTAINERS containers, $((CONTAINERS / ${#CARRIER_CPUS[@]})) per carrier: container i starts on carrier i % ${#CARRIER_CPUS[@]}."
+	skew_lines containers "$CONTAINERS"
+	echo "Each container has $CONNECTIONS backend connections, shared by its two servlets and its fraud detector: at most $((CONTAINERS * CONNECTIONS)) backend calls at once. The backend is one JVM for all the runs, with $BACKEND_THREADS reactors,"
 	echo "warmed first by a throwaway JVM at $RATE req/s for ${BACKEND_WARMUP} seconds (runs/servlet-backend-warmup-*.out)."
 	echo
 	rounds_lines "" "a run with perf c2c and one with perf stat" "the rate going up from a tenth of $RATE req/s"

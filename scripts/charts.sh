@@ -11,22 +11,24 @@
 #   user-small-max.svg   user benchmark, case small, depth 256: the max rate of each ramp
 #   user-big-max.svg     the same, case big
 #   servlet-max.svg      servlet benchmark: the same
-#   user-max.csv, servlet-max.csv   the numbers of these charts
+#   servlet-skewed-max.svg   the same, servlet benchmark with a skewed load
+#   user-max.csv, servlet-max.csv, servlet-skewed-max.csv   the numbers of these charts
 #
-#   p99-150k.svg         the p99 of each run at 150k req/s: user small, servlet, user big
-#   cpu-150k.svg         the same runs: the cpu µs/req
-#   migrations-150k.svg  the same runs: the migrations
-#   cpu-depth0.svg       the same at depth 0: the cpu µs/req, user small and big
-#   gcs-150k.svg         the GC pauses of each run at 150k req/s: user small, servlet
-#   measure-150k.csv     the numbers of these charts
-#   walk-l3.svg          the walk cycles/req and the loads from another L3, from the summaries
-#   walk-l3.csv          the numbers of this chart
-#   stackchunks.svg      the live StackChunks of the c2c run of user small
+#   <bench>-p99-measure.svg   the p99 of each measure (r1, r2); user: cases small and big
+#   <bench>-cpu-measure.svg   the same runs: the cpu µs/req
+#   <bench>-migrations.svg    the same runs: the migrations
+#   <bench>-gcs.svg           the same runs: the GC pauses; user: case small
+#   user-cpu-depth0.svg       the same at depth 0: the cpu µs/req, user small and big
+#   measure.csv               the numbers of these charts
+#   user-walk-l3.svg     the walk cycles/req and the loads from another L3, from the summaries
+#   servlet-l3.svg       the loads from another L3
+#   walk-l3.csv          the numbers of these charts
+#   user-stackchunks.svg the live StackChunks of the c2c run of user small
 #   stackchunks.csv      the numbers of this chart
 #
 # The charts by step have one line per scheduler and JDK: at each step, the mean of r1 and r2. A
 # line ends at the last step both ramps kept up with. Each bar is one ramp: its max req/s, and its
-# max req/s with p99 < 1 ms. Each dot is one scheduler: the mean of its runs at 150k req/s. The lines show the schedulers of SERIES, the bars and the dots those of
+# max req/s with p99 < 1 ms. Each dot is one scheduler: the mean of its measures. The lines show the schedulers of SERIES, the bars and the dots those of
 # BAR_SERIES. scripts/publish.sh runs it after each publish.
 #
 #   scripts/charts.sh
@@ -123,7 +125,7 @@ maxima() {
 maxcsv() {
 	local bench=$1 jdk sch color c r file cases
 	echo "jdk,scheduler,color,case,run,max req/s,max req/s p99 < 1 ms"
-	[ "$bench" = user ] && cases='small big' || cases=servlet
+	case $bench in user) cases='small big' ;; *) cases=servlet ;; esac
 	for c in $cases; do
 		while read -r jdk sch color; do
 			[ -n "$jdk" ] || continue
@@ -131,6 +133,7 @@ maxcsv() {
 				case $bench in
 					user) file=$RESULTS/$jdk/user/runs/$c-r$r-ramp-$sch-256.out ;;
 					servlet) file=$RESULTS/$jdk/servlet/runs/servlet-r$r-ramp-$sch.out ;;
+					servlet-skewed) file=$RESULTS/$jdk/servlet-skewed/runs/servlet-r$r-ramp-$sch.out ;;
 				esac
 				[ -f "$file" ] || break
 				echo "$jdk,$sch,$color,$c,r$r,$(maxima "$file")"
@@ -305,7 +308,7 @@ svg() {
 		}' "$1"
 }
 
-# measurecsv: one row per run at 150k req/s, r1, r2 and so on while there is one, for each group
+# measurecsv: one row per measure, r1, r2 and so on while there is one, for each group
 # of BAR_SERIES and each case: jdk,scheduler,color,case,run,p99 us,cpu us/req,migrations %,GCs.
 # The cases: small, servlet, big at depth 256; small0, big0 at depth 0. A run that is not a
 # measurement, as the summaries say it, has empty values. So has "migrations unknown". GCs: the
@@ -528,32 +531,47 @@ svg "$OUT/servlet.csv" p99 "Servlet benchmark: p99 by rate" "latency from the pl
 svg "$OUT/servlet.csv" cpu "Servlet benchmark: CPU per request by rate" "the server process minus the clients" >"$OUT/servlet-cpu.svg"
 maxcsv user >"$OUT/user-max.csv"
 maxcsv servlet >"$OUT/servlet-max.csv"
-bars "$OUT/user-max.csv" small "User benchmark: max rate" "case small, depth 256; each ramp from 150k req/s, 20k more at each step" >"$OUT/user-small-max.svg"
-bars "$OUT/user-max.csv" big "User benchmark: max rate" "case big, depth 256; each ramp from 150k req/s, 20k more at each step" >"$OUT/user-big-max.svg"
-bars "$OUT/servlet-max.csv" servlet "Servlet benchmark: max rate" "each ramp from 150k req/s, 20k more at each step" >"$OUT/servlet-max.svg"
+maxcsv servlet-skewed >"$OUT/servlet-skewed-max.csv"
+bars "$OUT/user-max.csv" small "User benchmark: max rate" "case small, depth 256" >"$OUT/user-small-max.svg"
+bars "$OUT/user-max.csv" big "User benchmark: max rate" "case big, depth 256" >"$OUT/user-big-max.svg"
+bars "$OUT/servlet-max.csv" servlet "Servlet benchmark: max rate" "10 containers, one per carrier" >"$OUT/servlet-max.svg"
+bars "$OUT/servlet-skewed-max.csv" servlet "Servlet benchmark, skewed load: max rate" "20 containers; the 2 that start on carrier 0 get half the requests" >"$OUT/servlet-skewed-max.svg"
 echo "wrote $OUT: user-p99.svg user-cpu.svg servlet-p99.svg servlet-cpu.svg user.csv servlet.csv"
-echo "wrote $OUT: user-small-max.svg user-big-max.svg servlet-max.svg user-max.csv servlet-max.csv"
-measurecsv >"$OUT/measure-150k.csv"
-dots "$OUT/measure-150k.csv" 6 log "small servlet big" "user small|servlet|user big" "p99 at 150k req/s" "latency from the planned send time" "p99 at 150k req/s" \
-	"One dot per scheduler: the mean of its runs. Log scale; the darker line is 1 ms. A run that did not keep up is left out." >"$OUT/p99-150k.svg"
-dots "$OUT/measure-150k.csv" 7 lin:10 "small servlet big" "user small|servlet|user big" "CPU per request at 150k req/s" "the server process minus the clients" "cpu µs per request" \
-	"One dot per scheduler: the mean of its runs. A run that did not keep up is left out." >"$OUT/cpu-150k.svg"
-dots "$OUT/measure-150k.csv" 8 lin:25 "small servlet big" "user small|servlet|user big" "Migrations at 150k req/s" "servlet: the fraud detectors" "messages run on another carrier than the message before" \
-	"One dot per scheduler: the mean of its runs. One message in 64 of each actor is checked. A run that did not keep up is left out." >"$OUT/migrations-150k.svg"
-dots "$OUT/measure-150k.csv" 7 lin:10 "small0 big0" "user small, depth 0|user big, depth 0" "CPU per request with no work per actor" \
-	"depth 0: the actor does not walk its objects; at 150k req/s" "cpu µs per request" \
-	"One dot per scheduler: the mean of its runs. A run that did not keep up is left out." >"$OUT/cpu-depth0.svg"
-dots "$OUT/measure-150k.csv" 9 lin:5 "small servlet" "user small|servlet" "GCs at 150k req/s" \
+echo "wrote $OUT: user-small-max.svg user-big-max.svg servlet-max.svg servlet-skewed-max.svg user-max.csv servlet-max.csv servlet-skewed-max.csv"
+measurecsv >"$OUT/measure.csv"
+KEPT="A run that did not keep up is left out."
+# The charts of the measures, one set per benchmark: <bench>;<cases>;<titles>;<name>.
+while IFS=';' read -r b cases titles name; do
+	dots "$OUT/measure.csv" 6 log "$cases" "$titles" "$name benchmark: p99 at 150k" "latency from the planned send time" "p99" \
+		"One dot per scheduler: the mean of its runs. Log scale; the darker line is 1 ms. $KEPT" >"$OUT/$b-p99-measure.svg"
+	dots "$OUT/measure.csv" 7 lin:10 "$cases" "$titles" "$name benchmark: CPU per request at 150k" "the server process minus the clients" "cpu µs per request" \
+		"One dot per scheduler: the mean of its runs. $KEPT" >"$OUT/$b-cpu-measure.svg"
+	dots "$OUT/measure.csv" 8 lin:25 "$cases" "$titles" "$name benchmark: migrations at 150k" \
+		"$([ "$b" = servlet ] && echo "the fraud detectors" || echo "every actor")" "messages run on another carrier than the message before" \
+		"One dot per scheduler: the mean of its runs. One message in 64 of each actor is checked. $KEPT" >"$OUT/$b-migrations.svg"
+done <<'SETS'
+user;small big;user small|user big;User
+servlet;servlet;servlet;Servlet
+SETS
+dots "$OUT/measure.csv" 7 lin:10 "small0 big0" "user small, depth 0|user big, depth 0" "User benchmark: CPU per request with no work per actor" \
+	"depth 0: the actor does not walk its objects; at 150k" "cpu µs per request" \
+	"One dot per scheduler: the mean of its runs. $KEPT" >"$OUT/user-cpu-depth0.svg"
+dots "$OUT/measure.csv" 9 lin:5 small "user small" "User benchmark: GCs at 150k" \
 	"the GC pauses of each run, the full GCs of the StackChunk counts left out" "GC pauses per run" \
-	"One dot per scheduler: the mean of its runs. A run that did not keep up is left out." >"$OUT/gcs-150k.svg"
-echo "wrote $OUT: p99-150k.svg cpu-150k.svg migrations-150k.svg cpu-depth0.svg gcs-150k.svg measure-150k.csv"
+	"One dot per scheduler: the mean of its runs. $KEPT" >"$OUT/user-gcs.svg"
+dots "$OUT/measure.csv" 9 lin:5 servlet servlet "Servlet benchmark: GCs at 150k" \
+	"the GC pauses of each run" "GC pauses per run" \
+	"One dot per scheduler: the mean of its runs. $KEPT" >"$OUT/servlet-gcs.svg"
+echo "wrote $OUT: <bench>-p99-measure.svg <bench>-cpu-measure.svg <bench>-migrations.svg user-cpu-depth0.svg <bench>-gcs.svg measure.csv"
 walkcsv >"$OUT/walk-l3.csv"
-panels "$OUT/walk-l3.csv" "walk-small walk-big l3-small l3-servlet" "walk cycles/req|walk cycles/req|other L3|other L3" \
-	"user small|user big|user small|servlet" "Walk cycles and loads from another L3" \
-	"the walk: user benchmark, depth 256; other L3: the share of the sampled loads" \
-	"One bar per scheduler, each panel on its own axis from 0. Walk: the walk run. Other L3: the c2c run." >"$OUT/walk-l3.svg"
+panels "$OUT/walk-l3.csv" "walk-small walk-big l3-small" "walk cycles/req|walk cycles/req|other L3" \
+	"user small|user big|user small" "User benchmark: walk cycles and loads from another L3" \
+	"the walk: depth 256; other L3: the share of the sampled loads" \
+	"One bar per scheduler, each panel on its own axis from 0. Walk: the walk run. Other L3: the c2c run." >"$OUT/user-walk-l3.svg"
+panels "$OUT/walk-l3.csv" "l3-servlet" "other L3" "servlet" "Servlet benchmark: loads from another L3" \
+	"the share of the sampled loads" "One bar per scheduler. The c2c run." >"$OUT/servlet-l3.svg"
 chunkscsv >"$OUT/stackchunks.csv"
 panels "$OUT/stackchunks.csv" "chunks-after" "live StackChunks" "after the measure" \
-	"Live stacks of virtual threads" "user small, depth 256: the c2c run" \
-	"One bar per scheduler. The count during the warm-up is in stackchunks.csv." >"$OUT/stackchunks.svg"
-echo "wrote $OUT: walk-l3.svg walk-l3.csv stackchunks.svg stackchunks.csv"
+	"User benchmark: live stacks of virtual threads" "user small, depth 256: the c2c run" \
+	"One bar per scheduler. The count during the warm-up is in stackchunks.csv." >"$OUT/user-stackchunks.svg"
+echo "wrote $OUT: user-walk-l3.svg servlet-l3.svg walk-l3.csv user-stackchunks.svg stackchunks.csv"
