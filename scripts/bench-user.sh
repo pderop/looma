@@ -5,6 +5,7 @@
 #
 #   scripts/bench-user.sh                           # the CPUs of an AMD Ryzen 9 9950X
 #   scripts/bench-user.sh --users-per-group 8000    # the small case only
+#   scripts/bench-user.sh --hot-carrier 50          # a skewed load: the actors that start on carrier 0 get half the requests
 #
 # Prerequisites: the Loom JDK selected (`sdk env`) and the project built. On Linux, it first runs
 # scripts/lib/linux-setup.sh, which needs sudo.
@@ -67,7 +68,7 @@ bench_args() {
 	args+=(-Dbench.scheduler="${s/jdk-pinned/jdk}" -Dbench.carriers="${#CARRIER_CPUS[@]}"
 		-Dbench.rate="$RATE" -Dbench.clientCpus="$CLIENT_LIST" -Dbench.depth="$depth"
 		-Dbench.usersPerGroup="$CASE_USERS" -Dbench.warmupSeconds="$WARMUP" -Dbench.measureSeconds="$MEASURE"
-		-Dbench.backendPid="$BACKEND_PID" -Dbench.clkTck="$CLK")
+		-Dbench.backendPid="$BACKEND_PID" -Dbench.clkTck="$CLK" -Dbench.hotCarrier="$HOT_CARRIER")
 	[ "$mode" != c2c ] || args+=(-Dbench.stackChunks=true)
 	[ "$mode" != ramp ] || args+=(-Dbench.step="$STEP" -Dbench.maxRate="$MAX_RATE" -Dbench.stepSeconds="$STEP_SECONDS")
 }
@@ -136,7 +137,9 @@ stop_backend
 	echo
 	echo "What the benchmark is: [benchmark-user.md](../../benchmark-user.md)."
 	echo
-	echo "$RATE req/s. Each group has $CONNECTIONS backend connections. The cases, by users per group:"
+	echo "$RATE req/s. Each group has $CONNECTIONS backend connections."
+	skew_lines groups
+	echo "The cases, by users per group:"
 	echo
 	for c in "${CASES[@]}"; do
 		kib=$((${c#*:} * 82 / 1024))

@@ -6,7 +6,9 @@
 #
 #   scripts/publish.sh bench/user-20261110-061933 bench/servlet-20261110-091502
 #   scripts/publish.sh bench/user-* bench/servlet-*     # the runs of both JDKs
+#   scripts/publish.sh bench/*                           # the newest run of each benchmark
 #   scripts/publish.sh -n bench/user-20261110-061933    # dry run, one benchmark
+#   scripts/publish.sh bench/servlet-skewed-20261117-213738   # a skewed load (--hot-carrier)
 
 set -euo pipefail
 
@@ -24,18 +26,26 @@ scripts/bench-servlet.sh:
   runs/*.out, *.gc.log               the console and the GC log of each run
   runs/*-stat-*.csv                  the perf stat counts of each stat run
 
-into docs/results/<jdk>/user/ or docs/results/<jdk>/servlet/. The folder of each benchmark given
-is removed first; the other benchmark of the JDK, and the other JDKs, stay.
+into docs/results/<jdk>/<bench>/: user or servlet, or user-skewed or servlet-skewed for a run
+with a skewed load (--hot-carrier). The folder of each benchmark given is removed first; the other
+benchmarks of the JDK, and the other JDKs, stay.
 
 <jdk> is the name of the JDK build, from the `java` line of the summary: the part before the commit.
-"build 28-internal-noaff-<commit>" gives noaff. The runs may come from several JDKs, at
-most one user and one servlet run each. All must come from the same CPU as what stays published.
+"build 28-internal-noaff-<commit>" gives noaff. The runs may come from several JDKs. Of two
+runs of one benchmark on one JDK, the newer one is kept, by the date line of its summary. What
+is not a finished campaign is skipped: bench/* works. All must come from the same CPU as what
+stays published.
 
 Then it writes:
 
-  docs/results/<jdk>/summary.md      the At a glance of both benchmarks of the JDK, in one table
-  docs/results/summary.md            the parts between <!-- begin x --> and <!-- end x -->: the
-                                     tables of every JDK, and the notes of the charts
+  docs/results/<jdk>/summary.md      the date, build and kernel of each benchmark, then the At
+                                     a glance of both benchmarks of the JDK, in one table; those
+                                     of the skewed load in a second one
+
+A benchmark can be published alone: the others stay. A warning says when what stays comes from
+another commit of the same build, or another kernel.
+  docs/results/summary.md            the part between <!-- begin charts --> and
+                                     <!-- end charts -->: the notes of the charts
   docs/results/charts/               with scripts/charts.sh
 
 The perf data files are not copied: they are big, and only perf on the machine that made them can
@@ -70,25 +80,53 @@ jdk_of() {
 		sed -n 's/.*(build [^ ]*-internal-\([A-Za-z0-9._]*\)[-)].*/\1/p'
 }
 
+# build_of <summary>: the build of its java line, with its commit: 28-internal-noaff-<commit>.
+build_of() { sed -n 's/^java .*(build \([^ )]*\).*/\1/p' "$1" | head -1; }
+
+# kernel_of <summary>: "host   gabuzo-amd, Linux 7.0.0-43-generic" gives 7.0.0-43-generic.
+kernel_of() { sed -n 's/^host .*Linux //p' "$1" | head -1; }
+
+# date_of <summary>: "date         2026-11-17 04:58:54 +0000" gives 2026-11-17 04:58:54 +0000.
+date_of() { sed -n 's/^date *//p' "$1" | head -1; }
+
 # The benchmark and the JDK of each directory, from its summary.md. Absolute paths: the copies
-# below run from the project.
+# below run from the project. What is not a finished campaign is skipped, so bench/* works. Of two
+# runs of one benchmark on one JDK, the newer one is kept.
 DIRS=() BENCHES=() JDKS=() KEYS=() CPU=
 for d in "$@"; do
-	dir=$(cd "$d" 2>/dev/null && pwd) || die "no directory $d"
-	[ -f "$dir/summary.md" ] || die "no summary.md in $dir: did the run finish?"
+	[ -d "$d" ] || { echo "skipped $d: not a directory" >&2; continue; }
+	dir=$(cd "$d" && pwd)
+	[ -f "$dir/summary.md" ] || { echo "skipped $d: no summary.md, the run did not finish" >&2; continue; }
 	case $(head -1 "$dir/summary.md") in
 		"# User benchmark") b=user ;;
 		"# Servlet benchmark") b=servlet ;;
-		*) die "$dir/summary.md is not the summary of bench-user.sh or bench-servlet.sh" ;;
+		"# User benchmark, skewed load") b=user-skewed ;;
+		"# Servlet benchmark, skewed load") b=servlet-skewed ;;
+		*) echo "skipped $d: not a summary of bench-user.sh or bench-servlet.sh" >&2; continue ;;
 	esac
 	jdk=$(jdk_of "$dir/summary.md")
 	[ -n "$jdk" ] || die "no JDK name in the java line of $dir/summary.md"
+	k=-1
+	for ((i = 0; i < ${#KEYS[@]}; i++)); do [ "${KEYS[$i]}" != "$jdk/$b" ] || k=$i; done
+	if ((k >= 0)); then
+		old=${DIRS[$k]}
+		if [[ $(date_of "$dir/summary.md") > $(date_of "$old/summary.md") ]]; then
+			echo "skipped $old: $dir is a newer $b run of $jdk" >&2
+			DIRS[$k]=$dir
+		else
+			echo "skipped $dir: $old is a newer $b run of $jdk" >&2
+		fi
+		continue
+	fi
+	DIRS+=("$dir") BENCHES+=("$b") JDKS+=("$jdk") KEYS+=("$jdk/$b")
+done
+((${#DIRS[@]})) || die "no finished campaign given"
+# All the runs kept come from one CPU.
+for dir in "${DIRS[@]}"; do
 	cpu=$(cpu_of "$dir/summary.md")
 	[ -n "$cpu" ] || die "no cpu model in $dir/summary.md"
 	[ -n "$CPU" ] || CPU=$cpu
 	[ "$cpu" = "$CPU" ] || die "$dir ran on another CPU than ${DIRS[0]}"
-	[[ " ${KEYS[*]-} " != *" $jdk/$b "* ]] || die "two $b runs of $jdk: give one"
-	DIRS+=("$dir") BENCHES+=("$b") JDKS+=("$jdk") KEYS+=("$jdk/$b")
 done
 
 # The JDKs given, each once.
@@ -105,6 +143,15 @@ for f in "$ROOT/$RESULTS"/*/*/summary.md; do
 	[[ " ${KEYS[*]} " != *" $jdk/$b "* ]] || continue
 	[ "$(cpu_of "$f")" = "$CPU" ] ||
 		die "$RESULTS/$jdk/$b ran on another CPU: publish a new $b run of $jdk too, or remove it"
+	# A benchmark can be run again alone: what stays may come from another commit or kernel. Say so,
+	# and go on.
+	for i in "${!DIRS[@]}"; do
+		g=${DIRS[$i]}/summary.md
+		[ "${JDKS[$i]}" != "$jdk" ] || [ "$(build_of "$g")" = "$(build_of "$f")" ] ||
+			echo "warning: ${KEYS[$i]} is $(build_of "$g"), $RESULTS/$jdk/$b stays $(build_of "$f")" >&2
+		[ "$(kernel_of "$g")" = "$(kernel_of "$f")" ] ||
+			echo "warning: ${KEYS[$i]} ran on Linux $(kernel_of "$g"), $RESULTS/$jdk/$b stays on $(kernel_of "$f")" >&2
+	done
 done
 
 # copy <from> <to>: <from> a file of the run, <to> a name in DEST.
@@ -129,9 +176,12 @@ glance() {
 		# A column of the table: its label, where its values come from, and the column whose
 		# "not a measurement" empties it.
 		function add(label, b, sect, col, guard) { cols[++nc] = label; from[nc] = b SUBSEP sect SUBSEP col; by[nc] = guard }
+		# The benchmark, from the folder: user, servlet, user-skewed, servlet-skewed. Its base: user
+		# or servlet.
 		FNR == 1 { b = FILENAME; sub(/\/summary\.md$/, "", b); sub(/.*\//, "", b); benches[++nb] = b; sect = "" }
+		FNR == 1 { base[b] = b; sub(/-skewed$/, "", base[b]) }
 		/^## / { sect = $0; head = 0; next }
-		/^\|/ && (sect == "## At a glance" || (b == "servlet" && sect == "## In short")) {
+		/^\|/ && (sect == "## At a glance" || (base[b] == "servlet" && sect == "## In short")) {
 			n = split($0, f, "|")
 			if (trim(f[2]) ~ /^-+$/) next
 			if (!head) {
@@ -150,9 +200,9 @@ glance() {
 				b = benches[k]
 				for (i = 1; i <= count[b, g]; i++) {
 					c = name[b, g, i]
-					add(b == "user" ? "user " c : c, b, g, c)
+					add(base[b] == "user" ? "user " c : c, b, g, c)
 					# The p99 of the servlet benchmark, after its CPU.
-					if (b == "servlet" && c ~ /cpu/) add("servlet, p99 µs", b, "## In short", "p99 µs", c)
+					if (base[b] == "servlet" && c ~ /cpu/) add("servlet, p99 µs", b, "## In short", "p99 µs", c)
 				}
 			}
 			printf "| scheduler |"; for (i = 1; i <= nc; i++) printf " %s |", cols[i]; print ""
@@ -171,29 +221,56 @@ glance() {
 }
 
 
-# jdk_summary <jdk>: the summary.md of a JDK: the machine, from the header of its first summary
-# without its date, heap and command lines, then one table of both benchmarks, then the
-# schedulers.
-jdk_summary() {
-	local dest=$RESULTS/$1 benches=() files=() links= b
-	for b in user servlet; do
+# glance_section <title> <jdk> <bench>...: the table of glance, of the benchmarks of the JDK that
+# are published, and its notes. Nothing if none is.
+glance_section() {
+	local title=$1 dest=$RESULTS/$2 files=() links= servlet= b
+	shift 2
+	for b in "$@"; do
 		[ -f "$dest/$b/summary.md" ] || continue
-		benches+=("$b") files+=("$dest/$b/summary.md")
+		files+=("$dest/$b/summary.md")
 		links+="${links:+ and }[$b/summary.md]($b/summary.md)"
+		[[ $b != servlet* ]] || servlet=$b
 	done
-	echo "# Benchmarks, $1"
-	echo
-	awk '/^```/ { n++; print; if (n == 2) exit; next } n == 1 && !/^(date|heap|command) /' "${files[0]}"
-	echo
-	echo "## At a glance"
+	((${#files[@]} > 0)) || return 0
+	echo "## $title"
 	echo
 	glance "${files[@]}"
 	echo
 	echo "Each column is copied from the At a glance of $links, whose notes say how it is"
 	echo "computed. The date, the heap and the command of each benchmark are in the header of its summary, the rate in its section The runs."
-	[[ " ${benches[*]} " != *" servlet "* ]] ||
-		echo "servlet, p99 µs: the column p99 µs of the In short of servlet/summary.md."
+	[ -z "$servlet" ] ||
+		echo "servlet, p99 µs: the column p99 µs of the In short of $servlet/summary.md."
 	echo
+}
+
+# jdk_summary <jdk>: the summary.md of a JDK: the machine, from the header of its first summary
+# without the lines that can differ from one benchmark to the next, then the date, build and kernel
+# of each benchmark, one table of both benchmarks, one of both under a skewed load, then the
+# schedulers.
+jdk_summary() {
+	local dest=$RESULTS/$1 files=() b f
+	for b in user servlet user-skewed servlet-skewed; do
+		[ -f "$dest/$b/summary.md" ] && files+=("$dest/$b/summary.md")
+	done
+	echo "# Benchmarks, $1"
+	echo
+	awk '/^```/ { n++; print; if (n == 2) exit; next } n == 1 && !/^(date|host|java|heap|command) /' "${files[0]}"
+	echo
+	echo "## The runs"
+	echo
+	echo "| benchmark | date | java build | Linux kernel |"
+	echo "|---|---|---|---|"
+	for f in "${files[@]}"; do
+		b=$(basename "$(dirname "$f")")
+		echo "| [$b]($b/summary.md) | $(sed -n 's/^date *//p' "$f" | head -1) | $(build_of "$f") | $(kernel_of "$f") |"
+	done
+	echo
+	echo "Each benchmark can be run alone: each row comes from the header of its summary, lines date, java"
+	echo "and host. The host: $(sed -n 's/^host *\([^,]*\),.*/\1/p' "${files[0]}" | head -1)."
+	echo
+	glance_section "At a glance" "$1" user servlet
+	glance_section "At a glance, skewed load" "$1" user-skewed servlet-skewed
 	# The schedulers, as the At a glance of the first summary describes them.
 	awk '/^## / { p = 0 } /^#+ The schedulers/ { p = 1 }
 		# A blank line only before a line that is not blank: none at the end.
@@ -223,121 +300,11 @@ chart_notes() {
 	done
 }
 
-# The p99 limit of "max req/s with p99 < 1 ms", as in the summaries.
-P99_LIMIT=$(sed -n 's/^P99_LIMIT=//p' "$ROOT/scripts/lib/bench-common.sh")
-((P99_LIMIT % 1000)) && LIMIT_TEXT="$P99_LIMIT µs" || LIMIT_TEXT="$((P99_LIMIT / 1000)) ms"
-
-# cell: in scripts/lib/summary.sh.
-. "$ROOT/scripts/lib/summary.sh"
-
-# builds: the published JDKs, those of the charts first.
-builds() {
-	{
-		series | awk '{ print $1 }'
-		for f in "$RESULTS"/*/summary.md; do basename "$(dirname "$f")"; done
-	} | awk '!seen[$0]++' | while read -r jdk; do
-		[ -f "$RESULTS/$jdk/user/summary.md" ] || [ -f "$RESULTS/$jdk/servlet/summary.md" ] && echo "$jdk"
-	done
-}
-
-# schedulers <jdk>: the schedulers of a JDK, in the order of its At a glance.
-schedulers() {
-	local b
-	for b in user servlet; do
-		[ -f "$RESULTS/$1/$b/summary.md" ] || continue
-		awk '
-			/^## / { s = $0 == "## At a glance"; h = 0; next }
-			s && /^\|/ { v = $2; gsub(/^ +| +$/, "", v); if (!h) { h = 1; next } if (v !~ /^-+$/) print v }
-		' FS='|' "$RESULTS/$1/$b/summary.md"
-	done | awk '!seen[$0]++'
-}
-
-# specs <aspect>: where each column of an aspect comes from, one line each: <bench>|<section>|
-# <column>|<filters>. The columns of peak, fast, p99, cpu and migrations: user small, servlet, user
-# big, at depth 256.
-specs() {
-	case $1 in
-		peak | fast | cpu)
-			local c
-			case $1 in
-				peak) c="max req/s" ;;
-				fast) c="max req/s with p99 < $LIMIT_TEXT" ;;
-				cpu) c="cpu µs/req" ;;
-			esac
-			echo "user|At a glance|small, $c|"
-			echo "servlet|At a glance|servlet, $c|"
-			echo "user|At a glance|big, $c|"
-			;;
-		p99 | migrations)
-			local c=$1
-			[ "$1" = p99 ] && c="p99 µs"
-			echo "user|In short|$c|case=small depth=256"
-			echo "servlet|In short|$c|"
-			echo "user|In short|$c|case=big depth=256"
-			;;
-		*) return 1 ;;
-	esac
-}
-
-# header: the column titles of an aspect: the three cases.
-header() { echo "user \`small\` | servlet | user \`big\`"; }
-
-# value <jdk> <scheduler> <spec>: the cell a spec gives for one scheduler of one JDK.
-value() {
-	local b sec col filt
-	IFS='|' read -r b sec col filt <<<"$3"
-	cell "$RESULTS/$1/$b/summary.md" "$sec" "$col" "scheduler=$2 $filt"
-}
-
-# aspect_table <aspect>: one row per scheduler of each JDK, one column per spec. A row with no
-# value is left out.
-aspect_table() {
-	local jdk sch spec row v any n
-	n=$(specs "$1" | wc -l)
-	echo "| scheduler | build | $(header "$1") |"
-	printf '| --- | --- |'
-	for ((i = 0; i < n; i++)); do printf ' --- |'; done
-	echo
-	for jdk in $(builds); do
-		for sch in $(schedulers "$jdk"); do
-			row="| \`$sch\` | \`$jdk\` |" any=0
-			while IFS= read -r spec; do
-				v=$(value "$jdk" "$sch" "$spec")
-				[ -z "$v" ] || any=1
-				row+=" $v |"
-			done < <(specs "$1")
-			[ "$any" = 0 ] || echo "$row"
-		done
-	done
-}
-
-# vs_table <jdk> <scheduler> <jdk> <scheduler>: the first against the second, aspect by aspect.
-vs_table() {
-	local a label spec row
-	echo "| aspect | $(header peak) |"
-	echo "| --- | --- | --- | --- |"
-	for a in peak fast p99 cpu migrations; do
-		case $a in
-			peak) label="peak rate" ;;
-			fast) label="highest rate with p99 < $LIMIT_TEXT" ;;
-			p99) label="p99 µs at 150k req/s" ;;
-			cpu) label="cpu µs/req at 150k req/s" ;;
-			migrations) label="migrations" ;;
-		esac
-		row="| $label |"
-		while IFS= read -r spec; do
-			row+=" $(value "$1" "$2" "$spec") vs $(value "$3" "$4" "$spec") |"
-		done < <(specs "$a")
-		echo "$row"
-	done
-}
-
-# block <name> [<args>]: the content of a block of docs/results/summary.md.
+# block <name>: the content of a block of docs/results/summary.md.
 block() {
 	case $1 in
 		charts) chart_notes ;;
-		vs) [ $# = 5 ] || die "block vs needs <jdk> <scheduler> <jdk> <scheduler>: $*"; vs_table "$2" "$3" "$4" "$5" ;;
-		*) specs "$1" >/dev/null || die "unknown block in $RESULTS/summary.md: $1"; aspect_table "$1" ;;
+		*) die "unknown block in $RESULTS/summary.md: $1" ;;
 	esac
 }
 

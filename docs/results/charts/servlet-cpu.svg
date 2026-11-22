@@ -34,16 +34,14 @@ svg { --surface: #fcfcfb; --text: #0b0b0b; --text2: #52514e; --muted: #898781; -
 <text class="m" x="600.0" y="410" font-size="11" text-anchor="middle">450k</text>
 <text class="t2" x="336" y="434" font-size="12" text-anchor="middle">requests per second, step of the ramp</text>
 <text class="t2" x="12" y="68" font-size="12">cpu µs per request</text>
-<polyline class="l c3 dashed" points="72.0,225.9 107.2,222.6 142.4,221.2 177.6,222.1 212.8,223.2 248.0,225.1 283.2,227.7 318.4,231.1 353.6,235.7 388.8,240.8 424.0,246.6 459.2,253.2 494.4,259.8 529.6,266.2 564.8,272.0"><title>mpsc-affine-pinned, build pr227</title></polyline>
-<polyline class="l c1 dashed" points="72.0,180.4 107.2,178.2 142.4,179.5 177.6,183.6 212.8,187.4 248.0,194.7 283.2,203.3 318.4,214.5"><title>mpsc, build pr227</title></polyline>
-<polyline class="l c2 dashed" points="72.0,108.1 107.2,123.0 142.4,140.5 177.6,158.8 212.8,175.6 248.0,188.4 283.2,202.3 318.4,216.2 353.6,227.2 388.8,237.2 424.0,244.5"><title>jdk, build pr227</title></polyline>
-<polyline class="l c1" points="72.0,161.2 107.2,161.7 142.4,164.2 177.6,170.1 212.8,177.9 248.0,189.5 283.2,201.9 318.4,214.4 353.6,226.0 388.8,235.9 424.0,245.3 459.2,253.4"><title>mpsc, build noaff</title></polyline>
-<polyline class="l c2" points="72.0,107.8 107.2,124.0 142.4,139.9 177.6,158.6 212.8,175.6 248.0,189.0 283.2,204.0 318.4,214.6 353.6,227.6 388.8,235.7"><title>jdk, build noaff</title></polyline>
+<polyline class="l c3 dashed" points="72.0,228.2 107.2,225.1 142.4,224.3 177.6,224.3 212.8,225.2 248.0,227.1 283.2,229.4 318.4,232.8 353.6,236.9 388.8,241.6 424.0,247.1 459.2,253.3 494.4,259.9 529.6,266.2 564.8,272.0"><title>mpsc-affine-pinned, build pr227</title></polyline>
+<polyline class="l c1 dashed" points="72.0,185.9 107.2,185.2 142.4,186.2 177.6,187.1 212.8,190.1 248.0,196.5 283.2,204.9 318.4,214.9 353.6,225.8"><title>mpsc, build pr227</title></polyline>
+<polyline class="l c2 dashed" points="72.0,111.3 107.2,123.6 142.4,140.3 177.6,158.9 212.8,176.1 248.0,189.4 283.2,202.4 318.4,215.4 353.6,226.0 388.8,235.9"><title>jdk, build pr227</title></polyline>
+<polyline class="l c1" points="72.0,163.1 107.2,164.6 142.4,166.9 177.6,171.4 212.8,180.4 248.0,189.5 283.2,202.2 318.4,214.3 353.6,226.4 388.8,235.6 424.0,245.0"><title>mpsc, build noaff</title></polyline>
 <circle class="d3 ring" cx="564.8" cy="272.0" r="4"/>
-<circle class="d1 ring" cx="318.4" cy="214.5" r="4"/>
-<circle class="d2 ring" cx="424.0" cy="244.5" r="4"/>
-<circle class="d1 ring" cx="459.2" cy="253.4" r="4"/>
-<circle class="d2 ring" cx="388.8" cy="235.7" r="4"/>
+<circle class="d1 ring" cx="353.6" cy="225.8" r="4"/>
+<circle class="d2 ring" cx="388.8" cy="235.9" r="4"/>
+<circle class="d1 ring" cx="424.0" cy="245.0" r="4"/>
 <text class="t2" x="628" y="86" font-size="12" font-weight="600">by scheduler and build</text>
 <line class="l c3 dashed" x1="628" x2="656" y1="108" y2="108"/>
 <text class="t" x="664" y="112" font-size="12">mpsc-affine-pinned</text>
@@ -57,10 +55,7 @@ svg { --surface: #fcfcfb; --text: #0b0b0b; --text2: #52514e; --muted: #898781; -
 <line class="l c1" x1="628" x2="656" y1="228" y2="228"/>
 <text class="t" x="664" y="232" font-size="12">mpsc</text>
 <text class="m" x="664" y="247" font-size="11">build noaff</text>
-<line class="l c2" x1="628" x2="656" y1="268" y2="268"/>
-<text class="t" x="664" y="272" font-size="12">jdk</text>
-<text class="m" x="664" y="287" font-size="11">build noaff</text>
-<text class="m" x="628" y="312" font-size="11">A point: the mean of r1 and r2.</text>
-<text class="m" x="628" y="328" font-size="11">A line ends at the last step</text>
-<text class="m" x="628" y="344" font-size="11">both ramps kept up with.</text>
+<text class="m" x="628" y="272" font-size="11">A point: the mean of r1 and r2.</text>
+<text class="m" x="628" y="288" font-size="11">A line ends at the last step</text>
+<text class="m" x="628" y="304" font-size="11">both ramps kept up with.</text>
 </svg>

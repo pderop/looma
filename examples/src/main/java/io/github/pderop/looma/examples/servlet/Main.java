@@ -33,6 +33,7 @@ import io.github.pderop.looma.SpawnOptions;
 import io.github.pderop.looma.examples.utils.BackendCpu;
 import io.github.pderop.looma.examples.utils.ClientAffinity;
 import io.github.pderop.looma.examples.utils.LoadGenerator;
+import io.github.pderop.looma.examples.utils.SkewedLoad;
 
 /**
  * The servlet benchmark. Run it with {@code scripts/bench-servlet.sh}.
@@ -43,7 +44,7 @@ import io.github.pderop.looma.examples.utils.LoadGenerator;
  * {@link Running#handleRequest}.
  * <li>{@code handleRequest} sends each request to the
  * {@link ServletContainerActor} of its session. There is one container per
- * carrier.
+ * carrier, or several with {@code servlet.containers}.
  * <li>The container gives the request to one of its two servlets. The servlet
  * asks the container's {@link FraudDetectorActor} for a risk. The detector
  * calls {@link ServletBackend}, which runs in another process, and answers.
@@ -64,11 +65,13 @@ import io.github.pderop.looma.examples.utils.LoadGenerator;
  * </pre>
  *
  * {@code servlet.maxRate} stops the ramp after that rate. The other properties
- * are {@code servlet.carriers}, {@code servlet.scheduler} ({@code mpsc},
+ * are {@code servlet.carriers}, {@code servlet.containers} (a multiple of the
+ * carriers, default one per carrier), {@code servlet.scheduler} ({@code mpsc},
  * {@code mpsc-affine}, {@code mpsc-pinned}, {@code mpsc-affine-pinned} or
  * {@code jdk}), {@code servlet.backendHost}, {@code servlet.backendPort},
  * {@code bench.connections}, {@code servlet.sessions},
  * {@code servlet.products}, {@code servlet.cartMax}, {@code servlet.recentMax},
+ * {@code servlet.hotCarrier} (see {@link SkewedLoad}),
  * {@code servlet.fraudKiB}, {@code servlet.fraudFeatures},
  * {@code servlet.clientCpus}, and {@code servlet.backendPid} with
  * {@code servlet.clkTck} to print the backend's CPU (Linux only).
@@ -148,15 +151,30 @@ public final class Main {
 	}
 
 	/**
-	 * Starts the server. Blocks until every container has its backend connections.
-	 * Throws if a container cannot connect to the backend. {@code carriers} is the
-	 * size of the container pool; it must be at least 2, because the pool has a
-	 * selector.
+	 * Starts the server with one container per carrier. See
+	 * {@link #start(InetSocketAddress, int, int, String, int, FraudDetectorActor.Settings)}.
 	 */
 	public static Running start(InetSocketAddress backend, int carriers, String scheduler, int connections,
 			FraudDetectorActor.Settings fraud) throws Exception {
-		if (carriers < 2) {
-			throw new IllegalArgumentException("servlet.carriers must be at least 2, got " + carriers);
+		return start(backend, carriers, carriers, scheduler, connections, fraud);
+	}
+
+	/**
+	 * Starts the server. Blocks until every container has its backend connections.
+	 * Throws if a container cannot connect to the backend. {@code containers} is
+	 * the size of the container pool, a multiple of {@code carriers}; it must be at
+	 * least 2, because the pool has a selector. Container i starts on carrier
+	 * {@code i % carriers}.
+	 */
+	public static Running start(InetSocketAddress backend, int carriers, int containers, String scheduler,
+			int connections, FraudDetectorActor.Settings fraud) throws Exception {
+		if (containers < 2) {
+			throw new IllegalArgumentException("the container pool needs at least 2 containers (servlet.containers,"
+					+ " one per carrier by default), got " + containers);
+		}
+		if (carriers < 1 || containers % carriers != 0) {
+			throw new IllegalArgumentException("servlet.containers must be a multiple of servlet.carriers: "
+					+ containers + " containers, " + carriers + " carriers");
 		}
 		// First, before any virtual thread starts: the JVM picks its scheduler when
 		// the first one starts.
@@ -164,13 +182,16 @@ public final class Main {
 		try {
 			// The server is ready only once every container has its backend
 			// connections.
-			Startup startup = new Startup(carriers);
-			ActorRef containers = system.spawn("containers",
-					() -> new ServletContainerActor(backend, connections, fraud, startup), SpawnOptions.pooled(carriers)
+			Startup startup = new Startup(containers);
+			// The first spawn of the system: the round-robin starts at carrier 0, so
+			// container i lands on carrier i % carriers.
+			ActorRef pool = system.spawn("containers",
+					() -> new ServletContainerActor(backend, connections, fraud, startup), SpawnOptions
+							.pooled(containers)
 							.withSelector(key -> (int) ((Long) key).longValue())
 							.withPlacement(Placement.roundRobin()));
 			startup.await(Duration.ofSeconds(30));
-			return new Running(system, containers, carriers);
+			return new Running(system, pool, containers);
 		} catch (Exception e) {
 			system.shutdown();
 			system.awaitTermination(10, TimeUnit.SECONDS);
@@ -182,7 +203,10 @@ public final class Main {
 		int carriers = Integer.getInteger("servlet.carriers", Runtime.getRuntime().availableProcessors());
 		String scheduler = System.getProperty("servlet.scheduler", "mpsc");
 		int connections = Integer.getInteger("bench.connections", 8);
-		int sessions = Integer.getInteger("servlet.sessions", 100_000);
+		int sessionCount = Integer.getInteger("servlet.sessions", 100_000);
+		int containers = Integer.getInteger("servlet.containers", carriers);
+		// Session sid goes to container sid % containers: the selector of the pool.
+		SkewedLoad sessions = SkewedLoad.fromProperties("servlet", sessionCount, containers, carriers);
 		long rate = Long.getLong("servlet.rate", 0);
 		long step = Long.getLong("servlet.step", 0);
 		long maxRate = Long.getLong("servlet.maxRate", 0);
@@ -199,7 +223,7 @@ public final class Main {
 				Long.getLong("servlet.clkTck", 100));
 		FraudDetectorActor.Settings fraud = FraudDetectorActor.Settings.fromProperties();
 
-		Running server = start(backend, carriers, scheduler, connections, fraud);
+		Running server = start(backend, carriers, containers, scheduler, connections, fraud);
 		// Each request picks a session and a product; a response other than 200 is a
 		// failure.
 		LoadGenerator<HttpResponse> load = new LoadGenerator<>(
@@ -210,8 +234,9 @@ public final class Main {
 		System.out.printf(Locale.ROOT, "scheduler    %s, %s%n", server.system().scheduler().getClass().getName(),
 				carriers(scheduler, carriers));
 		System.out.printf(Locale.ROOT, "poller mode  %s%n", System.getProperty("jdk.pollerMode", "not set"));
-		System.out.printf(Locale.ROOT, "sessions     %,d, %d backend connection(s) per container%n", sessions,
+		System.out.printf(Locale.ROOT, "sessions     %,d, %d backend connection(s) per container%n", sessionCount,
 				connections);
+		System.out.printf(Locale.ROOT, "skew         %s%n", sessions.describe("containers"));
 		System.out.printf(Locale.ROOT,
 				"state        %,d products; a cart keeps %d lines, a profile %d viewed products%n", Products.COUNT,
 				CartServlet.MAX_LINES, ProfileServlet.MAX_VIEWED);
@@ -376,8 +401,8 @@ public final class Main {
 	 * A random session and a random product: half GET /profile, which views the
 	 * product, half POST /cart, which adds one to three of it.
 	 */
-	private static HttpRequest nextRequest(Random random, int sessions) {
-		long sid = random.nextInt(sessions);
+	private static HttpRequest nextRequest(Random random, SkewedLoad sessions) {
+		long sid = sessions.next(random);
 		int product = random.nextInt(Products.COUNT);
 		if (random.nextBoolean()) {
 			return new HttpRequest("GET", "/profile?viewed=" + product, sid, null);

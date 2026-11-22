@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 388" width="900" height="388" font-family="-apple-system, Segoe UI, Helvetica, Arial, sans-serif">
+<style>
+svg { --surface: #fcfcfb; --text: #0b0b0b; --text2: #52514e; --muted: #898781; --grid: #e1e0d9; --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300 }
+@media (prefers-color-scheme: dark) { svg { --surface: #1a1a19; --text: #f0efec; --text2: #c3c2b7; --muted: #898781; --grid: #2c2c2a; --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #0ca30c } }
+.bg { fill: var(--surface) } .t { fill: var(--text) } .t2 { fill: var(--text2) } .m { fill: var(--muted) }
+.g { stroke: var(--grid); stroke-width: 1 } .g1 { stroke: var(--muted); stroke-width: 1 }
+.d1 { fill: var(--s1) } .d2 { fill: var(--s2) } .d3 { fill: var(--s3) } .d4 { fill: var(--s4) } .d5 { fill: var(--s5) } .d6 { fill: var(--s6) }
+.ring { stroke: var(--surface); stroke-width: 2 }
+</style>
+<rect class="bg" width="900" height="388"/>
+<text class="t" x="12" y="30" font-size="16" font-weight="600">Servlet benchmark: migrations at 150k</text>
+<text class="t2" x="12" y="52" font-size="12">the fraud detectors</text>
+<text class="m" x="12" y="74" font-size="11">One dot per scheduler: the mean of its runs. One message in 64 of each actor is checked. A run that did not keep up is left out.</text>
+<text class="t" x="210" y="108" font-size="12" font-weight="600">servlet</text>
+<line class="g" x1="210.0" x2="210.0" y1="122" y2="324"/>
+<line class="g" x1="372.5" x2="372.5" y1="122" y2="324"/>
+<text class="m" x="372.5" y="340" font-size="10" text-anchor="middle">25%</text>
+<line class="g" x1="535.0" x2="535.0" y1="122" y2="324"/>
+<text class="m" x="535.0" y="340" font-size="10" text-anchor="middle">50%</text>
+<line class="g" x1="697.5" x2="697.5" y1="122" y2="324"/>
+<text class="m" x="697.5" y="340" font-size="10" text-anchor="middle">75%</text>
+<line class="g" x1="860.0" x2="860.0" y1="122" y2="324"/>
+<text class="t2" x="535" y="362" font-size="12" text-anchor="middle">messages run on another carrier than the message before</text>
+<text class="t" x="12" y="140" font-size="12">mpsc-affine-pinned</text>
+<text class="m" x="12" y="155" font-size="11">build pr227</text>
+<circle class="d3 ring" cx="210.0" cy="137.0" r="5"><title>mpsc-affine-pinned, servlet: 0% </title></circle>
+<text class="t" x="12" y="182" font-size="12">mpsc-affine</text>
+<text class="m" x="12" y="197" font-size="11">build pr227</text>
+<circle class="d4 ring" cx="210.0" cy="179.0" r="5"><title>mpsc-affine, servlet: 0% </title></circle>
+<text class="t" x="12" y="224" font-size="12">mpsc</text>
+<text class="m" x="12" y="239" font-size="11">build pr227</text>
+<circle class="d1 ring" cx="728.0" cy="221.0" r="5"><title>mpsc, servlet: 79.7% </title></circle>
+<text class="t" x="12" y="266" font-size="12">jdk</text>
+<text class="m" x="12" y="281" font-size="11">build pr227</text>
+<circle class="d2 ring" cx="667.0" cy="263.0" r="5"><title>jdk, servlet: 70.3% </title></circle>
+<text class="t" x="12" y="308" font-size="12">mpsc</text>
+<text class="m" x="12" y="323" font-size="11">build noaff</text>
+<circle class="d1 ring" cx="691.0" cy="305.0" r="5"><title>mpsc, servlet: 74% (r1)</title></circle>
+<text class="t2" x="700.0" y="309.0" font-size="10"> (r1)</text>
+</svg>

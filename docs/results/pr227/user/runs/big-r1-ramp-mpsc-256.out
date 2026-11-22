@@ -2,6 +2,7 @@ WARNING: Using experimental MPSC virtual thread scheduler
 scheduler    io.github.pderop.looma.scheduler.mpsc.MpscActorScheduler, Mpsc[count=10, pinned=false, affine=false]
 poller mode  not set
 groups       10, 200000 users each (~16015 KiB), depth 256
+skew         none: each of the 10 groups (one per carrier) gets the same share of the requests
 load         150,000 req/s, 4 connection(s) on CPUs [0, 1, 16, 17]
 backend      127.0.0.1:8081, 8 connections per group
 window       10s warm-up, 20s measured
@@ -9,31 +10,40 @@ window       10s warm-up, 20s measured
 ramp         from 150,000 req/s, 20,000 more at each step; at each step 10s measured and 3s to go up to it
 
 step         150,000 req/s, 10s measured
-throughput   150,001 req/s
-cpu          64.39 us/req (9.66 cores busy) -- server: process minus clients
-client cpu   26.64 us/req (4.00 cores busy)
-migrations   8.3% of 46,924 sampled messages ran on another carrier than the one before
-backend cpu  0.81 CPUs busy
-latency      p50 281.1  p90 685.1  p99 2271.2  p99.9 11354.1  max 54657.0 us (from the scheduled send)
+throughput   150,002 req/s
+cpu          64.52 us/req (9.68 cores busy) -- server: process minus clients
+client cpu   26.65 us/req (4.00 cores busy)
+migrations   8.1% of 46,915 sampled messages ran on another carrier than the one before
+backend cpu  0.80 CPUs busy
+latency      p50 274.2  p90 646.1  p99 1227.8  p99.9 3029.0  max 13721.6 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         170,000 req/s, 10s measured
-throughput   169,993 req/s
-cpu          58.25 us/req (9.90 cores busy) -- server: process minus clients
+throughput   169,983 req/s
+cpu          58.55 us/req (9.95 cores busy) -- server: process minus clients
 client cpu   23.53 us/req (4.00 cores busy)
-migrations   1.9% of 53,157 sampled messages ran on another carrier than the one before
-backend cpu  0.87 CPUs busy
-latency      p50 983.6  p90 2445.3  p99 15392.8  p99.9 70320.1  max 295960.6 us (from the scheduled send)
+migrations   1.8% of 53,145 sampled messages ran on another carrier than the one before
+backend cpu  0.86 CPUs busy
+latency      p50 917.0  p90 2091.0  p99 7839.7  p99.9 16703.5  max 83689.5 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         190,000 req/s, 10s measured
-throughput   189,521 req/s
-cpu          52.30 us/req (9.91 cores busy) -- server: process minus clients
-client cpu   21.10 us/req (4.00 cores busy)
-migrations   1.2% of 59,420 sampled messages ran on another carrier than the one before
-backend cpu  0.87 CPUs busy
-latency      p50 2998.3  p90 18235.4  p99 83296.3  p99.9 174456.8  max 1328545.8 us (from the scheduled send)
+throughput   190,302 req/s
+cpu          52.30 us/req (9.95 cores busy) -- server: process minus clients
+client cpu   21.02 us/req (4.00 cores busy)
+migrations   0.9% of 59,520 sampled messages ran on another carrier than the one before
+backend cpu  0.88 CPUs busy
+latency      p50 2975.7  p90 16162.8  p99 58228.7  p99.9 80412.7  max 708837.4 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
-*** did not keep up with 190,000 req/s: sent 189,750 req/s, 2,474 dropped, 0 unanswered, 0 failed -- not a measurement ***
 
-ramp         kept up with 170,000 req/s
+step         210,000 req/s, 10s measured
+throughput   197,068 req/s
+cpu          50.30 us/req (9.91 cores busy) -- server: process minus clients
+client cpu   20.29 us/req (4.00 cores busy)
+migrations   1.0% of 62,133 sampled messages ran on another carrier than the one before
+backend cpu  0.84 CPUs busy
+latency      p50 4599.8  p90 68681.7  p99 159776.8  p99.9 168296.4  max 7650410.5 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+*** did not keep up with 210,000 req/s: sent 197,079 req/s, 130,320 dropped, 0 unanswered, 0 failed -- not a measurement ***
+
+ramp         kept up with 190,000 req/s

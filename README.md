@@ -15,10 +15,11 @@ shows what that is worth to a Netty event loop. Then Looma asks the next questio
 
 > **Does a carrier-affine scheduler help an actor system?**
 
-An actor owns private state that only it touches: exactly what wants to stay on one core. For that,
-two things must hold: the actor keeps running on the same carrier, and that carrier keeps running
-on the same core. Looma is an actor library built to measure whether it helps. The same actors run
-on the JDK's default scheduler, and on the MPSC scheduler with or without `Thread.Affinity`:
+An actor owns private state that only it touches: exactly what wants to stay on one core. Each
+actor runs on its own virtual thread. For that, two things must hold: the actor's virtual thread
+keeps running on the same carrier, and that carrier keeps running on the same core. Looma is an
+actor library built to measure whether it helps. The same actors run on the JDK's default
+scheduler, and on the MPSC scheduler with or without `Thread.Affinity`:
 
 | Scheduler | The actor stays on its carrier | The carrier stays on its core |
 | --- | --- | --- |
@@ -33,11 +34,7 @@ request of the MPSC scheduler is a draft: whether it keeps `Thread.Affinity` is 
 evaluated, so Looma runs on two builds of it: `pr227`, the pull request, with
 `Thread.Affinity`, and `noaff`, a later commit, without it.
 
-The [results](docs/results/summary.md#in-short) answer the question for each build. On `pr227`,
-with each actor on its carrier and each carrier on its CPU (`mpsc-affine-pinned`), the MPSC
-scheduler beats the JDK's default one on every measure, in both benchmarks: peak rate, latency
-and CPU per request. On `noaff`, without affinity (`mpsc`), it uses less CPU or the same, and has a
-lower p99 at the same rate, and its peak rate is higher or the same.
+The [results](docs/results/summary.md): the charts of both builds, side by side.
 
 With `affine(true)`, only an actor's own messages stay on its carrier. The rest still moves:
 
@@ -57,7 +54,7 @@ Two benchmarks compare them:
   closer to a real server: sessions, a catalog, a fraud check, a call to a backend, and no pointer
   chasing. How far does it go, and what is its latency below that?
 
-The [results](docs/results/summary.md) give the numbers, and what they show.
+The [results](docs/results/summary.md): the charts of both benchmarks.
 
 ## Quick start
 
@@ -210,8 +207,8 @@ The classpath, the native access, and the same quick start on `noaff`:
   machine, and how to run them.
 - [`docs/benchmark-user.md`](docs/benchmark-user.md): the user benchmark.
 - [`docs/benchmark-servlet.md`](docs/benchmark-servlet.md): the servlet benchmark, and why it exists.
-- [`docs/results/summary.md`](docs/results/summary.md): the numbers of both benchmarks, and what
-  they show.
+- [`docs/results/summary.md`](docs/results/summary.md): the charts of both benchmarks, on both
+  builds.
 
 ## Words
 

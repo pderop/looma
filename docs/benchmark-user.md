@@ -54,7 +54,8 @@ big      one group about 16 MiB: does not fit in an L2
 ```
 
 **The load:** `LoadGenerator` sends it, as described in [`benchmark.md`](benchmark.md#the-load).
-Here, each request asks for a random user.
+Here, each request asks for a random user. With `--hot-carrier`, the group that starts on carrier 0 gets more
+of the requests ([a skewed load](benchmark.md#a-skewed-load)).
 
 **One request:**
 
@@ -127,6 +128,7 @@ estimate when it starts.
 scripts/bench-user.sh                                # this one
 scripts/bench-user.sh --users-per-group 8000         # the small case only
 scripts/bench-user.sh --no-depth0                    # at --depth only
+scripts/bench-user.sh --hot-carrier 50 --users-per-group 8000 # a skewed load, small only: the actors that start on carrier 0 get half the requests
 ```
 
 ## Why it is built this way

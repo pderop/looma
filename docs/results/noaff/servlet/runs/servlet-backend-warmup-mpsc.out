@@ -2,6 +2,7 @@ WARNING: Using experimental MPSC virtual thread scheduler
 scheduler    io.github.pderop.looma.scheduler.mpsc.MpscActorScheduler, Mpsc[count=10, pinned=false, affine=false]
 poller mode  not set
 sessions     100,000, 8 backend connection(s) per container
+skew         none: each of the 10 containers (one per carrier) gets the same share of the requests
 state        10,000 products; a cart keeps 20 lines, a profile 20 viewed products
 fraud        a table of 1024 KiB per container, 256 features per check
 load         150,000 req/s, 4 client thread(s) on CPUs [0, 1, 16, 17]
@@ -9,12 +10,12 @@ backend      127.0.0.1:8081
 window       10s warm-up, then a ramp from 150,000 req/s, 1 more at each step, up to 150,000; at each step 30s measured and 3s to go up to it
 
 step         150,000 req/s, 30s measured
-throughput   149,977 req/s (answered with a 200)
-cpu          44.83 us/req (6.72 cores busy) -- server: process minus clients
-client cpu   26.60 us/req (3.99 cores busy)
-migrations   73.4% of 140,649 sampled messages of the fraud detectors ran on another carrier than the one before
-backend cpu  1.91 CPUs busy
-latency      p50 54.2  p90 67.8  p99 85.9  p99.9 6467.6  max 15024.1 us (from the scheduled send)
-send lag     p50 0.1  p99 0.2 us (how late the clients sent)
+throughput   149,967 req/s (answered with a 200)
+cpu          44.75 us/req (6.71 cores busy) -- server: process minus clients
+client cpu   26.62 us/req (3.99 cores busy)
+migrations   74.0% of 140,655 sampled messages of the fraud detectors ran on another carrier than the one before
+backend cpu  1.88 CPUs busy
+latency      p50 53.4  p90 66.2  p99 84.7  p99.9 12402.7  max 46497.8 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 ramp         kept up with 150,000 req/s

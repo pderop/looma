@@ -11,26 +11,38 @@ builds side by side. The machine and the layout: [`../benchmark.md`](../benchmar
 into `<jdk>/user/` and `<jdk>/servlet/`, and writes `<jdk>/summary.md`. `<jdk>` comes from the line
 java of the summaries, without the commit: `build 28-internal-noaff-<commit>` gives `noaff`. A new
 commit of a build replaces its folder. One call takes the runs of one JDK or of several, and
-replaces only the benchmarks it is given. Then it fills the tables of the top `summary.md`, between
-its `<!-- begin x -->` and `<!-- end x -->` lines, and [`scripts/charts.sh`](../../scripts/charts.sh)
-redraws `charts/`. Only the text of In short is written by hand, after each campaign.
+replaces only the benchmarks it is given: a benchmark can be run and published alone, the others
+stay. `scripts/publish.sh bench/*` works: what is not a finished campaign is skipped, and of two
+runs of one benchmark on one build, the newer one is kept. When what stays comes from another commit of the same build, or another kernel, it prints a
+warning and goes on. Then it fills the notes of the charts of the top
+`summary.md`, between its `<!-- begin charts -->` and `<!-- end charts -->` lines, and
+[`scripts/charts.sh`](../../scripts/charts.sh) redraws `charts/`.
+
+A campaign with a skewed load (`--hot-carrier`) is `bench/user-skewed-<date>-<time>/` or
+`bench/servlet-skewed-<date>-<time>/`, unless `--out` names it; `publish.sh` knows it from the
+title of its summary. It goes into `<jdk>/user-skewed/` or `<jdk>/servlet-skewed/`, with the same
+files as below. `<jdk>/summary.md` shows it in a second table. The servlet one has its chart,
+`charts/servlet-skewed-max.svg`; the other charts leave it out.
 
 ```
-summary.md                                          the builds side by side, and what they show
+summary.md                                          the charts of the builds side by side
 charts/<bench>-p99.svg, charts/<bench>-cpu.svg      the p99 and the cpu µs/req at each step of each ramp; user: case small
 charts/<bench>.csv                                  the numbers of these charts
 charts/user-<case>-max.svg, charts/servlet-max.svg  the max rate of each ramp, r1 and r2
+charts/servlet-skewed-max.svg                       the same, servlet with a skewed load
 charts/<bench>-max.csv                              the numbers of these charts
-charts/<measure>-150k.svg, charts/measure-150k.csv  the p99, cpu µs/req and migrations at 150k req/s, the mean of the runs
-charts/gcs-150k.svg, charts/cpu-depth0.svg          the GC pauses, and the cpu µs/req at depth 0, from the same csv
-charts/walk-l3.svg, charts/walk-l3.csv              the walk cycles/req and the loads from another L3
-charts/stackchunks.svg, charts/stackchunks.csv      the live StackChunks of the c2c run of user small
+charts/<bench>-p99-measure.svg, -cpu-measure.svg    the p99 and the cpu µs/req of the measures, the mean of the runs
+charts/<bench>-migrations.svg, <bench>-gcs.svg      the migrations and the GC pauses of the same runs
+charts/user-cpu-depth0.svg, charts/measure.csv      the cpu µs/req at depth 0; the numbers of these charts
+charts/user-walk-l3.svg, charts/servlet-l3.svg      the walk cycles/req and the loads from another L3
+charts/walk-l3.csv                                  the numbers of these charts
+charts/user-stackchunks.svg, charts/stackchunks.csv the live StackChunks of the c2c run of user small
 ```
 
 In the folder of each JDK:
 
 ```
-summary.md                                          both benchmarks at a glance
+summary.md                                          the date, build and kernel of each benchmark, then all at a glance
 user/summary.md                                     the user benchmark
 user/<case>-c2c-<scheduler>.txt                     the perf c2c report
 user/<case>-walk-<scheduler>.txt                    the perf report of the walk run: cycles per function;

@@ -30,6 +30,7 @@ import io.github.pderop.looma.Carriers;
 import io.github.pderop.looma.examples.utils.BackendCpu;
 import io.github.pderop.looma.examples.utils.ClientAffinity;
 import io.github.pderop.looma.examples.utils.LoadGenerator;
+import io.github.pderop.looma.examples.utils.SkewedLoad;
 
 import static io.github.pderop.looma.Placement.carrier;
 import static io.github.pderop.looma.SpawnOptions.placedOn;
@@ -51,7 +52,8 @@ import static io.github.pderop.looma.SpawnOptions.placedOn;
  * {@code bench.carriers} (one group per carrier), {@code bench.clientCpus},
  * {@code bench.backendPort}, {@code bench.warmupSeconds},
  * {@code bench.measureSeconds}, {@code bench.depth},
- * {@code bench.usersPerGroup}, {@code bench.connections}, and
+ * {@code bench.usersPerGroup}, {@code bench.connections},
+ * {@code bench.hotCarrier} (see {@link SkewedLoad}), and
  * {@code bench.backendPid} with {@code bench.clkTck} to print the backend's CPU
  * (Linux only).
  *
@@ -130,8 +132,10 @@ public final class Main {
 		// Each request picks a user at random: every user answers.
 		Main main = new Main(groupRefs);
 		int users = groups * UserGroupActor.USERS_PER_GROUP;
+		// User u goes to group u % groups: see handleRequest.
+		SkewedLoad skew = SkewedLoad.fromProperties("bench", users, groups, groups);
 		LoadGenerator<UserGroupActor.Recommended> load = new LoadGenerator<>(
-				random -> main.handleRequest(random.nextInt(users)), reply -> true, clientCpus);
+				random -> main.handleRequest((int) skew.next(random)), reply -> true, clientCpus);
 		load.setRate(rate);
 
 		long mapKiB = (long) UserGroupActor.USERS_PER_GROUP * BYTES_PER_USER / 1024;
@@ -142,6 +146,7 @@ public final class Main {
 		System.out.printf(Locale.ROOT, "poller mode  %s%n", System.getProperty("jdk.pollerMode", "not set"));
 		System.out.printf(Locale.ROOT, "groups       %d, %d users each (~%d KiB), depth %d%n", groups,
 				UserGroupActor.USERS_PER_GROUP, mapKiB, UserGroupActor.DEPTH);
+		System.out.printf(Locale.ROOT, "skew         %s%n", skew.describe("groups"));
 		System.out.printf(Locale.ROOT, "load         %,d req/s, %d connection(s) on CPUs %s%n", rate,
 				load.connections(), clientCpus.isEmpty() ? "<floating>" : clientCpus);
 		System.out.printf(Locale.ROOT, "backend      %s:%d, %d connections per group%n", backend.getHostString(),

@@ -363,6 +363,31 @@ class ServletServerTest {
 	}
 
 	@Test
+	void severalContainersPerCarrier() throws Exception {
+		try (ServletBackend backend = ServletBackend.start(0, 1)) {
+			try (Main.Running server = Main.start(new InetSocketAddress("127.0.0.1", backend.port()), 4, 8, "jdk", 1,
+					FRAUD)) {
+				// One request to each of sessions 0 to 7: one per container.
+				for (long sid = 0; sid < 8; sid++) {
+					assertEquals(200, server.handleRequest(new HttpRequest("GET", "/profile", sid, null))
+							.get(10, TimeUnit.SECONDS)
+							.status());
+				}
+				// Eight containers: each detector counts one check. With four, the sum would be
+				// 16.
+				assertEquals(8, server.fraudStats(false).checks());
+			}
+		}
+	}
+
+	@Test
+	void containersMustBeAMultipleOfTheCarriers() {
+		InetSocketAddress nowhere = new InetSocketAddress("127.0.0.1", 1);
+		assertThrows(IllegalArgumentException.class, () -> Main.start(nowhere, 4, 6, "jdk", 1, FRAUD));
+		assertThrows(IllegalArgumentException.class, () -> Main.start(nowhere, 1, 1, "jdk", 1, FRAUD));
+	}
+
+	@Test
 	void anUnreachableBackendStopsTheStart() throws Exception {
 		int port;
 		try (ServerSocket free = new ServerSocket(0)) {

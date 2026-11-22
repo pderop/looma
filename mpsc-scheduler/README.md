@@ -26,14 +26,16 @@ Many threads may add to them.
 
 ```
 carrier-0
-  queue        VTs with an affinity (an actor's mailbox threads)  -> only carrier-0 takes them
-  stealQueue   VTs without one (offloaded threads, and the mailbox -> carrier-0, or an idle carrier
-               threads, unless affine(true))
+  queue        threads with an affinity to carrier-0   -> only carrier-0 runs them
+  stealQueue   threads without an affinity             -> carrier-0, or an idle carrier steals them
 
-a thread with an affinity  -> the queue of its carrier, at every start and every wake
-a thread without one       -> the stealQueue of the carrier that starts it
-an idle carrier steals     -> from another carrier's stealQueue only: with affinity, never an actor's
-                              mailbox thread
+an actor's mailbox thread  -> an affinity only with affine(true); none by default
+an offloaded thread        -> never an affinity
+
+with an affinity     -> the queue of its carrier, at every start and every wake
+without one          -> the stealQueue of the carrier that starts it
+an idle carrier      -> steals only from another carrier's stealQueue
+                        so with affine(true), a mailbox thread is never stolen
 ```
 
 On a JDK without `Thread.Affinity`, each carrier has one queue. An idle carrier may take any thread

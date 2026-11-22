@@ -1,0 +1,9 @@
+jdk,scheduler,color,case,run,max req/s,max req/s p99 < 1 ms
+pr227,mpsc-affine-pinned,3,servlet,r1,190000,150000
+pr227,mpsc-affine-pinned,3,servlet,r2,230000,210000
+pr227,mpsc,1,servlet,r1,290000,290000
+pr227,mpsc,1,servlet,r2,290000,290000
+pr227,jdk,2,servlet,r1,270000,0
+pr227,jdk,2,servlet,r2,250000,150000
+noaff,mpsc,1,servlet,r1,350000,290000
+noaff,mpsc,1,servlet,r2,370000,310000

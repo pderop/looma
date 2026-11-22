@@ -59,11 +59,16 @@ with commas and ranges only (2-7,10-13), and no CPU in two lists:
   --no-perf                No c2c, stat, walk or epsilon run: only the measures and the ramps.
   --ramps-only             Only the ramps: no measure at --rate, so no c2c, stat, walk or epsilon
                            run either. The summary then has only the max req/s.
+  --hot-carrier <pct>      A skewed load: the actors that start on carrier 0 (groups of
+                           the user benchmark, containers of the servlet one) get pct % of the
+                           requests, 1 to 99; the other actors share the rest. Default: 0, the same share
+                           for each. The campaign is then <bench>-skewed-<date>-<time>, published
+                           apart from the others.
   --schedulers <list>      The schedulers to run, comma-separated, among mpsc,
                            mpsc-affine, mpsc-pinned, mpsc-affine-pinned, jdk and
-                           jdk-pinned. Default: all six. On a JDK without
-                           Thread.Affinity: mpsc and jdk; it can also run
-                           jdk-pinned, and refuses the others.
+                           jdk-pinned. Default: mpsc, mpsc-affine, mpsc-affine-pinned
+                           and jdk. On a JDK without Thread.Affinity: mpsc; it can
+                           also run jdk and jdk-pinned, and refuses the others.
   --out <dir>              Default: bench/<bench>-<date>-<time>, in the project.
   --summary-only           Runs nothing: writes again the tables of <out>/summary.md, from the
                            files of its runs. Give --out and the options of the campaign; the
@@ -91,12 +96,15 @@ P99_LIMIT=1000
 SETTLE_SECONDS=3
 CONNECTIONS=8
 BACKEND_THREADS=
-SCHEDULERS="mpsc mpsc-affine mpsc-pinned mpsc-affine-pinned jdk jdk-pinned"
-KNOWN_SCHEDULERS=$SCHEDULERS
-# The schedulers a JDK without Thread.Affinity can run, and its default: jdk-pinned is pinned by
-# the script, and is run only when asked.
+HOT_CARRIER=0
+# All the schedulers, in the order of the tables, and the default. mpsc-pinned and jdk-pinned run
+# only when asked.
+KNOWN_SCHEDULERS="mpsc mpsc-affine mpsc-pinned mpsc-affine-pinned jdk jdk-pinned"
+SCHEDULERS="mpsc mpsc-affine mpsc-affine-pinned jdk"
+# The schedulers a JDK without Thread.Affinity can run, and its default. jdk runs the same there
+# as on a JDK with Thread.Affinity: it runs only when asked.
 NO_AFFINITY_SCHEDULERS="mpsc jdk jdk-pinned"
-NO_AFFINITY_DEFAULT="mpsc jdk"
+NO_AFFINITY_DEFAULT="mpsc"
 SCHEDULERS_GIVEN=0
 
 # parse_options "$@": the shared options, then those of the benchmark, through bench_flag and
@@ -124,6 +132,7 @@ parse_options() {
 			--schedulers) SCHEDULERS=${2//,/ }; SCHEDULERS_GIVEN=1 ;;
 			--out) OUT=$2 ;;
 			--connections) CONNECTIONS=$2 ;;
+			--hot-carrier) HOT_CARRIER=$2 ;;
 			*) bench_option "$1" "$2" || die "unknown option '$1' (try --help)" ;;
 		esac
 		shift 2
@@ -133,11 +142,13 @@ parse_options() {
 	for s in $SCHEDULERS; do
 		[[ " $KNOWN_SCHEDULERS " == *" $s "* ]] || die "unknown scheduler '$s' (try --help)"
 	done
-	for n in "$RATE" "$STEP" "$MAX_RATE" "$ROUNDS" "$CONNECTIONS"; do
+	for n in "$RATE" "$STEP" "$MAX_RATE" "$ROUNDS" "$CONNECTIONS" "$HOT_CARRIER"; do
 		[[ $n =~ ^[0-9]+$ ]] || die "not a number: '$n'"
 	done
 	[[ -z $BACKEND_THREADS || $BACKEND_THREADS =~ ^[1-9][0-9]*$ ]] || die "--reactors needs a number above 0, not '$BACKEND_THREADS'"
 	((RATE > 0 && ROUNDS > 0 && CONNECTIONS > 0)) || die "--rate, --rounds and --connections must be above 0"
+	HOT_CARRIER=$((10#$HOT_CARRIER))
+	((HOT_CARRIER < 100)) || die "--hot-carrier must be between 0 (none) and 99"
 	# A round is one measure and one ramp: as many of each. --ramps-only: no measure.
 	REPS=$ROUNDS RAMP_RUNS=$ROUNDS
 	if [ "$RAMPS_ONLY" = 1 ]; then
@@ -199,12 +210,10 @@ setup() {
 		fi
 	fi
 	CP=${CP:-$(scripts/lib/classpath.sh)}
-	OUT=${OUT:-$ROOT/bench/$BENCH-$(date +%Y%m%d-%H%M%S)}
-	[ ! -e "$OUT" ] || die "$OUT already exists"
-	RUNS=$OUT/runs
-	mkdir -p "$RUNS"
-
 	CARRIER_CPUS=($(expand_cpus "$CARRIER_LIST"))
+	((HOT_CARRIER == 0 || ${#CARRIER_CPUS[@]} >= 2)) || die "--hot-carrier needs at least 2 carriers"
+	((HOT_CARRIER == 0 || HOT_CARRIER * ${#CARRIER_CPUS[@]} > 100)) ||
+		die "--hot-carrier must be more than the even share of a carrier: $((100 / ${#CARRIER_CPUS[@]}))%"
 
 	# Two carriers on the two CPUs of one core would share its L2.
 	declare -gA CORE_OF=()
@@ -215,6 +224,13 @@ setup() {
 		[ -z "${CORE_OF[$core]:-}" ] || die "carrier CPUs ${CORE_OF[$core]} and $cpu share a core"
 		CORE_OF[$core]=$cpu
 	done
+	# The checks of the benchmark, if it has some: before the output folder exists.
+	! declare -F bench_checks >/dev/null || bench_checks
+
+	OUT=${OUT:-$ROOT/bench/$BENCH$( ((HOT_CARRIER == 0)) || echo -skewed)-$(date +%Y%m%d-%H%M%S)}
+	[ ! -e "$OUT" ] || die "$OUT already exists"
+	RUNS=$OUT/runs
+	mkdir -p "$RUNS"
 
 	if command -v taskset >/dev/null; then
 		PIN=(taskset -c "$CARRIER_LIST")
@@ -264,9 +280,10 @@ itmt() {
 	fi
 }
 
-# header <title>: the title and the machine, at the top of a summary.
+# header <title>: the title and the machine, at the top of a summary. With --hot-carrier, the title
+# says the load is skewed: publish.sh reads it.
 header() {
-	echo "# $1"
+	echo "# $1$( ((HOT_CARRIER == 0)) || echo ", skewed load")"
 	echo
 	echo '```'
 	printf 'date         %s\n' "$(date '+%Y-%m-%d %H:%M:%S %z')"
@@ -1070,6 +1087,19 @@ shared_lines() {
 	echo "- The clients are pinned to their own CPUs."
 	# One line: resummarize ends the shared lines at this one.
 	echo "- The JDK's poller mode is not set. On Linux, the JDK then uses mode 4 under the MPSC scheduler (one epoll per carrier), and mode 2 under jdk (pollers that run as virtual threads)."
+}
+
+# skew_lines <actors> [count]: with --hot-carrier, what the skewed load is, for The runs. <actors>:
+# "groups". [count]: how many there are, one per carrier by default.
+skew_lines() {
+	((HOT_CARRIER > 0)) || return 0
+	local c=${#CARRIER_CPUS[@]} n=${2:-${#CARRIER_CPUS[@]}}
+	if ((n == c)); then
+		echo "A skewed load: the ${1%s} that starts on carrier 0 gets $HOT_CARRIER% of the requests; the $((n - 1))"
+	else
+		echo "A skewed load: the $((n / c)) $1 that start on carrier 0 get $HOT_CARRIER% of the requests; the $((n - n / c))"
+	fi
+	echo "others share the rest. The \`skew\` line of each console says it."
 }
 
 # scheduler_lines: what each scheduler is, in one line, at the end of each At a glance.

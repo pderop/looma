@@ -1,6 +1,7 @@
 scheduler    io.github.pderop.looma.impl.JdkActorScheduler, Builtin[parallelism=10]
 poller mode  not set
 groups       10, 200000 users each (~16015 KiB), depth 256
+skew         none: each of the 10 groups (one per carrier) gets the same share of the requests
 load         150,000 req/s, 4 connection(s) on CPUs [0, 1, 16, 17]
 backend      127.0.0.1:8081, 8 connections per group
 window       10s warm-up, 20s measured
@@ -8,22 +9,40 @@ window       10s warm-up, 20s measured
 ramp         from 150,000 req/s, 20,000 more at each step; at each step 10s measured and 3s to go up to it
 
 step         150,000 req/s, 10s measured
-throughput   150,000 req/s
-cpu          64.88 us/req (9.73 cores busy) -- server: process minus clients
-client cpu   26.65 us/req (4.00 cores busy)
-migrations   3.7% of 46,938 sampled messages ran on another carrier than the one before
+throughput   149,977 req/s
+cpu          64.91 us/req (9.73 cores busy) -- server: process minus clients
+client cpu   26.66 us/req (4.00 cores busy)
+migrations   4.0% of 46,910 sampled messages ran on another carrier than the one before
 backend cpu  0.75 CPUs busy
-latency      p50 817.2  p90 1744.9  p99 17006.6  p99.9 52396.0  max 65601.5 us (from the scheduled send)
+latency      p50 856.6  p90 1607.7  p99 8253.4  p99.9 22986.8  max 31359.0 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
 
 step         170,000 req/s, 10s measured
-throughput   169,945 req/s
-cpu          57.73 us/req (9.81 cores busy) -- server: process minus clients
-client cpu   23.53 us/req (4.00 cores busy)
-migrations   0.9% of 53,152 sampled messages ran on another carrier than the one before
-backend cpu  0.71 CPUs busy
-latency      p50 2535.4  p90 4866.0  p99 60784.6  p99.9 116260.9  max 135790.6 us (from the scheduled send)
+throughput   170,012 req/s
+cpu          58.25 us/req (9.90 cores busy) -- server: process minus clients
+client cpu   23.52 us/req (4.00 cores busy)
+migrations   0.8% of 53,164 sampled messages ran on another carrier than the one before
+backend cpu  0.76 CPUs busy
+latency      p50 2510.8  p90 4255.7  p99 18677.8  p99.9 55410.7  max 80740.4 us (from the scheduled send)
 send lag     p50 0.1  p99 0.1 us (how late the clients sent)
-*** did not keep up with 170,000 req/s: sent 169,929 req/s, 744 dropped, 0 unanswered, 0 failed -- not a measurement ***
 
-ramp         kept up with 150,000 req/s
+step         190,000 req/s, 10s measured
+throughput   189,944 req/s
+cpu          52.54 us/req (9.98 cores busy) -- server: process minus clients
+client cpu   21.06 us/req (4.00 cores busy)
+migrations   0.2% of 59,498 sampled messages ran on another carrier than the one before
+backend cpu  0.77 CPUs busy
+latency      p50 6692.9  p90 11231.2  p99 23740.4  p99.9 47480.8  max 53968.9 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+
+step         210,000 req/s, 10s measured
+throughput   199,209 req/s
+cpu          50.12 us/req (9.98 cores busy) -- server: process minus clients
+client cpu   20.07 us/req (4.00 cores busy)
+migrations   0.1% of 62,730 sampled messages ran on another carrier than the one before
+backend cpu  0.74 CPUs busy
+latency      p50 13271.0  p90 47710.2  p99 79364.1  p99.9 92667.9  max 100859.9 us (from the scheduled send)
+send lag     p50 0.1  p99 0.1 us (how late the clients sent)
+*** did not keep up with 210,000 req/s: sent 199,129 req/s, 109,493 dropped, 0 unanswered, 0 failed -- not a measurement ***
+
+ramp         kept up with 190,000 req/s
